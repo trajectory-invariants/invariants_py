@@ -1,0 +1,11 @@
+*.pyc
+*.pkl
+*.bak
+.spyproject/
+.ipynb_checkpoints
+invariants_python.egg-info
+build/
+foobar/
+second_problem/
+reformulation_position/
+generation_position/

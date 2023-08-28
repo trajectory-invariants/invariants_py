@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "Invariants-Python"
+version = "0.2.0"
+description = "Calculate invariant representations of trajectories to be used for recognition and trajectory generalization"
+authors = ["Maxim Vochten", "Riccardo Burlizzi"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+scipy = "^1.7.2"
+casadi = "3.5.5"
+PyQt5 = "^5.10.1"
+matplotlib = "^3.5.0"
+numpy = "^1.21.1"
+ipython = "^7.34.0"
+numpy-stl = "^3.0.0"
+
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

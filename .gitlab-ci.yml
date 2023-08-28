@@ -1,0 +1,26 @@
+# This pipeline runs the Python scripts in the example folder. The pipeline succeeds if all scripts can be run completely.
+
+# Official language image. Look for the different tagged releases at:
+# https://hub.docker.com/r/library/python/tags/
+default:
+  image: python:3.9
+
+before_script:
+  - python --version  # For debugging
+  - pip install virtualenv
+  - virtualenv venv
+  - source venv/bin/activate
+
+build:
+  script:
+    - pip install .
+    
+test:
+  script:
+    - pip install .
+    - pip list
+    - pip list --not-required
+    - find . -maxdepth 2 -name "*.py" -path "./examples/*" | xargs -n 1 python 
+
+
+
