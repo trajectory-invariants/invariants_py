@@ -45,7 +45,8 @@ for i in indx:
     plot_stl(opener_location,trajectory_position[i,:],trajectory_orientation[i,:,:],colour="c",alpha=0.2,ax=ax)
 
 #%%
-use_fatrop_solver = True
+use_fatrop_solver = True # True = fatrop, False = ipopt
+
 # specify optimization problem symbolically
 FS_calculation_problem = FS_calc(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180, fatrop_solver = use_fatrop_solver) 
 
@@ -169,79 +170,79 @@ plt.title('Torsion [rad/m]')
 
 plt.show()
 
-# #%% Visualization
+#%% Visualization
 
-# window_len = 20
+window_len = 20
 
-# # specify optimization problem symbolically
-# FS_online_generation_problem = FS_gen(window_len=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
+# specify optimization problem symbolically
+FS_online_generation_problem = FS_gen(window_len=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
 
-# current_progress = 0.0
-# old_progress = 0.0
+current_progress = 0.0
+old_progress = 0.0
 
-# R_obj_end = calculate_trajectory[-1] # initialise R_obj_end with end point of reconstructed trajectory
-# iterative_trajectory = calculate_trajectory.copy()
-# iterative_movingframes = movingframes.copy()
-# trajectory_position_iter = trajectory_position.copy()
-# while current_progress <= 1.0:
+R_obj_end = calculate_trajectory[-1] # initialise R_obj_end with end point of reconstructed trajectory
+iterative_trajectory = calculate_trajectory.copy()
+iterative_movingframes = movingframes.copy()
+trajectory_position_iter = trajectory_position.copy()
+while current_progress <= 1.0:
     
-#     print(f"current progress = {current_progress}")
+    print(f"current progress = {current_progress}")
 
-#     # Resample invariants for current progress
-#     progress_values = np.linspace(current_progress, arclength_n[-1], window_len)
-#     model_invariants,new_stepsize = interpolate_model_invariants(spline_model_trajectory,progress_values)
+    # Resample invariants for current progress
+    progress_values = np.linspace(current_progress, arclength_n[-1], window_len)
+    model_invariants,new_stepsize = interpolate_model_invariants(spline_model_trajectory,progress_values)
     
-#     # Boundary constraints
-#     current_index = round( (current_progress - old_progress) * len(iterative_trajectory))
-#     R_obj_start = iterative_trajectory[current_index]
-#     rotate = R.from_euler('z', 30/window_len, degrees=True)
-#     R_obj_end =  orthonormalize(rotate.apply(R_obj_end))
-#     R_r_start = iterative_movingframes[current_index] 
-#     R_r_end = iterative_movingframes[-1] 
+    # Boundary constraints
+    current_index = round( (current_progress - old_progress) * len(iterative_trajectory))
+    R_obj_start = iterative_trajectory[current_index]
+    rotate = R.from_euler('z', 30/window_len, degrees=True)
+    R_obj_end =  orthonormalize(rotate.apply(R_obj_end))
+    R_r_start = iterative_movingframes[current_index] 
+    R_r_end = iterative_movingframes[-1] 
 
-#     # Calculate remaining trajectory
-#     new_invars, iterative_trajectory, iterative_movingframes = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, R_obj_init = calculate_trajectory, R_r_init = movingframes, R_r_start = R_r_start, R_r_end = R_r_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
-#     for i in range(len(iterative_trajectory)):
-#         iterative_trajectory[i] = orthonormalize(iterative_trajectory[i])
+    # Calculate remaining trajectory
+    new_invars, iterative_trajectory, iterative_movingframes = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, R_obj_init = calculate_trajectory, R_r_init = movingframes, R_r_start = R_r_start, R_r_end = R_r_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
+    for i in range(len(iterative_trajectory)):
+        iterative_trajectory[i] = orthonormalize(iterative_trajectory[i])
 
-#     # Visualization
-#     clear_output(wait=True)
+    # Visualization
+    clear_output(wait=True)
     
-#     fig = plt.figure(figsize=(14,8))
-#     ax = fig.add_subplot(111, projection='3d')
-#     ax.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,2],'b')
-#     for i in indx:
-#         plot_stl(opener_location,trajectory_position[i,:],calculate_trajectory[i,:,:],colour="c",alpha=0.2,ax=ax)
-#     cut_trajectory_position = trajectory_position_iter[current_index:,:]
-#     interp = ip.interp1d(np.linspace(0,1,len(cut_trajectory_position)),cut_trajectory_position, axis = 0)
-#     trajectory_position_iter = interp(np.linspace(0,1,len(iterative_trajectory)))
-#     indx_iter = np.trunc(np.linspace(0,len(iterative_trajectory)-1,n_frames))
-#     indx_iter = indx_iter.astype(int)
-#     for i in indx_iter:
-#         plot_3d_frame(trajectory_position_iter[i,:],iterative_trajectory[i,:,:],1,0.05,['red','green','blue'],ax)
-#         plot_stl(opener_location,trajectory_position_iter[i,:],iterative_trajectory[i,:,:],colour="r",alpha=0.2,ax=ax)
+    fig = plt.figure(figsize=(14,8))
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,2],'b')
+    for i in indx:
+        plot_stl(opener_location,trajectory_position[i,:],calculate_trajectory[i,:,:],colour="c",alpha=0.2,ax=ax)
+    cut_trajectory_position = trajectory_position_iter[current_index:,:]
+    interp = ip.interp1d(np.linspace(0,1,len(cut_trajectory_position)),cut_trajectory_position, axis = 0)
+    trajectory_position_iter = interp(np.linspace(0,1,len(iterative_trajectory)))
+    indx_iter = np.trunc(np.linspace(0,len(iterative_trajectory)-1,n_frames))
+    indx_iter = indx_iter.astype(int)
+    for i in indx_iter:
+        plot_3d_frame(trajectory_position_iter[i,:],iterative_trajectory[i,:,:],1,0.05,['red','green','blue'],ax)
+        plot_stl(opener_location,trajectory_position_iter[i,:],iterative_trajectory[i,:,:],colour="r",alpha=0.2,ax=ax)
     
-#     fig = plt.figure()
+    fig = plt.figure()
 
-#     plt.subplot(1,3,1)
-#     plt.plot(progress_values,new_invars[:,0],'r')
-#     plt.plot(arclength_n,invariants[:,0],'b')
-#     plt.plot(0,0)
-#     plt.title('velocity [m/m]')
+    plt.subplot(1,3,1)
+    plt.plot(progress_values,new_invars[:,0],'r')
+    plt.plot(arclength_n,invariants[:,0],'b')
+    plt.plot(0,0)
+    plt.title('velocity [m/m]')
     
-#     plt.subplot(1,3,2)
-#     plt.plot(progress_values,(new_invars[:,1]),'r')
-#     plt.plot(arclength_n,invariants[:,1],'b')
-#     plt.plot(0,0)
-#     plt.title('curvature [rad/m]')
+    plt.subplot(1,3,2)
+    plt.plot(progress_values,(new_invars[:,1]),'r')
+    plt.plot(arclength_n,invariants[:,1],'b')
+    plt.plot(0,0)
+    plt.title('curvature [rad/m]')
     
-#     plt.subplot(1,3,3)
-#     plt.plot(progress_values,(new_invars[:,2]),'r')
-#     plt.plot(arclength_n,invariants[:,2],'b')
-#     plt.plot(0,0)
-#     plt.title('torsion [rad/m]')
+    plt.subplot(1,3,3)
+    plt.plot(progress_values,(new_invars[:,2]),'r')
+    plt.plot(arclength_n,invariants[:,2],'b')
+    plt.plot(0,0)
+    plt.title('torsion [rad/m]')
 
-#     plt.show()
+    plt.show()
     
-#     old_progress = current_progress
-#     current_progress = old_progress + 1/window_len
+    old_progress = current_progress
+    current_progress = old_progress + 1/window_len

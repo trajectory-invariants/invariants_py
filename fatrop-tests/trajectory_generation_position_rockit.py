@@ -34,7 +34,7 @@ ax = plt.axes(projection='3d')
 ax.plot(trajectory[:,0],trajectory[:,1],trajectory[:,2],'.-')
 
 #%%
-use_fatrop_solver = False
+use_fatrop_solver = False # True = fatrop, False = ipopt
 
 # specify optimization problem symbolically
 FS_calculation_problem = FS_calc(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.003, fatrop_solver = use_fatrop_solver)
@@ -203,24 +203,18 @@ while current_progress <= 1.0:
     # plt.clf()
 
     fig_invars.clf()
-
-    plt.subplot(1,3,1)
-    plt.plot(progress_values,new_invars[:,0],'r')
-    plt.plot(arclength_n,invariants[:,0],'b')
-    plt.plot(0,0)
-    plt.title('velocity [m/m]')
-    
-    plt.subplot(1,3,2)
-    plt.plot(progress_values,(new_invars[:,1]),'r')
-    plt.plot(arclength_n,invariants[:,1],'b')
-    plt.plot(0,0)
-    plt.title('curvature [rad/m]')
-    
-    plt.subplot(1,3,3)
-    plt.plot(progress_values,(new_invars[:,2]),'r')
-    plt.plot(arclength_n,invariants[:,2],'b')
-    plt.plot(0,0)
-    plt.title('torsion [rad/m]')
+    ax_inv = fig_invars.add_subplot(131)
+    ax_inv.plot(progress_values,new_invars[:,0],'r')
+    ax_inv.plot(arclength_n,invariants[:,0],'b')
+    ax_inv.set_title('velocity [m/m]')
+    ax_inv = fig_invars.add_subplot(132)
+    ax_inv.plot(progress_values,new_invars[:,1],'r')
+    ax_inv.plot(arclength_n,invariants[:,1],'b')
+    ax_inv.set_title('curvature [rad/m]')
+    ax_inv = fig_invars.add_subplot(133)
+    ax_inv.plot(progress_values,new_invars[:,2],'r')
+    ax_inv.plot(arclength_n,invariants[:,2],'b')
+    ax_inv.set_title('torsion [rad/m]')
 
     fig_invars.canvas.draw()
     fig_invars.canvas.flush_events()
