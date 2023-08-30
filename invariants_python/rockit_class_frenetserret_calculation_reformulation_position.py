@@ -110,8 +110,7 @@ class FrenetSerret_calc_pos:
     def calculate_invariants_global(self,trajectory_meas,stepsize):
         #%%
 
-        start_time = time.time()
-        
+       
         if trajectory_meas.shape[1] == 3:
             measured_positions = trajectory_meas
         else:
@@ -132,13 +131,6 @@ class FrenetSerret_calc_pos:
         #ez = np.array([np.cross(ex[i,:],ey[i,:]) for i in range(N)])
         
         
-        end_time = time.time()
-        print('')
-        print("Calculation moving frames: ")
-        print(end_time - start_time)
-
-
-        start_time = time.time()
 
         #Initialize states
         self.ocp.set_initial(self.R_t_x, ex.T)
@@ -153,30 +145,17 @@ class FrenetSerret_calc_pos:
         self.ocp.set_value(self.R_t_0, np.eye(3))
         self.ocp.set_value(self.p_obj_m, measured_positions.T)      
         self.ocp.set_value(self.h,stepsize)
-        
-        end_time = time.time()
-        print('')
-        print("Initialization: ")
-        print(end_time - start_time)
-        
+               
 
         # Constraints
         self.ocp.subject_to(self.ocp.at_t0(self.p_obj == self.p_obj_m[:,0]))
         self.ocp.subject_to(self.ocp.at_tf(self.p_obj == self.p_obj_m[:,-1]))
 
         # Solve the NLP
-        start_time = time.time()
         sol = self.ocp.solve()
         #print(sol.sample(self.help, grid = 'control')[1])
-        end_time = time.time()
-        print('')
-        print("Solving: ")
-        print(end_time - start_time)
-        
         self.sol = sol
         
-        start_time = time.time()
-
         # Extract the solved variables
         _,i_t1 = sol.sample(self.U[0],grid='control')
         _,i_t2 = sol.sample(self.U[1],grid='control')
@@ -184,10 +163,5 @@ class FrenetSerret_calc_pos:
         invariants = np.array((i_t1,i_t2,i_t3)).T
         _,calculated_trajectory = sol.sample(self.p_obj,grid='control')
         _,calculated_movingframe = sol.sample(self.R_t,grid='control')
-
-        end_time = time.time()
-        print('')
-        print("sampling solution: ")
-        print(end_time - start_time)
         
         return invariants, calculated_trajectory, calculated_movingframe

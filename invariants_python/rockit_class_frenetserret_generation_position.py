@@ -133,17 +133,12 @@ class FrenetSerret_gen_pos:
         self.ocp.set_value(self.U_demo, U_demo.T)     
 
         end_time = time.time()
-        print('')
-        print("Initialization: ")
-        print(end_time - start_time)
 
         # Solve the NLP
         start_time = time.time()
         sol = self.ocp.solve()
+        tot_time = self.ocp._method.myOCP.get_stats().time_total
         end_time = time.time()
-        print('')
-        print("Solving: ")
-        print(end_time - start_time)
         
         self.sol = sol
         
@@ -158,8 +153,4 @@ class FrenetSerret_gen_pos:
         _,calculated_movingframe = sol.sample(self.R_t,grid='control')
         
         end_time = time.time()
-        print('')
-        print("sampling solution: ")
-        print(end_time - start_time)
-
-        return invariants, calculated_trajectory, calculated_movingframe
+        return invariants, calculated_trajectory, calculated_movingframe, tot_time

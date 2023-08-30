@@ -50,12 +50,7 @@ use_fatrop_solver = True # True = fatrop, False = ipopt
 FS_calculation_problem = FS_calc(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180, fatrop_solver = use_fatrop_solver) 
 
 # calculate invariants given measurements
-start_time = t.time()
 invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
-end_time = t.time()
-print('')
-print("Everything: ")
-print(end_time - start_time)
 
 init_vals_calculate_trajectory = calculate_trajectory
 init_vals_movingframes = movingframes
@@ -113,7 +108,11 @@ R_r_end = orthonormalize(movingframes[-1])
 FS_online_generation_problem = FS_gen(window_len=number_samples,w_invars = 10**2*np.array([10**1, 1.0, 1.0]), fatrop_solver = use_fatrop_solver)
 
 # Solve
-new_invars, new_trajectory, new_movingframes = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, R_obj_init = calculate_trajectory, R_r_init = movingframes, R_r_start = R_r_start, R_r_end = R_r_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
+new_invars, new_trajectory, new_movingframes, tot_time_rot = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, R_obj_init = calculate_trajectory, R_r_init = movingframes, R_r_start = R_r_start, R_r_end = R_r_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
+print('')
+print("TOTAL time to generate new trajectory: ")
+print(str(tot_time_rot) + '[s]')
+
 for i in range(len(new_trajectory)):
     new_trajectory[i] = orthonormalize(new_trajectory[i])
 
@@ -142,7 +141,7 @@ plt.show()
 window_len = 20
 
 # specify optimization problem symbolically
-FS_online_generation_problem = FS_gen(window_len=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
+FS_online_generation_problem = FS_gen(window_len=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]), fatrop_solver = use_fatrop_solver)
 
 current_progress = 0.0
 old_progress = 0.0
@@ -168,7 +167,11 @@ while current_progress <= 1.0:
     R_r_end = iterative_movingframes[-1] 
 
     # Calculate remaining trajectory
-    new_invars, iterative_trajectory, iterative_movingframes = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, R_obj_init = calculate_trajectory, R_r_init = movingframes, R_r_start = R_r_start, R_r_end = R_r_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
+    new_invars, iterative_trajectory, iterative_movingframes, tot_time_rot = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, R_obj_init = calculate_trajectory, R_r_init = movingframes, R_r_start = R_r_start, R_r_end = R_r_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
+    print('')
+    print("TOTAL time to generate new trajectory: ")
+    print(str(tot_time_rot) + '[s]')
+
     for i in range(len(iterative_trajectory)):
         iterative_trajectory[i] = orthonormalize(iterative_trajectory[i])
 
