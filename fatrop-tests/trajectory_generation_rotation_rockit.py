@@ -98,16 +98,7 @@ number_samples = 100
 progress_values = np.linspace(current_progress, arclength_n[-1], number_samples)
 model_invariants,new_stepsize = interpolate_model_invariants(spline_model_trajectory,progress_values)
 
-f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=(10,3))
-ax1.plot(arclength_n,invariants[:,0])
-ax1.plot(progress_values,model_invariants[:,0],'r.')
-ax1.set_title('Velocity [m/m]')
-ax2.plot(arclength_n,invariants[:,1])
-ax2.plot(progress_values,model_invariants[:,1],'r.')
-ax2.set_title('Curvature [rad/m]')
-ax3.plot(arclength_n,invariants[:,2])
-ax3.plot(progress_values,model_invariants[:,2],'r.')
-ax3.set_title('Torsion [rad/m]')
+pl.plot_interpolated_invariants(invariants, model_invariants, arclength_n, progress_values, inv_type = 'FS_rot')
 
 # new constraints
 current_index = round(current_progress*len(trajectory))

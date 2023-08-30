@@ -278,7 +278,7 @@ def plot_trajectory_invariants_online(arclength_n, invariants, progress_values, 
     fig.canvas.flush_events()
 
 
-def plot_interpolated_invariants(initial_invariants, interpolated_invariants, progress1, progress2):
+def plot_interpolated_invariants(initial_invariants, interpolated_invariants, progress1, progress2, inv_type = 'eFS'):
     """
     plots invariants after interpolation
 
@@ -288,33 +288,52 @@ def plot_interpolated_invariants(initial_invariants, interpolated_invariants, pr
     interpolated_invariants : numpy array (M,6) containing invariants after interpolation
     progress1 : numpy array (N,1) with the trajectory progress before interpolation
     progress2 : numpy array (M,1) with the trajectory progress after interpolation 
-
+    inv_type : string defining the type of invariants to plot, possible entries 'eFS','FS_pos','FS_rot'
+    
     """
+    size = 100
     fig = plt.figure(figsize=(10,6))
-    ax1 = fig.add_subplot(231)
-    ax1.set_title('i_r1')
-    ax1.plot(progress1,initial_invariants[:,0],'b')
-    ax1.plot(progress2,interpolated_invariants[:,0],'r.')
-    ax2 = fig.add_subplot(232)
-    ax2.set_title('i_r2')
-    ax2.plot(progress1,initial_invariants[:,1],'b')
-    ax2.plot(progress2,interpolated_invariants[:,1],'r.')
-    ax3 = fig.add_subplot(233)
-    ax3.set_title('i_r3')
-    ax3.plot(progress1,initial_invariants[:,2],'b')
-    ax3.plot(progress2,interpolated_invariants[:,2],'r.')
-    ax4 = fig.add_subplot(234)
-    ax4.set_title('i_t1')
-    ax4.plot(progress1,initial_invariants[:,3],'b')
-    ax4.plot(progress2,interpolated_invariants[:,3],'r.')
-    ax5 = fig.add_subplot(235)
-    ax5.set_title('i_t2')
-    ax5.plot(progress1,initial_invariants[:,4],'b')
-    ax5.plot(progress2,interpolated_invariants[:,4],'r.')
-    ax6 = fig.add_subplot(236)
-    ax6.plot(progress1,initial_invariants[:,5],'b')
-    ax6.plot(progress2,interpolated_invariants[:,5],'r.')
-    ax6.set_title('i_t3')
+    if inv_type == 'FS_rot' or inv_type == 'eFS':
+        if inv_type == 'eFS':
+            ax4 = fig.add_subplot(234)
+            ax4.set_title('i_t1')
+            ax4.plot(progress1,initial_invariants[:,3],'b')
+            ax4.plot(progress2,interpolated_invariants[:,3],'r.')
+            ax5 = fig.add_subplot(235)
+            ax5.set_title('i_t2')
+            ax5.plot(progress1,initial_invariants[:,4],'b')
+            ax5.plot(progress2,interpolated_invariants[:,4],'r.')
+            ax6 = fig.add_subplot(236)
+            ax6.plot(progress1,initial_invariants[:,5],'b')
+            ax6.plot(progress2,interpolated_invariants[:,5],'r.')
+            ax6.set_title('i_t3')
+            size = size + 100
+        ax1 = fig.add_subplot(size + 31)
+        ax1.set_title('i_r1')
+        ax1.plot(progress1,initial_invariants[:,0],'b')
+        ax1.plot(progress2,interpolated_invariants[:,0],'r.')
+        ax2 = fig.add_subplot(size + 32)
+        ax2.set_title('i_r2')
+        ax2.plot(progress1,initial_invariants[:,1],'b')
+        ax2.plot(progress2,interpolated_invariants[:,1],'r.')
+        ax3 = fig.add_subplot(size + 33)
+        ax3.set_title('i_r3')
+        ax3.plot(progress1,initial_invariants[:,2],'b')
+        ax3.plot(progress2,interpolated_invariants[:,2],'r.')
+    elif inv_type == 'FS_pos':
+        ax4 = fig.add_subplot(131)
+        ax4.set_title('i_t1')
+        ax4.plot(progress1,initial_invariants[:,0],'b')
+        ax4.plot(progress2,interpolated_invariants[:,0],'r.')
+        ax5 = fig.add_subplot(132)
+        ax5.set_title('i_t2')
+        ax5.plot(progress1,initial_invariants[:,1],'b')
+        ax5.plot(progress2,interpolated_invariants[:,1],'r.')
+        ax6 = fig.add_subplot(133)
+        ax6.plot(progress1,initial_invariants[:,2],'b')
+        ax6.plot(progress2,interpolated_invariants[:,2],'r.')
+        ax6.set_title('i_t3')
+        
 
 
 def plot_invariants(invariants1, invariants2, progress1, progress2 = [], inv_type = 'eFS'):
