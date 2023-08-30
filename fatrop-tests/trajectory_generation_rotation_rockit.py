@@ -12,7 +12,6 @@ import os
 import time as t
 import invariants_python.read_and_write_data as rw
 import matplotlib.pyplot as plt
-from mpl_toolkits import mplot3d
 import invariants_python.reparameterization as reparam
 import scipy.interpolate as ip
 from invariants_python.rockit_class_frenetserret_calculation_reformulation_rotation import FrenetSerret_calc_rot as FS_calc
@@ -21,9 +20,9 @@ from IPython.display import clear_output
 from invariants_python.plotting_functions.plot_3d_frame import plot_3d_frame
 from invariants_python.plotting_functions.plot_orientation import plot_orientation
 from invariants_python.plotting_functions.plot_stl import plot_stl
-from stl import mesh
 from scipy.spatial.transform import Rotation as R
 from invariants_python.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
+import invariants_python.plotters as pl
 #%%
 data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/beer_1.txt'
 trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
@@ -74,13 +73,7 @@ for i in indx:
 
 plot_orientation(trajectory_orientation,init_vals_calculate_trajectory)
 
-f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=(10,3))
-ax1.plot(arclength_n,invariants[:,0])
-ax1.set_title('Velocity [m/m]')
-ax2.plot(arclength_n,invariants[:,1])
-ax2.set_title('Curvature [rad/m]')
-ax3.plot(arclength_n,invariants[:,2])
-ax3.set_title('Torsion [rad/m]')
+pl.plot_invariants(invariants,[],arclength_n,[],inv_type='FS_rot')
 
 plt.show()
 
@@ -149,24 +142,7 @@ for i in indx_online:
     plot_stl(opener_location,trajectory_position_online[i,:],new_trajectory[i,:,:],colour="r",alpha=0.2,ax=ax)
 plot_orientation(calculate_trajectory, new_trajectory,current_index)
 
-fig = plt.figure()
-plt.subplot(1,3,1)
-plt.plot(progress_values,new_invars[:,0],'r')
-plt.plot(arclength_n,invariants[:,0],'b')
-plt.plot(0,0)
-plt.title('Velocity [m/m]')
-
-plt.subplot(1,3,2)
-plt.plot(progress_values,(new_invars[:,1]),'r')
-plt.plot(arclength_n,invariants[:,1],'b')
-plt.plot(0,0)
-plt.title('Curvature [rad/m]')
-
-plt.subplot(1,3,3)
-plt.plot(progress_values,(new_invars[:,2]),'r')
-plt.plot(arclength_n,invariants[:,2],'b')
-plt.plot(0,0)
-plt.title('Torsion [rad/m]')
+pl.plot_invariants(invariants,new_invars,arclength_n,progress_values,inv_type='FS_rot')
 
 plt.show()
 
@@ -222,25 +198,7 @@ while current_progress <= 1.0:
         plot_3d_frame(trajectory_position_iter[i,:],iterative_trajectory[i,:,:],1,0.05,['red','green','blue'],ax)
         plot_stl(opener_location,trajectory_position_iter[i,:],iterative_trajectory[i,:,:],colour="r",alpha=0.2,ax=ax)
     
-    fig = plt.figure()
-
-    plt.subplot(1,3,1)
-    plt.plot(progress_values,new_invars[:,0],'r')
-    plt.plot(arclength_n,invariants[:,0],'b')
-    plt.plot(0,0)
-    plt.title('velocity [m/m]')
-    
-    plt.subplot(1,3,2)
-    plt.plot(progress_values,(new_invars[:,1]),'r')
-    plt.plot(arclength_n,invariants[:,1],'b')
-    plt.plot(0,0)
-    plt.title('curvature [rad/m]')
-    
-    plt.subplot(1,3,3)
-    plt.plot(progress_values,(new_invars[:,2]),'r')
-    plt.plot(arclength_n,invariants[:,2],'b')
-    plt.plot(0,0)
-    plt.title('torsion [rad/m]')
+    pl.plot_invariants(invariants,new_invars,arclength_n,progress_values,inv_type='FS_rot')
 
     plt.show()
     

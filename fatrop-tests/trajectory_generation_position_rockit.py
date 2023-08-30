@@ -17,6 +17,7 @@ from invariants_python.rockit_class_frenetserret_calculation_reformulation_posit
 from invariants_python.rockit_class_frenetserret_generation_position import FrenetSerret_gen_pos as FS_gen
 from IPython.display import clear_output
 import matplotlib
+import invariants_python.plotters as pl
 
 matplotlib.use('TkAgg') #default backend
 
@@ -34,7 +35,7 @@ ax = plt.axes(projection='3d')
 ax.plot(trajectory[:,0],trajectory[:,1],trajectory[:,2],'.-')
 
 #%%
-use_fatrop_solver = False # True = fatrop, False = ipopt
+use_fatrop_solver = True # True = fatrop, False = ipopt
 
 # specify optimization problem symbolically
 FS_calculation_problem = FS_calc(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.003, fatrop_solver = use_fatrop_solver)
@@ -56,13 +57,7 @@ ax = plt.axes(projection='3d')
 ax.plot(trajectory[:,0],trajectory[:,1],trajectory[:,2],'.-')
 ax.plot(calculate_trajectory[:,0],calculate_trajectory[:,1],calculate_trajectory[:,2],'.-')
 
-f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=(10,3))
-ax1.plot(arclength_n,invariants[:,0])
-ax1.set_title('Velocity [m/m]')
-ax2.plot(arclength_n,invariants[:,1])
-ax2.set_title('Curvature [rad/m]')
-ax3.plot(arclength_n,invariants[:,2])
-ax3.set_title('Torsion [rad/m]')
+pl.plot_invariants(invariants,[],arclength_n,[],inv_type='FS_pos')
 
 plt.show()
 
@@ -128,29 +123,12 @@ ax.set_xlabel('x')
 ax.set_ylabel('y')
 ax.set_zlabel('z')
 
-fig = plt.figure()
-plt.subplot(1,3,1)
-plt.plot(progress_values,new_invars[:,0],'r')
-plt.plot(arclength_n,invariants[:,0],'b')
-plt.plot(0,0)
-plt.title('Velocity [m/m]')
-
-plt.subplot(1,3,2)
-plt.plot(progress_values,(new_invars[:,1]),'r')
-plt.plot(arclength_n,invariants[:,1],'b')
-plt.plot(0,0)
-plt.title('Curvature [rad/m]')
-
-plt.subplot(1,3,3)
-plt.plot(progress_values,(new_invars[:,2]),'r')
-plt.plot(arclength_n,invariants[:,2],'b')
-plt.plot(0,0)
-plt.title('Torsion [rad/m]')
+pl.plot_invariants(invariants,new_invars,arclength_n,progress_values,inv_type='FS_pos')
 
 plt.show()
 
 
-# #%% Visualization
+#%% Visualization
 
 window_len = 20
 
