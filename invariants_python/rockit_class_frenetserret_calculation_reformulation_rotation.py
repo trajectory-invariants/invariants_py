@@ -117,8 +117,6 @@ class FrenetSerret_calc_rot:
          
     def calculate_invariants_global(self,trajectory_meas,stepsize): 
         #%%
-        start_time = time.time()
-
         measured_orientation = trajectory_meas[:,:3,:3]
         N = self.window_len
         
@@ -130,12 +128,7 @@ class FrenetSerret_calc_rot:
         ey = np.tile( np.array((0,1,0)), (N,1) )
         ez = np.array([np.cross(ex[i,:],ey[i,:]) for i in range(N)])
         
-        end_time = time.time()
-        print('')
-        print("Calculation moving frames: ")
-        print(end_time - start_time)
 
-        start_time = time.time()
 
         #Initialize states
         self.ocp.set_initial(self.R_r_x,ex.T)
@@ -156,25 +149,15 @@ class FrenetSerret_calc_rot:
         
         # self.ocp._transcribe()
 
-        end_time = time.time()
-        print('')
-        print("Initialization: ")
-        print(end_time - start_time)
         # self.ocp._transcribe()
         # self.ocp._method.set_option("iterative_refinement", False)
         # self.ocp._method.set_option("tol", 1e-8)
         # Solve the NLP
-        start_time = time.time()
         sol = self.ocp.solve()
         #print(sol.sample(self.help, grid = 'control')[1])
-        end_time = time.time()
-        print('')
-        print("Solving: ")
-        print(end_time - start_time)        
 
         self.sol = sol
         
-        start_time = time.time()
         
         # Extract the solved variables
         _,i_r1 = sol.sample(self.U[0],grid='control')
@@ -183,12 +166,7 @@ class FrenetSerret_calc_rot:
         invariants = np.array((i_r1,i_r2,i_r3)).T
         _,calculated_trajectory = sol.sample(self.R_obj,grid='control')
         _,calculated_movingframe = sol.sample(self.R_r,grid='control')
-
-        end_time = time.time()
-        print('')
-        print("sampling solution: ")
-        print(end_time - start_time)
-        
+      
         return invariants, calculated_trajectory, calculated_movingframe
 
     # def calculate_invariants_online(self,trajectory_meas,stepsize,sample_jump):

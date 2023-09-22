@@ -107,9 +107,7 @@ class FrenetSerret_gen_rot:
          
     def generate_trajectory(self,U_demo,R_obj_init,R_r_init,R_r_start,R_r_end,R_obj_start,R_obj_end,step_size):
         #%%
-
-        start_time = time.time()
-        
+      
         # Initialize states
         self.ocp.set_initial(self.R_obj_x, R_obj_init[:self.window_len,:,0].T) 
         self.ocp.set_initial(self.R_obj_y, R_obj_init[:self.window_len,:,1].T) 
@@ -131,23 +129,13 @@ class FrenetSerret_gen_rot:
         self.ocp.set_value(self.h,step_size)
         self.ocp.set_value(self.U_demo, U_demo.T)     
         
-        end_time = time.time()
-        print('')
-        print("Initialization: ")
-        print(end_time - start_time)
 
         # Solve the NLP
-        start_time = time.time()
         sol = self.ocp.solve()
-        end_time = time.time()
-        print('')
-        print("Solving: ")
-        print(end_time - start_time)
+        tot_time = self.ocp._method.myOCP.get_stats().time_total
         
         self.sol = sol
-        
-        start_time = time.time()        
-        
+              
         # Extract the solved variables
         _,i_r1 = sol.sample(self.U[0],grid='control')
         _,i_r2 = sol.sample(self.U[1],grid='control')
@@ -155,10 +143,5 @@ class FrenetSerret_gen_rot:
         invariants = np.array((i_r1,i_r2,i_r3)).T
         _,calculated_trajectory = sol.sample(self.R_obj,grid='control')
         _,calculated_movingframe = sol.sample(self.R_r,grid='control')
-        
-        end_time = time.time()
-        print('')
-        print("sampling solution: ")
-        print(end_time - start_time)
-        
-        return invariants, calculated_trajectory, calculated_movingframe
+                
+        return invariants, calculated_trajectory, calculated_movingframe, tot_time

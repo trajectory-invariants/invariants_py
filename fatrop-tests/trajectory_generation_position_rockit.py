@@ -17,6 +17,7 @@ from invariants_python.rockit_class_frenetserret_calculation_reformulation_posit
 from invariants_python.rockit_class_frenetserret_generation_position import FrenetSerret_gen_pos as FS_gen
 from IPython.display import clear_output
 import matplotlib
+import invariants_python.plotters as pl
 
 matplotlib.use('TkAgg') #default backend
 
@@ -34,18 +35,13 @@ ax = plt.axes(projection='3d')
 ax.plot(trajectory[:,0],trajectory[:,1],trajectory[:,2],'.-')
 
 #%%
-use_fatrop_solver = False
+use_fatrop_solver = True # True = fatrop, False = ipopt
 
 # specify optimization problem symbolically
 FS_calculation_problem = FS_calc(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.003, fatrop_solver = use_fatrop_solver)
 
 # calculate invariants given measurements
-start_time = t.time()
 invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
-end_time = t.time()
-print('')
-print("Everything: ")
-print(end_time - start_time)
 
 init_vals_calculate_trajectory = calculate_trajectory
 init_vals_movingframes = movingframes
@@ -56,13 +52,7 @@ ax = plt.axes(projection='3d')
 ax.plot(trajectory[:,0],trajectory[:,1],trajectory[:,2],'.-')
 ax.plot(calculate_trajectory[:,0],calculate_trajectory[:,1],calculate_trajectory[:,2],'.-')
 
-f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=(10,3))
-ax1.plot(arclength_n,invariants[:,0])
-ax1.set_title('Velocity [m/m]')
-ax2.plot(arclength_n,invariants[:,1])
-ax2.set_title('Curvature [rad/m]')
-ax3.plot(arclength_n,invariants[:,2])
-ax3.set_title('Torsion [rad/m]')
+pl.plot_invariants(invariants,[],arclength_n,[],inv_type='FS_pos')
 
 plt.show()
 
@@ -89,17 +79,7 @@ movingframes = init_vals_movingframes
 progress_values = np.linspace(current_progress, arclength_n[-1], number_samples)
 model_invariants,new_stepsize = interpolate_model_invariants(spline_model_trajectory,progress_values)
 
-f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True, figsize=(10,3))
-ax1.plot(arclength_n,invariants[:,0],'b.')
-ax1.plot(progress_values,model_invariants[:,0],'r.')
-ax1.set_title('Velocity [m/m]')
-ax2.plot(arclength_n,invariants[:,1],'b.')
-ax2.plot(progress_values,model_invariants[:,1],'r.')
-ax2.set_title('Curvature [rad/m]')
-ax3.plot(arclength_n,invariants[:,2],'b.')
-ax3.plot(progress_values,model_invariants[:,2],'r.')
-ax3.set_title('Torsion [rad/m]')
-
+pl.plot_interpolated_invariants(invariants, model_invariants, arclength_n, progress_values, inv_type = 'FS_pos')
 
 # new constraints
 current_index = round(current_progress*len(trajectory))
@@ -113,12 +93,11 @@ R_FS_end = movingframes[-1]
 FS_online_generation_problem = FS_gen(window_len=number_samples,w_invars = np.array([5*10**1, 1.0, 1.0]),fatrop_solver = use_fatrop_solver)
 
 # Solve
-start_time = t.time()
-new_invars, new_trajectory, new_movingframes = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = calculate_trajectory, R_t_init = movingframes, R_t_start = R_FS_start, R_t_end = R_FS_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize)
-end_time = t.time()
+new_invars, new_trajectory, new_movingframes, tot_time_pos = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = calculate_trajectory, R_t_init = movingframes, R_t_start = R_FS_start, R_t_end = R_FS_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize)
 print('')
-print("Everything: ")
-print(end_time - start_time)
+print("TOTAL time to generate new trajectory: ")
+print(str(tot_time_pos) + '[s]')
+
 
 fig = plt.figure(figsize=(14,8))
 ax = fig.add_subplot(111, projection='3d')
@@ -128,29 +107,12 @@ ax.set_xlabel('x')
 ax.set_ylabel('y')
 ax.set_zlabel('z')
 
-fig = plt.figure()
-plt.subplot(1,3,1)
-plt.plot(progress_values,new_invars[:,0],'r')
-plt.plot(arclength_n,invariants[:,0],'b')
-plt.plot(0,0)
-plt.title('Velocity [m/m]')
-
-plt.subplot(1,3,2)
-plt.plot(progress_values,(new_invars[:,1]),'r')
-plt.plot(arclength_n,invariants[:,1],'b')
-plt.plot(0,0)
-plt.title('Curvature [rad/m]')
-
-plt.subplot(1,3,3)
-plt.plot(progress_values,(new_invars[:,2]),'r')
-plt.plot(arclength_n,invariants[:,2],'b')
-plt.plot(0,0)
-plt.title('Torsion [rad/m]')
+pl.plot_invariants(invariants,new_invars,arclength_n,progress_values,inv_type='FS_pos')
 
 plt.show()
 
 
-# #%% Visualization
+#%% Visualization
 
 window_len = 20
 
@@ -185,7 +147,10 @@ while current_progress <= 1.0:
     R_FS_end = movingframes[-1] 
 
     # Calculate remaining trajectory
-    new_invars, calculate_trajectory, movingframes = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = calculate_trajectory, R_t_init = movingframes, R_t_start = R_FS_start, R_t_end = R_FS_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize)
+    new_invars, calculate_trajectory, movingframes, tot_time_pos = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = calculate_trajectory, R_t_init = movingframes, R_t_start = R_FS_start, R_t_end = R_FS_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize)
+    print('')
+    print("TOTAL time to generate new trajectory: ")
+    print(str(tot_time_pos) + '[s]')
 
     # # Dynamic plot trajectory
     fig_traj.clf()
@@ -203,24 +168,18 @@ while current_progress <= 1.0:
     # plt.clf()
 
     fig_invars.clf()
-
-    plt.subplot(1,3,1)
-    plt.plot(progress_values,new_invars[:,0],'r')
-    plt.plot(arclength_n,invariants[:,0],'b')
-    plt.plot(0,0)
-    plt.title('velocity [m/m]')
-    
-    plt.subplot(1,3,2)
-    plt.plot(progress_values,(new_invars[:,1]),'r')
-    plt.plot(arclength_n,invariants[:,1],'b')
-    plt.plot(0,0)
-    plt.title('curvature [rad/m]')
-    
-    plt.subplot(1,3,3)
-    plt.plot(progress_values,(new_invars[:,2]),'r')
-    plt.plot(arclength_n,invariants[:,2],'b')
-    plt.plot(0,0)
-    plt.title('torsion [rad/m]')
+    ax_inv = fig_invars.add_subplot(131)
+    ax_inv.plot(progress_values,new_invars[:,0],'r')
+    ax_inv.plot(arclength_n,invariants[:,0],'b')
+    ax_inv.set_title('velocity [m/m]')
+    ax_inv = fig_invars.add_subplot(132)
+    ax_inv.plot(progress_values,new_invars[:,1],'r')
+    ax_inv.plot(arclength_n,invariants[:,1],'b')
+    ax_inv.set_title('curvature [rad/m]')
+    ax_inv = fig_invars.add_subplot(133)
+    ax_inv.plot(progress_values,new_invars[:,2],'r')
+    ax_inv.plot(arclength_n,invariants[:,2],'b')
+    ax_inv.set_title('torsion [rad/m]')
 
     fig_invars.canvas.draw()
     fig_invars.canvas.flush_events()
