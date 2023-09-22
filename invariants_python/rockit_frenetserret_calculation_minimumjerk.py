@@ -84,6 +84,7 @@ class FrenetSerret_calc:
         # Solve already once with dummy measurements
         self.dummy_solve() 
         self.ocp._method.set_option("print_level",0)
+        self.ocp._method.set_option("tol",1e-11)
         self.first_window = True
         
         # Transform the whole OCP to a Casadi function
