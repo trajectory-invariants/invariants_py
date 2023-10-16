@@ -7,7 +7,7 @@ authors = ["Maxim Vochten", "Riccardo Burlizzi"]
 [tool.poetry.dependencies]
 python = "^3.6"
 scipy = "^1.5.2"
-casadi = "3.5.5"
+casadi = "^3.5.5"
 PyQt5 = "^5.10.1"
 matplotlib = "^3.3.1"
 numpy = "^1.19.0"
