@@ -8,11 +8,11 @@ Python library for the invariant shape descriptors.
 
 Clone (or download) this repository:
 
-    git clone git@gitlab.kuleuven.be:robotgenskill/python_projects/invariants_python.git
+    git clone https://gitlab.kuleuven.be/robotgenskill/public_code/invariants_py.git
 
 Install package:
 
-    cd invariants_python
+    cd invariants_py
     python -m pip install -e .
 
 
