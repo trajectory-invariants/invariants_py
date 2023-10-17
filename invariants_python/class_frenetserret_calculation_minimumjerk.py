@@ -50,7 +50,7 @@ class FrenetSerret_calc:
 
         out_plus1 = cas.vertcat(cas.vec(R_t_plus1),p_obj_plus1,i1dotplus1,i1plus1,i2plus1)
 
-        integrator = cas.Function("phi", [x,u] , [out_plus1])
+        integrator = cas.Function("phi", [x,u,h] , [out_plus1])
 
 
        
