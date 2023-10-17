@@ -95,7 +95,7 @@ class FrenetSerret_calc:
         # Dynamic constraints
         for k in range(window_len-1):
             # Integrate current state to obtain next state (next rotation and position)
-            Xk_end = integrator(X[k],U[:,k])
+            Xk_end = integrator(X[k],U[:,k],h)
             
             # Gap closing constraint
             opti.subject_to(Xk_end==X[k+1])

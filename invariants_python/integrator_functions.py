@@ -179,7 +179,7 @@ def define_geom_integrator_tra_FSI_casadi(h):
     ## Define a geometric integrator for eFSI, (meaning rigid-body motion is perfectly integrated assuming constant invariants)
     (R_t_plus1, p_obj_plus1) = geo_integrator_tra(R_t, p_obj, u, h)
     out_plus1 = cas.vertcat(cas.vec(R_t_plus1),  p_obj_plus1)
-    integrator = cas.Function("phi", [x,u] , [out_plus1])
+    integrator = cas.Function("phi", [x,u,h] , [out_plus1])
     
     return integrator
 
@@ -196,6 +196,6 @@ def define_geom_integrator_rot_FSI_casadi(h):
     ## Define a geometric integrator for eFSI, (meaning rigid-body motion is perfectly integrated assuming constant invariants)
     (R_r_plus1, R_obj_plus1) = geo_integrator_rot(R_r, R_obj, u, h)
     out_plus1 = cas.vertcat(cas.vec(R_r_plus1),  cas.vec(R_obj_plus1))
-    integrator = cas.Function("phi", [x,u] , [out_plus1])
+    integrator = cas.Function("phi", [x,u,h] , [out_plus1])
     
     return integrator
