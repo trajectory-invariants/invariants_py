@@ -22,6 +22,7 @@ from scipy.spatial.transform import Rotation as R
 from invariants_python.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 import invariants_python.plotters as pl
 import random
+import invariants_python.robotics_functions.collision_detection as cd
 #%%
 data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/beer_1.txt'
 trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
@@ -155,6 +156,22 @@ pl.plot_invariants(optim_calc_results.invariants, optim_gen_results.invariants, 
 
 plt.show()
 
+opener_dim_x = 0.04
+opener_dim_y = 0.15
+opener_dim_z = 0
+opener_points = 30
+offset = -0.02 # position of the hook where have contact with bottle
+opener_geom = np.zeros((opener_points,3))
+for j in range(opener_points // 3):
+    opener_geom[j*3, :] = [opener_dim_x/2, offset-j*offset, opener_dim_z]
+    opener_geom[j*3+1, :] = [0, offset-j*offset, opener_dim_z]
+    opener_geom[j*3+2, :] = [-opener_dim_x/2, offset-j*offset, opener_dim_z]
+
+tilting_angle_rotx_deg=0
+tilting_angle_roty_deg=0
+tilting_angle_rotz_deg=0
+mode = 'rpy'
+collision_flag, first_collision_sample = cd.collision_detection(optim_gen_results.Obj_pos,optim_gen_results.Obj_frames,p_obj_end,opener_geom,tilting_angle_rotx_deg,tilting_angle_roty_deg,tilting_angle_rotz_deg,mode)
 #%% Visualization
 
 window_len = 20
