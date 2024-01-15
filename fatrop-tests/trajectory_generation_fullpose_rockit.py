@@ -154,8 +154,6 @@ pl.plot_orientation(optim_calc_results.Obj_frames,optim_gen_results.Obj_frames,c
 
 pl.plot_invariants(optim_calc_results.invariants, optim_gen_results.invariants, arclength_n, progress_values)
 
-plt.show()
-
 opener_dim_x = 0.04
 opener_dim_y = 0.15
 opener_dim_z = 0
@@ -171,7 +169,9 @@ tilting_angle_rotx_deg=0
 tilting_angle_roty_deg=0
 tilting_angle_rotz_deg=0
 mode = 'rpy'
-collision_flag, first_collision_sample = cd.collision_detection(optim_gen_results.Obj_pos,optim_gen_results.Obj_frames,p_obj_end,opener_geom,tilting_angle_rotx_deg,tilting_angle_roty_deg,tilting_angle_rotz_deg,mode)
+collision_flag, first_collision_sample = cd.collision_detection(optim_gen_results.Obj_pos,optim_gen_results.Obj_frames,p_obj_end,opener_geom,tilting_angle_rotx_deg,tilting_angle_roty_deg,tilting_angle_rotz_deg,mode,ax)
+
+plt.show()
 #%% Visualization
 
 window_len = 20

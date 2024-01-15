@@ -2,29 +2,31 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from scipy.spatial.transform import Rotation as R
+import GJK
 
-def collision_detection(p_obj_demo, R_demo, position_bottle, opener_geom, tilting_rotx, tilting_roty, tilting_rotz, mode):
+def collision_detection(p_obj_demo, R_demo, position_bottle, opener_geom, tilting_rotx, tilting_roty, tilting_rotz, mode,ax):
     # How many iterations to allow for collision detection.
     iterationsAllowed = 6
 
-    # Define the geometry of the bottle
-    z_top = np.zeros(100) # np.linspace(0, -0.0830, 100)
-    r_top = np.full_like(z_top, 0.0145)
-    z_bottom = np.ones((2,100))
-    z_bottom[0] = np.ones((1,100))*(-0.087) #np.linspace(0, -0.087, 100)
-    z_bottom[1] = np.ones((1,100))*(-0.174)
-    r_bottom = np.full_like(z_top, 0.035)
+    # Define the geometry of the bottle by creating three circles: top, middle, bottom
+    N = 100 # number of points in each circle
+    z_top = np.zeros(N) # the top of bottle is at z = 0, we consider N points
+    r_top = np.full_like(z_top, 0.0145) # radius at the top is 0.0145
+    z_bottom = np.ones((2,N)) # z_bottom describes the middle and bottom of the bottle
+    z_bottom[0] = np.ones((1,N))*(-0.087) # the middle of the bottle is at z = -0.087
+    z_bottom[1] = np.ones((1,N))*(-0.174) # the bottom of the bottle is at z = -0.174
+    r_bottom = np.full_like(z_top, 0.035) # radius from the middle to the bottom is 0.035
 
-    theta = np.linspace(0, 2.*np.pi, 100)
-    x_top = r_top * np.cos(theta)
-    y_top = r_top * np.sin(theta)
-    x_bottom = r_bottom * np.cos(theta)
-    y_bottom = r_bottom * np.sin(theta)
+    theta = np.linspace(0, 2.*np.pi, N) # theta goes from 0 to 2*pi in N steps
+    x_top = r_top * np.cos(theta) # x coordinate of all N circle points at the top
+    y_top = r_top * np.sin(theta) # y coordinate of all N circle points at the top
+    x_bottom = r_bottom * np.cos(theta) # x coordinate of all N circle points at the bottom/middle
+    y_bottom = r_bottom * np.sin(theta) # y coordinate of all N circle points at the bottom/middle
 
-    V1 = np.zeros((2*2*len(x_top),3))
+    V1 = np.zeros((2*2*len(x_top),3)) # V1 is the matrix that contains all cylinder points, 2*2*len(x_top) is because I count middle cirlce twice + top and bottom
     k = 0
     for i in range(len(x_top)): # put data of cylinder in one matrix
-        for j in range(2):
+        for j in range(2): # sequence is: top, middle,top,middle [...], middle,bottom,middle,bottom [...]
             if j == 0:
                 V1[k,:] = [x_top[i], y_top[i], z_top[i]]
             else:
@@ -32,27 +34,26 @@ def collision_detection(p_obj_demo, R_demo, position_bottle, opener_geom, tiltin
             V1[k+2*len(x_top),:] = [x_bottom[i], y_bottom[i], z_bottom[j,i]]
             k += 1
 
-    V1 += position_bottle
+    V1 += position_bottle - [0 , 0.0145+0.01, 0] # shift the bottle to the correct position
 
-    F1 = np.zeros((2*(len(x_top)-1),4))
+    F1 = np.zeros((2*(len(x_top)-1),4)) # F1 are contains sequence to create faces
     for i in range(len(F1)):
         F1[i,:] = [1+2*i, 2+2*i, 4+2*i, 3+2*i]
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.add_collection3d(Poly3DCollection(V1[F1.astype(int)]))
+    ax.add_collection3d(Poly3DCollection(V1[F1.astype(int)])) # plot the shell of the bottle
 
-    if mode == 'rpy':
-        ax.view_init(elev=tilting_rotx, azim=tilting_roty)
-    else:
-        ax.view_init(elev=tilting_rotz, azim=np.rad2deg(np.arctan2(tilting_roty, tilting_rotz)))
+    # if mode == 'rpy':
+    #     ax.view_init(elev=tilting_rotx, azim=tilting_roty)
+    # else:
+    #     ax.view_init(elev=tilting_rotz, azim=np.rad2deg(np.arctan2(tilting_roty, tilting_rotz)))
 
     collision_sample = 0
 
-    for j in np.linspace(0, len(p_obj_demo)-1, 100).astype(int):
+    N_checks = 100 # number of checks for collision
+    for j in np.linspace(0, len(p_obj_demo)-1, N_checks).astype(int):
         fm = [0, 1, 2, 3]
-        vm = np.tile(p_obj_demo[j,:], (4,1)) + np.dot(R_demo[:3,:3,j], opener_geom[[0,18,20,2],:].T).T
-        ax.add_collection3d(Poly3DCollection(vm[fm]))
+        vm = np.tile(p_obj_demo[j,:], (4,1)) + np.dot(R_demo[j,:,:], opener_geom[[0,18,20,2],:].T).T # include opener geometry
+        ax.add_collection3d(Poly3DCollection([vm[fm]], color='r'))
 
         # collisionFlag = GJK(S1Obj,S2Obj,iterationsAllowed)
         # if collisionFlag:
@@ -67,7 +68,5 @@ def collision_detection(p_obj_demo, R_demo, position_bottle, opener_geom, tiltin
         collision_happened = 0
     else:
         collision_happened = 1
-
-    plt.show()
     
     return collision_happened, collision_sample#, last_collision_sample
