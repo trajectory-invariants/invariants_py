@@ -1,5 +1,14 @@
+import sys
+import os 
+# setting the path to invariants_python
+current = os.path.dirname(os.path.realpath(__file__))
+parent = os.path.dirname(current)
+parent = os.path.dirname(parent)
+parent = os.path.dirname(parent)
+parent = os.path.dirname(parent)
+sys.path.append(parent)
+
 import numpy as np
-import os
 import matplotlib.pyplot as plt
 import invariants_python.reparameterization as reparam
 import scipy.interpolate as ip
@@ -7,7 +16,8 @@ from invariants_python.class_frenetserret_calculation_minimumjerk import FrenetS
 from IPython.display import clear_output
 
 #%%
-data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/contour_coordinates.out'
+data_location = parent + '/data/contour_coordinates.out'
+#data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/contour_coordinates.out'
 position_data = np.loadtxt(data_location, dtype='float')
 trajectory,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_positiontrajectory_arclength(position_data)
 stepsize_orig = stepsize

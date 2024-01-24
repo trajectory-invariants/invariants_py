@@ -5,10 +5,17 @@ Created on Mon Jul 10 2023
 @author: Riccardo
 """
 
+import sys
+import os 
+# setting the path to invariants_python
+current = os.path.dirname(os.path.realpath(__file__))
+parent = os.path.dirname(current)
+parent = os.path.dirname(parent)
+sys.path.append(parent)
+
 # Imports
 import numpy as np
 from math import pi
-import os
 import invariants_python.read_and_write_data as rw
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
@@ -24,7 +31,8 @@ from stl import mesh
 from scipy.spatial.transform import Rotation as R
 from invariants_python.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 #%%
-data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/beer_1.txt'
+data_location = parent + '/data/beer_1.txt'
+#data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/beer_1.txt'
 trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
