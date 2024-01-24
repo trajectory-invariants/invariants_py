@@ -1,3 +1,12 @@
+import sys
+import os 
+# setting the path to invariants_python
+current = os.path.dirname(os.path.realpath(__file__))
+parent = os.path.dirname(current)
+parent = os.path.dirname(parent)
+sys.path.append(parent)
+
+from invariants_python import read_and_write_data
 import invariants_python.read_and_write_data as rw
 import invariants_python.reparameterization as reparam
 from invariants_python.class_frenetserret_calculation import FrenetSerret_calc
@@ -5,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/sinus.txt'
+data_location = parent + '/data/sinus.txt'
 parameterization = 'arclength' # {time,arclength,screwprogress}
 
 """
@@ -19,19 +28,20 @@ trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
 trajectory_geom,arclength,arclength_n,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 
 """
-Global calculation of invariants
+Example calculation invariants using the full horizon
 """
 
 # symbolic specification
 FS_calculation_problem = FrenetSerret_calc(window_len=nb_samples)
 
 # calculate invariants given measurements
-invariants = FS_calculation_problem.calculate_invariants_global(trajectory_geom,stepsize=stepsize)
-
-#plt.plot(abs(invariants))
+result = FS_calculation_problem.calculate_invariants_global(trajectory_geom,stepsize=stepsize)
+invariants = result[0]
+plt.plot(abs(invariants))
+plt.title('Calculated invariants full horizon')
 
 """
-Example of online calculation of invariants
+Example calculation invariants using a smaller moving horizon
 """
 
 window_len = 40

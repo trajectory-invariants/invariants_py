@@ -5,9 +5,16 @@ Created on Wed Feb  9 21:27:38 2022
 @author: u0091864
 """
 
+import sys
+import os 
+# setting the path to invariants_python
+current = os.path.dirname(os.path.realpath(__file__))
+parent = os.path.dirname(current)
+parent = os.path.dirname(parent)
+sys.path.append(parent)
+
 # Imports
 import numpy as np
-import os
 import invariants_python.read_and_write_data as rw
 import matplotlib.pyplot as plt
 import invariants_python.reparameterization as reparam
