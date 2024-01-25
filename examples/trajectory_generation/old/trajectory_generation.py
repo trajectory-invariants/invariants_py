@@ -6,6 +6,12 @@ Created on Fri Sep 17 09:09:09 2021
 Example script of shape-preserving trajectory generation
 """
 
+
+""" [Arno] This script seems incompatible with current invariants_py directory ...
+
+
+
+
 import sys
 sys.path.append('../implementation')
 import invariants_python.calculate_invariant_trajectory as calc_traj
@@ -85,3 +91,5 @@ ax.set_ylabel('y')
 ax.set_zlabel('z')
 
 plt.show()
+
+"""
