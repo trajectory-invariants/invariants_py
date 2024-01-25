@@ -20,7 +20,7 @@ test:
     - pip install .
     - pip list
     - pip list --not-required
-    - find . -maxdepth 3 -name "*.py" -path "./examples/*" | xargs -n 1 python 
+    - find . -maxdepth 2 -name "*.py" -path "./examples/*" | xargs -n 1 python 
 
 
 
