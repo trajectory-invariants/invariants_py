@@ -49,9 +49,9 @@ class FrenetSerret_gen_pos:
         
         # Boundary constraints
         opti.subject_to(R_t[0] == R_t_start)
-        opti.subject_to(R_t[-1] == R_t_end)
+        # opti.subject_to(R_t[-1] == R_t_end)
         opti.subject_to(p_obj[0] == p_obj_start)
-        opti.subject_to(p_obj[-1] == p_obj_end)
+        # opti.subject_to(p_obj[-1] == p_obj_end)
             
         # Dynamic constraints
         integrator = integrators.define_geom_integrator_tra_FSI_casadi(h)
