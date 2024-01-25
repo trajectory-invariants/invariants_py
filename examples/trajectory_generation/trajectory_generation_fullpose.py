@@ -67,8 +67,8 @@ class OCP_results:
 optim_calc_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((len(trajectory),6)))
 
 # specify optimization problem symbolically
-FS_calculation_problem_pos = FrenetSerret_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.005)
-FS_calculation_problem_rot = FrenetSerret_calc_rot(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 5*pi/180) 
+FS_calculation_problem_pos = FrenetSerret_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.01)
+FS_calculation_problem_rot = FrenetSerret_calc_rot(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 10*pi/180) 
 
 # calculate invariants given measurements
 optim_calc_results.invariants[:,3:], optim_calc_results.Obj_pos, optim_calc_results.FSt_frames = FS_calculation_problem_pos.calculate_invariants_global(trajectory,stepsize)
