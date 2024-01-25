@@ -2,7 +2,7 @@
 name = "Invariants-Python"
 version = "0.2.0"
 description = "Calculate invariant representations of trajectories to be used for recognition and trajectory generalization"
-authors = ["Maxim Vochten", "Riccardo Burlizzi"]
+authors = ["Maxim Vochten", "Riccardo Burlizzi", "Arno Verduyn"]
 
 [tool.poetry.dependencies]
 python = "^3.6"
