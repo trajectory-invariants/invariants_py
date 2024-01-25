@@ -11,7 +11,8 @@ import os
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 parent = os.path.dirname(parent)
-sys.path.append(parent)
+if not parent in sys.path:
+    sys.path.append(parent)
 
 # Imports
 import numpy as np
@@ -32,7 +33,9 @@ from scipy.spatial.transform import Rotation as R
 from invariants_python.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 #%%
 data_location = parent + '/data/beer_1.txt'
+opener_location = parent + '/data/opener.stl'
 #data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/beer_1.txt'
+#opener_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/opener.stl'
 trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
@@ -46,7 +49,7 @@ ax.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,
 n_frames = 10
 indx = np.trunc(np.linspace(0,len(trajectory_orientation)-1,n_frames))
 indx = indx.astype(int)
-opener_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/opener.stl'
+
 for i in indx:
     plot_3d_frame(trajectory_position[i,:],trajectory_orientation[i,:,:],1,0.05,['red','green','blue'],ax)
     plot_stl(opener_location,trajectory_position[i,:],trajectory_orientation[i,:,:],colour="c",alpha=0.2,ax=ax)

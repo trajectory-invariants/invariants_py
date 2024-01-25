@@ -4,7 +4,8 @@ import os
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 parent = os.path.dirname(parent)
-sys.path.append(parent)
+if not parent in sys.path:
+    sys.path.append(parent)
 
 import numpy as np
 import matplotlib.pyplot as plt

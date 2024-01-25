@@ -11,7 +11,8 @@ import os
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 parent = os.path.dirname(parent)
-sys.path.append(parent)
+if not parent in sys.path:
+    sys.path.append(parent)
 
 # Imports
 import numpy as np
@@ -25,7 +26,8 @@ import invariants_python.plotters as plotters
 
 """Input data"""
 
-data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/sinus.txt'
+data_location = parent + '/data/sinus.txt'
+#data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/sinus.txt'
 trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]

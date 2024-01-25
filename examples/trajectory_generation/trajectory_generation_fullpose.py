@@ -11,7 +11,8 @@ import os
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 parent = os.path.dirname(parent)
-sys.path.append(parent)
+if not parent in sys.path:
+    sys.path.append(parent)
 
 # Imports
 import numpy as np
@@ -31,7 +32,9 @@ from stl import mesh
 import invariants_python.plotters as pl
 #%%
 data_location = parent + '/data/beer_1.txt'
+opener_location = parent + '/data/opener.stl'
 #data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/beer_1.txt'
+#opener_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/opener.stl'
 trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
@@ -45,7 +48,7 @@ ax.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,
 n_frames = 10
 indx = np.trunc(np.linspace(0,len(trajectory_orientation)-1,n_frames))
 indx = indx.astype(int)
-opener_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/opener.stl'
+
 for i in indx:
     pl.plot_3d_frame(trajectory_position[i,:],trajectory_orientation[i,:,:],1,0.01,['red','green','blue'],ax)
     pl.plot_stl(opener_location,trajectory_position[i,:],trajectory_orientation[i,:,:],colour="c",alpha=0.2,ax=ax)    
@@ -64,8 +67,8 @@ class OCP_results:
 optim_calc_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((len(trajectory),6)))
 
 # specify optimization problem symbolically
-FS_calculation_problem_pos = FrenetSerret_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.001)
-FS_calculation_problem_rot = FrenetSerret_calc_rot(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180) 
+FS_calculation_problem_pos = FrenetSerret_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.005)
+FS_calculation_problem_rot = FrenetSerret_calc_rot(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 5*pi/180) 
 
 # calculate invariants given measurements
 optim_calc_results.invariants[:,3:], optim_calc_results.Obj_pos, optim_calc_results.FSt_frames = FS_calculation_problem_pos.calculate_invariants_global(trajectory,stepsize)

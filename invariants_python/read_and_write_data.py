@@ -38,12 +38,13 @@ def read_pose_trajectory_from_txt(filepath):
     N = np.size(data,0)
     
     timestamps = np.zeros(N)
+    time_zero = data[0][0]
     T_all = np.zeros((N,4,4))
     T_all[:,3,3] = 1
     
     for i in range(0, N):
         #timestamp
-        timestamps[i] = data[i][0]
+        timestamps[i] = data[i][0]-time_zero
         #position
         T_all[i,0,3] = data[i][1]
         T_all[i,1,3] = data[i][2]

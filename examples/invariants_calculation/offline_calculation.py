@@ -4,7 +4,8 @@ import os
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 parent = os.path.dirname(parent)
-sys.path.append(parent)
+if not parent in sys.path:
+    sys.path.append(parent)
 
 from invariants_python import read_and_write_data
 import invariants_python.read_and_write_data as rw
@@ -14,6 +15,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
+plt.close('all')
+          
 data_location = parent + '/data/sinus.txt'
 parameterization = 'arclength' # {time,arclength,screwprogress}
 
@@ -37,32 +40,49 @@ FS_calculation_problem = FrenetSerret_calc(window_len=nb_samples)
 # calculate invariants given measurements
 result = FS_calculation_problem.calculate_invariants_global(trajectory_geom,stepsize=stepsize)
 invariants = result[0]
-plt.plot(abs(invariants))
-plt.title('Calculated invariants full horizon')
+
+plt.figure()
+plt.plot(arclength,invariants[:,0],label = '$v$ [m]',color='r')
+plt.plot(arclength,invariants[:,1],label = '$\omega_\kappa$ [rad/m]',color='g')
+plt.plot(arclength,invariants[:,2],label = '$\omega_\u03C4$ [rad/m]',color='b')
+plt.xlabel('s [m]')
+plt.legend()
+plt.title('Calculated invariants (full horizon)')
+plt.show()
 
 """
 Example calculation invariants using a smaller moving horizon
 """
 
-window_len = 40
-window_increment = 20
+window_len = 20
+window_increment = 10
 
 # symbolic specification
 FS_online_calculation_problem = FrenetSerret_calc(window_len=window_len)
 
 
 n = 0
+invariants = np.zeros([nb_samples,3])
+print(invariants)
 for i in range(round(nb_samples/window_increment)-2):
     
     # Set measurements current window
     trajectory_geom_online = trajectory_geom[n:n+window_len]
     
     # Calculate invariants in window
-    invariants_online = FS_online_calculation_problem.calculate_invariants_online(trajectory_geom_online,sample_jump=window_increment,stepsize=stepsize)
-    
-    #plt.plot(np.arange(n,n+window_len-1),abs(invariants_online[:,0]),'b')
-    #plt.plot(np.arange(n,n+window_len-1),abs(invariants_online[:,1]),'r')
-    #plt.plot(np.arange(n,n+window_len-1),abs(invariants_online[:,2]),'g')
+    result_online = FS_online_calculation_problem.calculate_invariants_online(trajectory_geom_online,sample_jump=window_increment,stepsize=stepsize)
+    invariants_online = result_online[0]
+    half_window_increment = round(window_increment/2)
+    invariants[half_window_increment+window_increment*i:window_len-half_window_increment+window_increment*i,:] = invariants_online[half_window_increment:window_len-half_window_increment,:]
     
     n = n + window_increment; # start index next window
+    
+plt.figure()
+plt.plot(arclength,invariants[:,0],label = '$v$ [m]',color='r')
+plt.plot(arclength,invariants[:,1],label = '$\omega_\kappa$ [rad/m]',color='g')
+plt.plot(arclength,invariants[:,2],label = '$\omega_\u03C4$ [rad/m]',color='b')
+plt.xlabel('s [m]')
+plt.legend()
+plt.title('Calculated invariants (moving horizon)')
+plt.show()
 
