@@ -6,7 +6,7 @@ authors = ["Maxim Vochten", "Riccardo Burlizzi", "Arno Verduyn"]
 include = ["data"]
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.7"
 scipy = "^1.5.2"
 casadi = "^3.5.5"
 PyQt5 = "^5.10.1"
