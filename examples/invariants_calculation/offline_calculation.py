@@ -7,7 +7,7 @@ import invariants_python.class_frenetserret_calculation_reformulation_position a
 #import invariants_python.class_frenetserret_calculation_minimumjerk as FS3
 
 #%%
-data_location = files('data').joinpath('contour_coordinates.out')
+data_location = files('invariants_python').joinpath('../data').joinpath('contour_coordinates.out')
 position_data = np.loadtxt(data_location, dtype='float')
 trajectory,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_positiontrajectory_arclength(position_data)
 stepsize_orig = stepsize
