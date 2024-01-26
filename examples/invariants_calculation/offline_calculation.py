@@ -4,85 +4,137 @@ import os
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 parent = os.path.dirname(parent)
-if not parent in sys.path:
-    sys.path.append(parent)
+parent = os.path.dirname(parent)
+parent = os.path.dirname(parent)
+sys.path.append(parent)
 
-from invariants_python import read_and_write_data
-import invariants_python.read_and_write_data as rw
-import invariants_python.reparameterization as reparam
-from invariants_python.class_frenetserret_calculation import FrenetSerret_calc
-import matplotlib.pyplot as plt
+
 import numpy as np
-import os
+import matplotlib.pyplot as plt
+import invariants_python.reparameterization as reparam
+import scipy.interpolate as ip
+import invariants_python.class_frenetserret_calculation as FS1
+import invariants_python.class_frenetserret_calculation_reformulation_position as FS2
+import invariants_python.class_frenetserret_calculation_minimumjerk as FS3
+from IPython.display import clear_output
 
-plt.close('all')
-          
-data_location = parent + '/data/sinus.txt'
-parameterization = 'arclength' # {time,arclength,screwprogress}
+#%%
+data_location = parent + '/data/contour_coordinates.out'
+#data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/contour_coordinates.out'
+position_data = np.loadtxt(data_location, dtype='float')
+trajectory,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_positiontrajectory_arclength(position_data)
+stepsize_orig = stepsize
+arclength_n = arclength/arclength[-1]
+
+plt.figure(figsize=(8,3))
+plt.axis('equal')
+plt.plot(trajectory[:,0],trajectory[:,1],'.-')
+
+
 
 """
-Load and reparameterize data
+Old optimization problem
 """
 
-# load data
-trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
-
-# reparameterization
-trajectory_geom,arclength,arclength_n,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
-
-"""
-Example calculation invariants using the full horizon
-"""
-
-# symbolic specification
-FS_calculation_problem = FrenetSerret_calc(window_len=nb_samples)
+#%%
+# specify optimization problem symbolically
+FS_calculation_problem = FS1.FrenetSerret_calc(window_len=nb_samples, bool_unsigned_invariants = True, w_pos = 100, w_deriv = (10**-7)*np.array([1.0, 1.0, 1.0]), w_abs = (10**-5)*np.array([1.0, 1.0]))
 
 # calculate invariants given measurements
-result = FS_calculation_problem.calculate_invariants_global(trajectory_geom,stepsize=stepsize)
-invariants = result[0]
+invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
 
-plt.figure()
-plt.plot(arclength,invariants[:,0],label = '$v$ [m]',color='r')
-plt.plot(arclength,invariants[:,1],label = '$\omega_\kappa$ [rad/m]',color='g')
-plt.plot(arclength,invariants[:,2],label = '$\omega_\u03C4$ [rad/m]',color='b')
-plt.xlabel('s [m]')
-plt.legend()
-plt.title('Calculated invariants (full horizon)')
+# figures
+plt.figure(figsize=(14,6))
+plt.subplot(2,2,1)
+plt.plot(trajectory[:,0],trajectory[:,1],'.-')
+plt.plot(calculate_trajectory[:,0],calculate_trajectory[:,1],'.-')
+plt.title('Trajectory')
+
+plt.subplot(2,2,3)
+plt.plot(arclength_n,invariants[:,0])
+plt.plot(0,0)
+plt.title('Velocity [m/-]')
+
+plt.subplot(2,2,2)
+plt.plot(arclength_n,invariants[:,1])
+plt.plot(0,0)
+plt.title('Curvature [rad/-]')
+
+plt.subplot(2,2,4)
+plt.plot(arclength_n,invariants[:,2])
+plt.plot(0,1)
+plt.title('Torsion [rad/-]')
+
 plt.show()
 
+
+
+# """ 
+# OCP 2: Minimum-jerk optimization problem
+# """
+
+# #%%
+# # specify optimization problem symbolically
+# FS_calculation_problem = FS3.FrenetSerret_calc(window_len=nb_samples, w_pos = 100, w_regul = 10**-9)
+
+# # calculate invariants given measurements
+# invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
+
+# # figures
+# plt.figure(figsize=(14,6))
+# plt.subplot(2,2,1)
+# plt.plot(trajectory[:,0],trajectory[:,1],'.-')
+# plt.plot(calculate_trajectory[:,0],calculate_trajectory[:,1],'.-')
+
+# plt.subplot(2,2,3)
+# plt.plot(arclength_n,invariants[:,0])
+# plt.plot(0,0)
+# plt.title('Velocity [m/-]')
+
+# plt.subplot(2,2,2)
+# plt.plot(arclength_n,invariants[:,1])
+# plt.plot(0,0)
+# plt.title('Curvature [rad/-]')
+
+# plt.subplot(2,2,4)
+# plt.plot(arclength_n,invariants[:,2])
+# plt.plot(0,1)
+# plt.title('Torsion [rad/-]')
+
+# plt.show()
+
+
+""" 
+Reformulated optimization problem
 """
-Example calculation invariants using a smaller moving horizon
-"""
 
-window_len = 20
-window_increment = 10
+#%%
+# specify optimization problem symbolically
+FS_calculation_problem = FS2.FrenetSerret_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.001)
 
-# symbolic specification
-FS_online_calculation_problem = FrenetSerret_calc(window_len=window_len)
+# calculate invariants given measurements
+invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
 
+# figures
+plt.figure(figsize=(14,6))
+plt.subplot(2,2,1)
+plt.plot(trajectory[:,0],trajectory[:,1],'.-')
+plt.plot(calculate_trajectory[:,0],calculate_trajectory[:,1],'.-')
+plt.title('Trajectory')
 
-n = 0
-invariants = np.zeros([nb_samples,3])
-print(invariants)
-for i in range(round(nb_samples/window_increment)-2):
-    
-    # Set measurements current window
-    trajectory_geom_online = trajectory_geom[n:n+window_len]
-    
-    # Calculate invariants in window
-    result_online = FS_online_calculation_problem.calculate_invariants_online(trajectory_geom_online,sample_jump=window_increment,stepsize=stepsize)
-    invariants_online = result_online[0]
-    half_window_increment = round(window_increment/2)
-    invariants[half_window_increment+window_increment*i:window_len-half_window_increment+window_increment*i,:] = invariants_online[half_window_increment:window_len-half_window_increment,:]
-    
-    n = n + window_increment; # start index next window
-    
-plt.figure()
-plt.plot(arclength,invariants[:,0],label = '$v$ [m]',color='r')
-plt.plot(arclength,invariants[:,1],label = '$\omega_\kappa$ [rad/m]',color='g')
-plt.plot(arclength,invariants[:,2],label = '$\omega_\u03C4$ [rad/m]',color='b')
-plt.xlabel('s [m]')
-plt.legend()
-plt.title('Calculated invariants (moving horizon)')
+plt.subplot(2,2,3)
+plt.plot(arclength_n,invariants[:,0])
+plt.plot(0,0)
+plt.title('Velocity [m/-]')
+
+plt.subplot(2,2,2)
+plt.plot(arclength_n,invariants[:,1])
+plt.plot(0,0)
+plt.title('Curvature [rad/-]')
+
+plt.subplot(2,2,4)
+plt.plot(arclength_n,invariants[:,2])
+plt.plot(0,1)
+plt.title('Torsion [rad/-]')
+
 plt.show()
-
