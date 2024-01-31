@@ -169,7 +169,14 @@ tilting_angle_rotx_deg=0
 tilting_angle_roty_deg=0
 tilting_angle_rotz_deg=0
 mode = 'rpy'
-collision_flag, first_collision_sample = cd.collision_detection(optim_gen_results.Obj_pos,optim_gen_results.Obj_frames,p_obj_end,opener_geom,tilting_angle_rotx_deg,tilting_angle_roty_deg,tilting_angle_rotz_deg,mode,ax)
+collision_flag, first_collision_sample, last_collision_sample = cd.collision_detection(optim_gen_results.Obj_pos,optim_gen_results.Obj_frames,p_obj_end,opener_geom,tilting_angle_rotx_deg,tilting_angle_roty_deg,tilting_angle_rotz_deg,mode,ax)
+
+if collision_flag:
+    print("COLLISION DETECTED")
+    print("First collision sample: " + str(first_collision_sample))
+    print("Last collision sample: " + str(last_collision_sample))
+else:
+    print("NO COLLISION DETECTED")
 
 plt.show()
 #%% Visualization
