@@ -35,7 +35,7 @@ def collision_detection(p_obj_demo, R_demo, position_bottle, opener_geom, tiltin
             v_bottle[k+2*len(x_top),:] = [x_bottom[i], y_bottom[i], z_bottom[j,i]]
             k += 1
 
-    v_bottle += position_bottle - [0 , 0.0145+0.01, 0] # shift the bottle to the correct position
+    v_bottle += position_bottle # shift the bottle to the correct position
 
     F1 = np.zeros((2*(len(x_top)-1),4)) # F1 are contains sequence to create faces
     for i in range(len(F1)):
@@ -57,7 +57,7 @@ def collision_detection(p_obj_demo, R_demo, position_bottle, opener_geom, tiltin
     for j in np.linspace(0, len(p_obj_demo)-1, N_checks).astype(int):
         fm = [0, 1, 2, 3]
         v_opener = np.tile(p_obj_demo[j,:], (4,1)) + np.dot(R_demo[j,:,:], opener_geom[[0,18,20,2],:].T).T # include opener geometry
-        ax.add_collection3d(Poly3DCollection([v_opener[fm]], color='r'))
+        ax.add_collection3d(Poly3DCollection([v_opener[fm]], color='r',alpha=0.1))
 
         b = GJK.geometry.Polytope(v_bottle)
         o = GJK.geometry.Polytope(v_opener)

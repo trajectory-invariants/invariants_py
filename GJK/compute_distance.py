@@ -1,5 +1,7 @@
 """
 Contains the class implementataion of the GJK Algorithm
+
+Script taken from: https://github.com/mohith-sakthivel/Fast_GJK-collision_detection
 """
 
 import numpy as np

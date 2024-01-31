@@ -115,9 +115,10 @@ R_obj_start = orthonormalize(optim_calc_results.Obj_frames[current_index])
 FSt_start = orthonormalize(optim_calc_results.FSt_frames[current_index])
 FSr_start = orthonormalize(optim_calc_results.FSr_frames[current_index])
 p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([0.1,0.1,0.1])
-rotate = R.from_euler('z', 30, degrees=True)
-R_obj_end =  orthonormalize(rotate.apply(optim_calc_results.Obj_frames[-1]))
-FSt_end = orthonormalize(optim_calc_results.FSt_frames[-1])
+alpha = 120
+rotate = R.from_euler('z', alpha, degrees=True)
+R_obj_end =  orthonormalize(rotate.as_matrix() @ optim_calc_results.Obj_frames[-1])
+FSt_end = orthonormalize(rotate.as_matrix() @ optim_calc_results.FSt_frames[-1])
 FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
 
 # define new class for OCP results
@@ -154,6 +155,12 @@ pl.plot_orientation(optim_calc_results.Obj_frames,optim_gen_results.Obj_frames,c
 
 pl.plot_invariants(optim_calc_results.invariants, optim_gen_results.invariants, arclength_n, progress_values)
 
+fig99 = plt.figure(figsize=(14,8))
+ax99 = fig99.add_subplot(111, projection='3d')
+pl.plot_stl(opener_location,[0,0,0],optim_calc_results.Obj_frames[-1],colour="r",alpha=0.5,ax=ax99)
+pl.plot_stl(opener_location,[0,0,0],R_obj_end,colour="b",alpha=0.5,ax=ax99)
+pl.plot_stl(opener_location,[0,0,0],optim_gen_results.Obj_frames[-1],colour="g",alpha=0.5,ax=ax99)
+
 opener_dim_x = 0.04
 opener_dim_y = 0.15
 opener_dim_z = 0
@@ -169,7 +176,9 @@ tilting_angle_rotx_deg=0
 tilting_angle_roty_deg=0
 tilting_angle_rotz_deg=0
 mode = 'rpy'
-collision_flag, first_collision_sample, last_collision_sample = cd.collision_detection(optim_gen_results.Obj_pos,optim_gen_results.Obj_frames,p_obj_end,opener_geom,tilting_angle_rotx_deg,tilting_angle_roty_deg,tilting_angle_rotz_deg,mode,ax)
+r_bottle = 0.0145+0.01 # bottle radius + margin
+obj_pos = p_obj_end + [r_bottle*np.sin(alpha*pi/180) , -r_bottle*np.cos(alpha*pi/180), 0] # position of the bottle
+collision_flag, first_collision_sample, last_collision_sample = cd.collision_detection(optim_gen_results.Obj_pos,optim_gen_results.Obj_frames,obj_pos,opener_geom,tilting_angle_rotx_deg,tilting_angle_roty_deg,tilting_angle_rotz_deg,mode,ax)
 
 if collision_flag:
     print("COLLISION DETECTED")
