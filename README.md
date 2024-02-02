@@ -48,6 +48,13 @@ Build and install the Fatropy project
     pip install --upgrade pip setuptools
     pip install .
 
+Install rockit with Fatropy interface
+
+    git clone https://gitlab.kuleuven.be/meco-software/rockit.git
+    git clone https://gitlab.kuleuven.be/u0110259/rockit_fatrop_plugin.git ./rockit/rockit/external/fatrop
+    cd rockit
+    pip install .
+
 ## Examples
 
 Example scripts are found in the `examples` folder.
