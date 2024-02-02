@@ -6,7 +6,6 @@ default:
   image: python:3.9
 
 before_script:
-  - python --version  # For debugging
   - pip install virtualenv
   - virtualenv venv
   - source venv/bin/activate
@@ -17,9 +16,6 @@ build:
     
 test:
   script:
-    - pip install .
-    - pip list
-    - pip list --not-required
     - python run_all_examples
 
 
