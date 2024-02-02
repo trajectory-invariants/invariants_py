@@ -13,7 +13,7 @@ import invariants_python.plotters as plotters
 import os
 import time
 
-use_fatrop_solver = False  # True = fatrop, False = ipopt
+use_fatrop_solver = True  # True = fatrop, False = ipopt
 
 #%% Load data
 
