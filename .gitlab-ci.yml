@@ -14,6 +14,8 @@ before_script:
   - pip install .
 
   #fatrop installation
+  - git clone https://github.com/meco-group/fatrop.git --recursive
+  - cd fatrop
   - export CMAKE_ARGS="-DBLASFEO_TARGET=X64_AUTOMATIC -DENABLE_MULTITHREADING=OFF"
   - cd fatropy
   - pip install --upgrade pip setuptools
