@@ -16,7 +16,7 @@ build:
     
 test:
   script:
-    - python run_all_examples
+    - python run_all_examples.py
 
 
 
