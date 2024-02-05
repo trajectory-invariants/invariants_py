@@ -23,7 +23,7 @@ from invariants_python.robotics_functions.orthonormalize_rotation import orthono
 import invariants_python.plotters as pl
 import random
 #%%
-data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/beer_1.txt'
+data_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/beer_1.txt'
 trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]

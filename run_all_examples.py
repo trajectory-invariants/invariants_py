@@ -32,6 +32,6 @@ if failed_examples:
     print("The following examples failed to execute:")
     for example in failed_examples:
         print(example)
-    raise Exception('One or more examples failed')
+    raise Exception('One or more examples failed, see the above output')
 else:
     print("All examples executed successfully.")

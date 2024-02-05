@@ -24,7 +24,7 @@ from scipy.spatial.transform import Rotation as R
 from invariants_python.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 import invariants_python.plotters as pl
 #%%
-data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/beer_1.txt'
+data_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/beer_1.txt'
 trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
