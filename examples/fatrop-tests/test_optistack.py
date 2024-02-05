@@ -22,7 +22,7 @@ weight_regularization = 10**-10
 #%% Load data
 
 # load data
-data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/contour_coordinates.out'
+data_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/contour_coordinates.out'
 position_data = np.loadtxt(data_location, dtype='float')
 
 # reparameterize to arc length

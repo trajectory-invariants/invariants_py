@@ -13,12 +13,12 @@ import invariants_python.plotters as plotters
 import os
 import time
 
-use_fatrop_solver = False  # True = fatrop, False = ipopt
+use_fatrop_solver = True  # True = fatrop, False = ipopt
 
 #%% Load data
 
 # load data
-data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/contour_coordinates.out'
+data_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/contour_coordinates.out'
 position_data = np.loadtxt(data_location, dtype='float')
 
 # reparameterize to arc length

@@ -125,7 +125,7 @@ class FrenetSerret_calc:
           self.ocp.sample(self.i3,    grid='control')[1], 
          ],
          ["stepsize","p_obj_m","R_t_x","R_t_y","R_t_z","p_obj","i1dot","i1","i2","i1ddot","i2dot","i3"],   # Input labels
-         ["R_t_x","R_t_y","R_t_z","p_obj","i1dot","i1","i2","i1ddot","i2dot","i3"],   # Output labels
+         ["R_t_x2","R_t_y2","R_t_z2","p_obj2","i1dot2","i12","i22","i1ddot2","i2dot2","i32"],   # Output labels
          )
         
     def dummy_solve(self):
