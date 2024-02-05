@@ -1,26 +1,38 @@
-# This pipeline runs the Python scripts in the example folder. The pipeline succeeds if all scripts can be run completely.
+# This pipeline installs the invariants-py package and then runs the examples.
 
 # Official language image. Look for the different tagged releases at:
 # https://hub.docker.com/r/library/python/tags/
 default:
   image: python:3.9
 
-before_script:
-  - python --version  # For debugging
-  - pip install virtualenv
-  - virtualenv venv
-  - source venv/bin/activate
+install_and_test:
+  script:
+    # invariants-py installation
+    - pip install virtualenv
+    - virtualenv venv
+    - source venv/bin/activate
+    - pip install .
 
-build:
-  script:
+    #fatrop installation
+    - git clone https://github.com/meco-group/fatrop.git --recursive
+    - cd fatrop
+    - apt-get update && apt-get install -y cmake
+    - export CMAKE_ARGS="-DBLASFEO_TARGET=X64_AUTOMATIC -DENABLE_MULTITHREADING=OFF"
+    - cd fatropy
+    - pip install --upgrade pip setuptools
     - pip install .
-    
-test:
-  script:
+    - cd ../..
+
+    # rockit and rockit-fatrop plugin installation
+    - git clone https://gitlab.kuleuven.be/meco-software/rockit.git
+    - git clone https://gitlab.kuleuven.be/u0110259/rockit_fatrop_plugin.git ./rockit/rockit/external/fatrop
+    - cd rockit
     - pip install .
-    - pip list
-    - pip list --not-required
-    - find . -maxdepth 3 -name "*.py" -path "./examples/*" | xargs -n 1 python 
+    - cd ..
+
+    # Run examples
+    - python run_all_examples.py
+    #python -m pytest tests/
 
 
 

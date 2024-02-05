@@ -19,11 +19,11 @@ from IPython.display import clear_output
 import matplotlib
 import invariants_python.plotters as pl
 
-matplotlib.use('TkAgg') #default backend
+#matplotlib.use('TkAgg') #default backend
 
 #%%
 
-data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/beer_1.txt'
+data_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/beer_1.txt'
 trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
@@ -125,7 +125,7 @@ old_progress = 0.0
 calculate_trajectory = init_vals_calculate_trajectory
 movingframes = init_vals_movingframes
 
-matplotlib.use('Qt5Agg') #backend for interactive plotting, pip install pyqt5
+#matplotlib.use('Qt5Agg') #backend for interactive plotting, pip install pyqt5
 
 plt.ion() # interactive plotting, necessary for updating the plot
 fig_traj = plt.figure(figsize=(8, 8)) # plot showing update of progress

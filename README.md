@@ -6,17 +6,54 @@ Python library for the invariant shape descriptors.
 
 ## Installation
 
+### Prerequisites
+
+Prerequisites: Python >3.6 and pip
+
+    sudo apt install python3-pip
+
+### Installation of invariants-py
+
 Clone (or download) this repository:
 
     git clone https://gitlab.kuleuven.be/robotgenskill/public_code/invariants_py.git
 
-Install package:
+Install package in your Python environment:
 
     cd invariants_py
+    
     python -m pip install -e .
 
+### (Optional) Installation of Fatrop
 
-(Optional) To speed-up calculation times, you should additionally install the [fatrop solver](https://gitlab.kuleuven.be/robotgenskill/fatrop/fatrop).
+To speed-up calculation times, you can choose to additionally install the [fatrop solver](https://gitlab.kuleuven.be/robotgenskill/fatrop/fatrop). Currently this solver is only available in Linux.
+
+Clone the Fatrop repository:    
+
+    cd ..
+
+    git clone https://github.com/meco-group/fatrop.git --recursive
+
+    cd fatrop
+
+Set the CMake flags, change the BLASFEO target to your system architecture (see table of https://github.com/giaf/blasfeo)
+
+    sudo apt-get install cmake
+
+    export CMAKE_ARGS="-DBLASFEO_TARGET=X64_AUTOMATIC -DENABLE_MULTITHREADING=OFF"
+
+Build and install the Fatropy project
+
+    cd fatropy
+    pip install --upgrade pip setuptools
+    pip install .
+
+Install rockit with Fatropy interface
+
+    git clone https://gitlab.kuleuven.be/meco-software/rockit.git
+    git clone https://gitlab.kuleuven.be/u0110259/rockit_fatrop_plugin.git ./rockit/rockit/external/fatrop
+    cd rockit
+    pip install .
 
 ## Examples
 
