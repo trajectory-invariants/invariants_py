@@ -5,12 +5,7 @@
 default:
   image: python:3.9
 
-stages:
-  - install
-  - test
-
-install_package:
-  stage: install
+install_and_test:
   script:
     # invariants-py installation
     - pip install virtualenv
@@ -34,20 +29,6 @@ install_package:
     - cd rockit
     - pip install .
     - cd ..
-
-    # Cache the installation
-    - tar czf package_cache.tar.gz venv
-
-  artifacts:
-    paths:
-      - package_cache.tar.gz
-
-test_examples:
-  stage: test
-  script:
-    # Restore the package cache
-    - tar xzf package_cache.tar.gz
-    - source venv/bin/activate
 
     # Run examples
     - python run_all_examples.py
