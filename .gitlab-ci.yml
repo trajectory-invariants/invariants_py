@@ -1,16 +1,22 @@
-# This pipeline runs the Python scripts in the example folder. The pipeline succeeds if all scripts can be run completely.
+# This pipeline installs the invariants-py package and then runs the examples.
 
 # Official language image. Look for the different tagged releases at:
 # https://hub.docker.com/r/library/python/tags/
 default:
   image: python:3.9
 
-build:
-  script:
-    - pip install virtualenv
-    - virtualenv venv
-    - source venv/bin/activate
+stages:
+  - install
+  - test
 
+before_script:
+  - pip install virtualenv
+  - virtualenv venv
+  - source venv/bin/activate
+
+install_package:
+  stage: install
+  script:
     # invariants-py installation
     - pip install .
 
@@ -29,10 +35,11 @@ build:
     - cd rockit
     - pip install .
 
-test:
+test_examples:
+  stage: test
   script:
-    - source venv/bin/activate
     - python run_all_examples.py
+    #python -m pytest tests/
 
 
 
