@@ -21,7 +21,7 @@ plots the value of qx,qy,qz,qw of two rotational trajectories expressed as quate
 import numpy as np
 import math as math
 import matplotlib.pyplot as plt
-from invariants_python.robotics_functions.rot2quat import rot2quat
+from invariants_py.robotics_functions.rot2quat import rot2quat
 from scipy import interpolate as ip
 
 def plot_orientation(trajectory1,trajectory2,current_index = 0):

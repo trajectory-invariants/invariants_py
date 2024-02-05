@@ -2,10 +2,10 @@ from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
-import invariants_python.reparameterization as reparam
-import invariants_python.class_frenetserret_calculation as FS1
-import invariants_python.class_frenetserret_calculation_reformulation_position as FS2
-#import invariants_python.class_frenetserret_calculation_minimumjerk as FS3
+import invariants_py.reparameterization as reparam
+import invariants_py.class_frenetserret_calculation as FS1
+import invariants_py.class_frenetserret_calculation_reformulation_position as FS2
+#import invariants_py.class_frenetserret_calculation_minimumjerk as FS3
 
 #%%
 

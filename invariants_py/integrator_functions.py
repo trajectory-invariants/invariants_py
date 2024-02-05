@@ -11,7 +11,7 @@ Helper functions for invariant calculations:
 
 import casadi as cas
 import numpy as np
-#import invariants_python.SE3 as SE3
+#import invariants_py.SE3 as SE3
 
 def rodriguez_rot_form(omega,h):
     """Return a rotation matrix which is the result of rotating with omega over time interval h"""

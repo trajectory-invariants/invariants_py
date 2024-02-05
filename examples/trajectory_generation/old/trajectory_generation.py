@@ -14,7 +14,7 @@ Example script of shape-preserving trajectory generation
 
 import sys
 sys.path.append('../implementation')
-import invariants_python.calculate_invariant_trajectory as calc_traj
+import invariants_py.calculate_invariant_trajectory as calc_traj
 import tf_conversions as tf
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D

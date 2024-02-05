@@ -15,7 +15,7 @@ import matplotlib
 import sys
 from mpl_toolkits import mplot3d
 from stl import mesh
-from invariants_python.robotics_functions.rot2quat import rot2quat
+from invariants_py.robotics_functions.rot2quat import rot2quat
 from scipy import interpolate as ip
 #import PyQt5
 #sys.modules.get("PyQt5")

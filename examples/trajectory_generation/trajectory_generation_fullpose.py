@@ -7,7 +7,7 @@ Created on Thu Aug 3 2023
 
 import sys
 import os 
-# setting the path to invariants_python
+# setting the path to invariants_py
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 parent = os.path.dirname(parent)
@@ -17,19 +17,19 @@ if not parent in sys.path:
 # Imports
 import numpy as np
 from math import pi
-import invariants_python.read_and_write_data as rw
+import invariants_py.read_and_write_data as rw
 import matplotlib.pyplot as plt
-import invariants_python.reparameterization as reparam
+import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_python.class_frenetserret_calculation_reformulation_rotation import FrenetSerret_calc_rot
-from invariants_python.class_frenetserret_calculation_reformulation_position import FrenetSerret_calc_pos as FrenetSerret_calc_pos
-from invariants_python.class_frenetserret_generation_rotation import FrenetSerret_gen_rot
-from invariants_python.class_frenetserret_generation_position import FrenetSerret_gen_pos as FrenetSerret_gen_pos
+from invariants_py.class_frenetserret_calculation_reformulation_rotation import FrenetSerret_calc_rot
+from invariants_py.class_frenetserret_calculation_reformulation_position import FrenetSerret_calc_pos as FrenetSerret_calc_pos
+from invariants_py.class_frenetserret_generation_rotation import FrenetSerret_gen_rot
+from invariants_py.class_frenetserret_generation_position import FrenetSerret_gen_pos as FrenetSerret_gen_pos
 from IPython.display import clear_output
 from scipy.spatial.transform import Rotation as R
-from invariants_python.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
+from invariants_py.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 from stl import mesh
-import invariants_python.plotters as pl
+import invariants_py.plotters as pl
 #%%
 data_location = parent + '/data/beer_1.txt'
 opener_location = parent + '/data/opener.stl'

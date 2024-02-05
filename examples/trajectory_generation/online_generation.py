@@ -7,7 +7,7 @@ Created on Wed Feb  9 21:27:38 2022
 
 import sys
 import os 
-# setting the path to invariants_python
+# setting the path to invariants_py
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 parent = os.path.dirname(parent)
@@ -16,13 +16,13 @@ if not parent in sys.path:
 
 # Imports
 import numpy as np
-import invariants_python.read_and_write_data as rw
+import invariants_py.read_and_write_data as rw
 import matplotlib.pyplot as plt
-import invariants_python.reparameterization as reparam
-from invariants_python.class_frenetserret_calculation import FrenetSerret_calc
-from invariants_python.class_frenetserret_generation_position import FrenetSerret_gen_pos
-import invariants_python.spline_handler as spline_handler
-import invariants_python.plotters as plotters
+import invariants_py.reparameterization as reparam
+from invariants_py.class_frenetserret_calculation import FrenetSerret_calc
+from invariants_py.class_frenetserret_generation_position import FrenetSerret_gen_pos
+import invariants_py.spline_handler as spline_handler
+import invariants_py.plotters as plotters
 
 """Input data"""
 

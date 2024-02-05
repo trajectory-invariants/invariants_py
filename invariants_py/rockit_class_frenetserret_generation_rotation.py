@@ -8,7 +8,7 @@ Created on Fri July  7 11:56:15 2023
 import numpy as np
 import casadi as cas
 import rockit
-import invariants_python.integrator_functions as integrators
+import invariants_py.integrator_functions as integrators
 import time
 
 

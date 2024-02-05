@@ -9,15 +9,15 @@ Created on Mon Aug 7 2023
 import numpy as np
 import os
 import time as t
-import invariants_python.read_and_write_data as rw
+import invariants_py.read_and_write_data as rw
 import matplotlib.pyplot as plt
-import invariants_python.reparameterization as reparam
+import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_python.rockit_class_frenetserret_calculation_reformulation_position import FrenetSerret_calc_pos as FS_calc
-from invariants_python.rockit_class_frenetserret_generation_position import FrenetSerret_gen_pos as FS_gen
+from invariants_py.rockit_class_frenetserret_calculation_reformulation_position import FrenetSerret_calc_pos as FS_calc
+from invariants_py.rockit_class_frenetserret_generation_position import FrenetSerret_gen_pos as FS_gen
 from IPython.display import clear_output
 import matplotlib
-import invariants_python.plotters as pl
+import invariants_py.plotters as pl
 
 #matplotlib.use('TkAgg') #default backend
 

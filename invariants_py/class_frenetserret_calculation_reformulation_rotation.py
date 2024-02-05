@@ -7,7 +7,7 @@
 import numpy as np
 from math import pi
 import casadi as cas
-import invariants_python.integrator_functions as integrators
+import invariants_py.integrator_functions as integrators
 
 
 class FrenetSerret_calc_rot:

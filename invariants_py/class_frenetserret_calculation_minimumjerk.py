@@ -7,7 +7,7 @@ Created on Tue Dec  7 11:24:19 2021
 
 import numpy as np
 import casadi as cas
-import invariants_python.integrator_functions as integrators
+import invariants_py.integrator_functions as integrators
 
 
 class FrenetSerret_calc:

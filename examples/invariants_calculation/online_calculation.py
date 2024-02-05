@@ -1,6 +1,6 @@
 import sys
 import os 
-# setting the path to invariants_python
+# setting the path to invariants_py
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 parent = os.path.dirname(parent)
@@ -9,9 +9,9 @@ if not parent in sys.path:
 
 import numpy as np
 import matplotlib.pyplot as plt
-import invariants_python.reparameterization as reparam
+import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_python.class_frenetserret_calculation import FrenetSerret_calc
+from invariants_py.class_frenetserret_calculation import FrenetSerret_calc
 from IPython.display import clear_output
 
 #%%

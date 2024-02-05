@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
 """
+Created on Tue Dec  7 11:24:19 2021
 
 @author: u0091864
 """
 
 import numpy as np
 import casadi as cas
-import invariants_python.integrator_functions as integrators
+import invariants_py.integrator_functions as integrators
 
 
-class FrenetSerret_calc_pos:
+class FrenetSerret_calc:
 
-    def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 10**-2):
+    def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, w_deriv = (10**-6)*np.array([1.0, 1.0, 1.0]), w_abs = (10**-10)*np.array([1.0, 1.0]), planar_task = False):
        
         #%% Create decision variables and parameters for the optimization problem
         
@@ -40,12 +41,8 @@ class FrenetSerret_calc_pos:
         #%% Specifying the constraints
         
         # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
-        #opti.subject_to( R_t[-1].T @ R_t[-1] == np.eye(3))
+        opti.subject_to( R_t[-1].T @ R_t[-1] == np.eye(3))
         
-        constr = R_t[0].T @ R_t[0]
-        opti.subject_to(cas.vertcat(constr[1,0], constr[2,0], constr[2,1], constr[0,0], constr[1,1], constr[2,2])==cas.vertcat(cas.DM.zeros(3,1), cas.DM.ones(3,1)))
-
-
         # Dynamic constraints
         integrator = integrators.define_geom_integrator_tra_FSI_casadi(h)
         for k in range(window_len-1):
@@ -60,39 +57,41 @@ class FrenetSerret_calc_pos:
             opti.subject_to(U[0,:]>=0) # lower bounds on control
             opti.subject_to(U[1,:]>=0) # lower bounds on control
 
+        # 2D contour   
+        if planar_task:
+            for k in range(window_len):
+                opti.subject_to( cas.dot(R_t[k][:,1],np.array([0,0,1])) > 0)
+            
+            
         #%% Specifying the objective
 
         # Fitting constraint to remain close to measurements
         objective_fit = 0
         for k in range(window_len):
             err_pos = p_obj[k] - p_obj_m[k] # position error
-            objective_fit = objective_fit + cas.dot(err_pos,err_pos)
-            
-        opti.subject_to(objective_fit/window_len/rms_error_traj**2 < 1)
+            objective_fit = objective_fit + w_pos*cas.dot(err_pos,err_pos)
 
         # Regularization constraints to deal with singularities and noise
         objective_reg = 0
         for k in range(window_len-1):
-            #if k!=0:
-            #    err_deriv = U[:,k] - U[:,k-1] # first-order finite backwards derivative (noise smoothing effect)
-            #else:
-            #    err_deriv = 0
+            if k!=0:
+                err_deriv = U[:,k] - U[:,k-1] # first-order finite backwards derivative (noise smoothing effect)
+            else:
+                err_deriv = 0
             err_abs = U[[1,2],k] # absolute value invariants (force arbitrary invariants to zero)
 
-            objective_reg = objective_reg + cas.dot(err_abs,err_abs)
+            
 
             ##Check that obj function is correctly typed in !!!
-            #objective_reg = objective_reg \
-            #                + cas.dot(w_deriv**(0.5)*err_deriv,w_deriv**(0.5)*err_deriv) \
-            #                + cas.dot(w_abs**(0.5)*err_abs, w_abs**(0.5)*err_abs)
+            objective_reg = objective_reg \
+                            + cas.dot(w_deriv**(0.5)*err_deriv,w_deriv**(0.5)*err_deriv) \
+                            + cas.dot(w_abs**(0.5)*err_abs, w_abs**(0.5)*err_abs)
 
-        objective = objective_reg/(window_len-1)
-
-        opti.subject_to(U[1,-1] == U[1,-2]) # Last sample has no impact on RMS error
+        objective = objective_fit + objective_reg
 
         #%% Define solver and save variables
         opti.minimize(objective)
-        opti.solver('ipopt',{"print_time":True,"expand":True},{'gamma_theta':1e-12,'max_iter':200,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
+        opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':1000,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
         
         # Save variables
         self.R_t = R_t
@@ -122,27 +121,20 @@ class FrenetSerret_calc_pos:
         ey = np.tile( np.array((0,0,1)), (N,1) )
         ez = np.array([np.cross(ex[i,:],ey[i,:]) for i in range(N)])
         
-        #Pdiff_cross = np.cross(Pdiff[0:-1],Pdiff[1:])
-        #ey = Pdiff_cross / np.linalg.norm(Pdiff_cross,axis=1).reshape(N-2,1)
-        
         for k in range(N):
             self.opti.set_initial(self.R_t[k], np.array([ex[k,:], ey[k,:], ez[k,:]]).T ) #construct_init_FS_from_traj(meas_traj.Obj_location)
             self.opti.set_initial(self.p_obj[k], measured_positions[k])
-        
+            
         # Initialize controls
         for k in range(N-1):    
             self.opti.set_initial(self.U[:,k], np.array([1,1e-12,1e-12]))
-            
+
         # Set values parameters
         self.opti.set_value(self.R_t_0, np.eye(3,3))
         for k in range(N):
             self.opti.set_value(self.p_obj_m[k], measured_positions[k])       
         
         self.opti.set_value(self.h,stepsize)
-
-        # Constraints
-        self.opti.subject_to(self.p_obj[0] == self.p_obj_m[0])
-        self.opti.subject_to(self.p_obj[N-1] == self.p_obj_m[N-1])
 
         # ######################
         # ##  DEBUGGING: check integrator in initial values, time step 0 to 1

@@ -23,7 +23,7 @@ or negative for continuity
 
 import numpy as np
 import math as math
-from invariants_python.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
+from invariants_py.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 def rot2quat(R_all):
     N = np.size(R_all,0)
     q_all = np.zeros((N,4))

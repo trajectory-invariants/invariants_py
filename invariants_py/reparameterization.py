@@ -6,7 +6,7 @@ Created on Mon Dec  6 16:34:38 2021
 """
 
 import numpy as np
-import invariants_python.SO3 as SO3
+import invariants_py.SO3 as SO3
 
 
 def interpR(x_n, x_p, R_p):

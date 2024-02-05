@@ -1,8 +1,8 @@
 import rockit
 import numpy as np
 import casadi as cas
-import invariants_python.integrator_functions as integrators
-import invariants_python.ocp_helper as ocp_helper
+import invariants_py.integrator_functions as integrators
+import invariants_py.ocp_helper as ocp_helper
 
 class FrenetSerret_calc:
 

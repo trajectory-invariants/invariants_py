@@ -9,18 +9,18 @@ Created on Thu Aug 3 2023
 import numpy as np
 from math import pi
 import os
-import invariants_python.read_and_write_data as rw
+import invariants_py.read_and_write_data as rw
 import matplotlib.pyplot as plt
-import invariants_python.reparameterization as reparam
+import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_python.rockit_class_frenetserret_calculation_reformulation_position import FrenetSerret_calc_pos as FS_calc_pos
-from invariants_python.rockit_class_frenetserret_calculation_reformulation_rotation import FrenetSerret_calc_rot as FS_calc_rot
-from invariants_python.rockit_class_frenetserret_generation_position import FrenetSerret_gen_pos as FS_gen_pos
-from invariants_python.rockit_class_frenetserret_generation_rotation import FrenetSerret_gen_rot as FS_gen_rot
+from invariants_py.rockit_class_frenetserret_calculation_reformulation_position import FrenetSerret_calc_pos as FS_calc_pos
+from invariants_py.rockit_class_frenetserret_calculation_reformulation_rotation import FrenetSerret_calc_rot as FS_calc_rot
+from invariants_py.rockit_class_frenetserret_generation_position import FrenetSerret_gen_pos as FS_gen_pos
+from invariants_py.rockit_class_frenetserret_generation_rotation import FrenetSerret_gen_rot as FS_gen_rot
 from IPython.display import clear_output
 from scipy.spatial.transform import Rotation as R
-from invariants_python.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
-import invariants_python.plotters as pl
+from invariants_py.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
+import invariants_py.plotters as pl
 import random
 #%%
 data_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/beer_1.txt'

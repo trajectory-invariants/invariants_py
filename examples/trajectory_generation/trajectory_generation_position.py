@@ -7,7 +7,7 @@ Created on Wed Jul 19 2023
 
 import sys
 import os 
-# setting the path to invariants_python
+# setting the path to invariants_py
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 parent = os.path.dirname(parent)
@@ -17,12 +17,12 @@ if not parent in sys.path:
 # Imports
 import numpy as np
 import os
-import invariants_python.read_and_write_data as rw
+import invariants_py.read_and_write_data as rw
 import matplotlib.pyplot as plt
-import invariants_python.reparameterization as reparam
+import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_python.class_frenetserret_calculation_reformulation_position import FrenetSerret_calc_pos
-from invariants_python.class_frenetserret_generation_position import FrenetSerret_gen_pos
+from invariants_py.class_frenetserret_calculation_reformulation_position import FrenetSerret_calc_pos
+from invariants_py.class_frenetserret_generation_position import FrenetSerret_gen_pos
 from IPython.display import clear_output
 
 data_location = parent + '/data/beer_1.txt'

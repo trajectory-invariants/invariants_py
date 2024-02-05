@@ -7,7 +7,7 @@ optimization problems for calculating invariants and generating new trajectories
 
 import sys
 sys.path.append('../helper_programs')
-import invariants_python.plotters
+import invariants_py.plotters
 import time
 import csv
 import numpy as np
@@ -21,7 +21,7 @@ import pickle
 import math
 
 import casadi as cas
-import invariants_python.integrator_functions as helper
+import invariants_py.integrator_functions as helper
 
 from collections import OrderedDict
 
@@ -1717,9 +1717,9 @@ class MotionTrajectory:
 
 
 if __name__ == "__main__":
-    testfile = "/home/roboticskuleuven/catkin_ws/src/invariants_python/data/motion_profiles/single_pose.csv"
-    testfile = "/home/roboticskuleuven/catkin_ws/src/invariants_python/data_old/sinus.txt"
-#    testfile = "/home/roboticskuleuven/catkin_ws/src/invariants_python/data_old/MPC_handover_data.txt"
+    testfile = "/home/roboticskuleuven/catkin_ws/src/invariants_py/data/motion_profiles/single_pose.csv"
+    testfile = "/home/roboticskuleuven/catkin_ws/src/invariants_py/data_old/sinus.txt"
+#    testfile = "/home/roboticskuleuven/catkin_ws/src/invariants_py/data_old/MPC_handover_data.txt"
     testfile = "data/motion_tajectories/recorded_motion.csv"
     descriptor = MotionTrajectory(testfile, invariantType='timebased')
     poses = descriptor.getPosesFromInvariantSignature(descriptor.getInvariantSignature())

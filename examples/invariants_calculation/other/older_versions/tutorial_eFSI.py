@@ -1,6 +1,6 @@
 import sys
 import os 
-# setting the path to invariants_python
+# setting the path to invariants_py
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 parent = os.path.dirname(parent)
@@ -8,7 +8,7 @@ parent = os.path.dirname(parent)
 parent = os.path.dirname(parent)
 sys.path.append(parent)
 
-import invariants_python.invariant_descriptor_class as invars
+import invariants_py.invariant_descriptor_class as invars
 #import numpy as np
 
 # Initialization
