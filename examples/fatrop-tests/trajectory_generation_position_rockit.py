@@ -19,7 +19,7 @@ from IPython.display import clear_output
 import matplotlib
 import invariants_python.plotters as pl
 
-matplotlib.use('TkAgg') #default backend
+#matplotlib.use('TkAgg') #default backend
 
 #%%
 
