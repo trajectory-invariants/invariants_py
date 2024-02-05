@@ -9,15 +9,13 @@ stages:
   - install
   - test
 
-before_script:
-  - pip install virtualenv
-  - virtualenv venv
-  - source venv/bin/activate
-
 install_package:
   stage: install
   script:
     # invariants-py installation
+    - pip install virtualenv
+    - virtualenv venv
+    - source venv/bin/activate
     - pip install .
 
     #fatrop installation
@@ -35,9 +33,21 @@ install_package:
     - cd rockit
     - pip install .
 
+    # Cache the installation
+    - tar czf package_cache.tar.gz venv
+
+  artifacts:
+    paths:
+      - package_cache.tar.gz
+
 test_examples:
   stage: test
   script:
+    # Restore the package cache
+    - tar xzf package_cache.tar.gz
+    - source venv/bin/activate
+
+    # Run examples
     - python run_all_examples.py
     #python -m pytest tests/
 
