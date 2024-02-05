@@ -125,7 +125,7 @@ old_progress = 0.0
 calculate_trajectory = init_vals_calculate_trajectory
 movingframes = init_vals_movingframes
 
-matplotlib.use('Qt5Agg') #backend for interactive plotting, pip install pyqt5
+#matplotlib.use('Qt5Agg') #backend for interactive plotting, pip install pyqt5
 
 plt.ion() # interactive plotting, necessary for updating the plot
 fig_traj = plt.figure(figsize=(8, 8)) # plot showing update of progress
