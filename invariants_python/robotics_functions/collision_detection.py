@@ -41,7 +41,7 @@ def collision_detection(p_obj_demo, R_demo, position_bottle, opener_geom, tiltin
     for i in range(len(F1)):
         F1[i,:] = [1+2*i, 2+2*i, 4+2*i, 3+2*i]
 
-    ax.add_collection3d(Poly3DCollection(v_bottle[F1.astype(int)])) # plot the shell of the bottle
+    # ax.add_collection3d(Poly3DCollection(v_bottle[F1.astype(int)])) # plot the shell of the bottle
 
     # if mode == 'rpy':
     #     ax.view_init(elev=tilting_rotx, azim=tilting_roty)
