@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from scipy.spatial.transform import Rotation as R
-from invariants_py import GJK.geometry as GJK.geometry
-from invariants_py import GJK.compute_distance as GJK.compute_distance
+from invariants_py.GJK import geometry as GJK_geometry
+from invariants_py.GJK import compute_distance as GJK_compute_distance
 
 def collision_detection(p_obj_demo, R_demo, position_bottle, opener_geom, tilting_rotx, tilting_roty, tilting_rotz, mode,ax):
     # How many iterations to allow for collision detection.
@@ -59,10 +59,10 @@ def collision_detection(p_obj_demo, R_demo, position_bottle, opener_geom, tiltin
         v_opener = np.tile(p_obj_demo[j,:], (4,1)) + np.dot(R_demo[j,:,:], opener_geom[[0,18,20,2],:].T).T # include opener geometry
         ax.add_collection3d(Poly3DCollection([v_opener[fm]], color='r',alpha=0.1))
 
-        b = GJK.geometry.Polytope(v_bottle)
-        o = GJK.geometry.Polytope(v_opener)
+        b = GJK_geometry.Polytope(v_bottle)
+        o = GJK_geometry.Polytope(v_opener)
 
-        set_GJK = GJK.compute_distance.ComputeDist([("bottle",b), ("opener",o)])
+        set_GJK = GJK_compute_distance.ComputeDist([("bottle",b), ("opener",o)])
         bo_dist[j,:] = set_GJK.GetDist("bottle", "opener")
         if np.any(bo_dist[j,:] < 0.00001):
             if collision_sample == 0:
