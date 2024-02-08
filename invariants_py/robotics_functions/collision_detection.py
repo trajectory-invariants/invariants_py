@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from scipy.spatial.transform import Rotation as R
-import GJK.geometry
-import GJK.compute_distance
+from invariants_py import GJK.geometry as GJK.geometry
+from invariants_py import GJK.compute_distance as GJK.compute_distance
 
 def collision_detection(p_obj_demo, R_demo, position_bottle, opener_geom, tilting_rotx, tilting_roty, tilting_rotz, mode,ax):
     # How many iterations to allow for collision detection.

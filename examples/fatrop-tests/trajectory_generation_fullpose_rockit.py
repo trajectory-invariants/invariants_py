@@ -22,8 +22,8 @@ from scipy.spatial.transform import Rotation as R
 from invariants_py.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 import invariants_py.plotters as pl
 import random
-import invariants_python.robotics_functions.collision_detection as cd
-from invariants_python.reparameterization import interpR
+import invariants_py.robotics_functions.collision_detection as cd
+from invariants_py.reparameterization import interpR
 
 #%%
 data_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/beer_1.txt'
