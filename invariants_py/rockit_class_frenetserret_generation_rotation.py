@@ -57,15 +57,17 @@ class FrenetSerret_gen_rot:
         ocp.subject_to(ocp.at_t0(self.tril_vec(R_obj.T @ R_obj - np.eye(3))==0.))
         
         # Boundary constraints
-        ocp.subject_to(ocp.at_t0(self.tril_vec_no_diag(R_r - R_r_start)) == 0.)
-        ocp.subject_to(ocp.at_tf(self.tril_vec_no_diag(R_r - R_r_end)) == 0.)
-        ocp.subject_to(ocp.at_t0(self.tril_vec_no_diag(R_obj - R_obj_start)) == 0.)
-        ocp.subject_to(ocp.at_tf(self.tril_vec_no_diag(R_obj - R_obj_end)) == 0.)
+        ocp.subject_to(ocp.at_t0(self.tril_vec_no_diag(R_r.T @ R_r_start - np.eye(3)) == 0.))
+        ocp.subject_to(ocp.at_tf(self.tril_vec_no_diag(R_r.T @ R_r_end - np.eye(3)) == 0.))
+        ocp.subject_to(ocp.at_t0(self.tril_vec_no_diag(R_obj.T @ R_obj_start - np.eye(3)) == 0.))
+        ocp.subject_to(ocp.at_tf(self.tril_vec_no_diag(R_obj.T @ R_obj_end - np.eye(3))==0.))
             
         # Dynamic constraints
         (R_r_plus1, R_obj_plus1) = integrators.geo_integrator_rot(R_r, R_obj, U, h)
         # Integrate current state to obtain next state (next rotation and position)
-        ocp.set_next(R_obj,R_obj_plus1)
+        ocp.set_next(R_obj_x,R_obj_plus1[:,0])
+        ocp.set_next(R_obj_y,R_obj_plus1[:,1])
+        ocp.set_next(R_obj_z,R_obj_plus1[:,2])
         ocp.set_next(R_r_x,R_r_plus1[:,0])
         ocp.set_next(R_r_y,R_r_plus1[:,1])
         ocp.set_next(R_r_z,R_r_plus1[:,2])
@@ -73,16 +75,21 @@ class FrenetSerret_gen_rot:
         #%% Specifying the objective
 
         # Fitting constraint to remain close to measurements
-        objective = ocp.sum(1/window_len*cas.dot(w_invars*(U - U_demo),w_invars*(U - U_demo)))
+        objective = ocp.sum(1/window_len*cas.dot(w_invars*(U - U_demo),w_invars*(U - U_demo)),include_last=True)
 
         #%% Define solver and save variables
         ocp.add_objective(objective)
         if fatrop_solver:
             ocp.method(rockit.external_method('fatrop' , N=window_len-1))
-            ocp._method.set_name("second_problem")
+            # ocp._method.set_name("generation_rotation")
+            # TEMPORARY SOLUTION TO HAVE ONLINE GENERATION
+            import random
+            import string
+            rand = "".join(random.choices(string.ascii_lowercase))
+            ocp._method.set_name("generation_rotation_"+rand)
         else:
             ocp.method(rockit.MultipleShooting(N=window_len-1))
-            ocp.solver('ipopt', {'expand':True})
+            ocp.solver('ipopt', {'expand':True, 'ipopt.print_info_string': 'yes'})
             # ocp.solver('ipopt',{"print_time":True,"expand":True},{'tol':1e-4,'print_level':0,'ma57_automatic_scaling':'no','linear_solver':'mumps','max_iter':100})
         
         # Save variables
@@ -113,7 +120,7 @@ class FrenetSerret_gen_rot:
         self.ocp.set_initial(self.R_obj_y, R_obj_init[:self.window_len,:,1].T) 
         self.ocp.set_initial(self.R_obj_z, R_obj_init[:self.window_len,:,2].T) 
         self.ocp.set_initial(self.R_r_x, R_r_init[:self.window_len,:,0].T) 
-        self.ocp.set_initial(self.R_r_y,  R_r_init[:self.window_len,:,1].T) 
+        self.ocp.set_initial(self.R_r_y, R_r_init[:self.window_len,:,1].T) 
         self.ocp.set_initial(self.R_r_z, R_r_init[:self.window_len,:,2].T) 
             
         # Initialize controls

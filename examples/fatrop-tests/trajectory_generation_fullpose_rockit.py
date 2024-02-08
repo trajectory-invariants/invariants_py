@@ -22,6 +22,9 @@ from scipy.spatial.transform import Rotation as R
 from invariants_py.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 import invariants_py.plotters as pl
 import random
+import invariants_python.robotics_functions.collision_detection as cd
+from invariants_python.reparameterization import interpR
+
 #%%
 data_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/beer_1.txt'
 trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
@@ -38,6 +41,7 @@ n_frames = 10
 indx = np.trunc(np.linspace(0,len(trajectory_orientation)-1,n_frames))
 indx = indx.astype(int)
 opener_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/opener.stl'
+bottle_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/bottle.stl'
 for i in indx:
     pl.plot_3d_frame(trajectory_position[i,:],trajectory_orientation[i,:,:],1,0.01,['red','green','blue'],ax)
     pl.plot_stl(opener_location,trajectory_position[i,:],trajectory_orientation[i,:,:],colour="c",alpha=0.2,ax=ax)    
@@ -114,9 +118,10 @@ R_obj_start = orthonormalize(optim_calc_results.Obj_frames[current_index])
 FSt_start = orthonormalize(optim_calc_results.FSt_frames[current_index])
 FSr_start = orthonormalize(optim_calc_results.FSr_frames[current_index])
 p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([0.1,0.1,0.1])
-rotate = R.from_euler('z', 30, degrees=True)
-R_obj_end =  orthonormalize(rotate.apply(optim_calc_results.Obj_frames[-1]))
-FSt_end = orthonormalize(optim_calc_results.FSt_frames[-1])
+alpha = 120
+rotate = R.from_euler('z', alpha, degrees=True)
+R_obj_end =  orthonormalize(rotate.as_matrix() @ optim_calc_results.Obj_frames[-1])
+FSt_end = orthonormalize(rotate.as_matrix() @ optim_calc_results.FSt_frames[-1])
 FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
 
 # define new class for OCP results
@@ -126,12 +131,18 @@ optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], 
 FS_online_generation_problem_pos = FS_gen_pos(window_len=number_samples,w_invars = np.array([5*10**1, 1.0, 1.0]), fatrop_solver = use_fatrop_solver)
 FS_online_generation_problem_rot = FS_gen_rot(window_len=number_samples,w_invars = 10**2*np.array([10**1, 1.0, 1.0]), fatrop_solver = use_fatrop_solver)
 
+# Linear initialization
+R_obj_init = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end]))
+R_r_init = interpR(np.linspace(0, 1, len(optim_calc_results.FSr_frames)), [0,1], np.array([FSr_start, FSr_end]))
+
 # Solve
 optim_gen_results.invariants[:,3:], optim_gen_results.Obj_pos, optim_gen_results.FSt_frames, tot_time_pos = FS_online_generation_problem_pos.generate_trajectory(U_demo = model_invariants[:,3:], p_obj_init = optim_calc_results.Obj_pos, R_t_init = optim_calc_results.FSt_frames, R_t_start = FSt_start, R_t_end = FSt_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize)
-optim_gen_results.invariants[:,:3], optim_gen_results.Obj_frames, optim_gen_results.FSr_frames, tot_time_rot = FS_online_generation_problem_rot.generate_trajectory(U_demo = model_invariants[:,:3], R_obj_init = optim_calc_results.Obj_frames, R_r_init = optim_calc_results.FSr_frames, R_r_start = FSr_start, R_r_end = FSr_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
+optim_gen_results.invariants[:,:3], optim_gen_results.Obj_frames, optim_gen_results.FSr_frames, tot_time_rot = FS_online_generation_problem_rot.generate_trajectory(U_demo = model_invariants[:,:3], R_obj_init = R_obj_init, R_r_init = optim_calc_results.FSr_frames, R_r_start = FSr_start, R_r_end = FSr_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
 print('')
 print("TOTAL time to generate new trajectory: ")
 print(str(tot_time_pos + tot_time_rot) + "[s]")
+
+# optim_gen_results.Obj_frames = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end])) # JUST TO CHECK INITIALIZATION
 
 for i in range(len(optim_gen_results.Obj_frames)):
     optim_gen_results.Obj_frames[i] = orthonormalize(optim_gen_results.Obj_frames[i])
@@ -149,12 +160,44 @@ for i in indx_online:
     pl.plot_3d_frame(optim_calc_results.Obj_pos[i,:],optim_calc_results.Obj_frames[i,:,:],1,0.01,['red','green','blue'],ax)
     pl.plot_3d_frame(optim_gen_results.Obj_pos[i,:],optim_gen_results.Obj_frames[i,:,:],1,0.01,['red','green','blue'],ax)
     pl.plot_stl(opener_location,optim_gen_results.Obj_pos[i,:],optim_gen_results.Obj_frames[i,:,:],colour="r",alpha=0.2,ax=ax)
+r_bottle = 0.0145+0.01 # bottle radius + margin
+obj_pos = p_obj_end + [r_bottle*np.sin(alpha*pi/180) , -r_bottle*np.cos(alpha*pi/180), 0] # position of the bottle
+pl.plot_stl(bottle_location,obj_pos,np.eye(3),colour="tab:gray",alpha=1,ax=ax)
 pl.plot_orientation(optim_calc_results.Obj_frames,optim_gen_results.Obj_frames,current_index)
 
 pl.plot_invariants(optim_calc_results.invariants, optim_gen_results.invariants, arclength_n, progress_values)
 
-plt.show()
+fig99 = plt.figure(figsize=(14,8))
+ax99 = fig99.add_subplot(111, projection='3d')
+pl.plot_stl(opener_location,[0,0,0],optim_calc_results.Obj_frames[-1],colour="r",alpha=0.5,ax=ax99)
+pl.plot_stl(opener_location,[0,0,0],R_obj_end,colour="b",alpha=0.5,ax=ax99)
+pl.plot_stl(opener_location,[0,0,0],optim_gen_results.Obj_frames[-1],colour="g",alpha=0.5,ax=ax99)
 
+opener_dim_x = 0.04
+opener_dim_y = 0.15
+opener_dim_z = 0
+opener_points = 30
+offset = -0.02 # position of the hook where have contact with bottle
+opener_geom = np.zeros((opener_points,3))
+for j in range(opener_points // 3):
+    opener_geom[j*3, :] = [opener_dim_x/2, offset-j*offset, opener_dim_z]
+    opener_geom[j*3+1, :] = [0, offset-j*offset, opener_dim_z]
+    opener_geom[j*3+2, :] = [-opener_dim_x/2, offset-j*offset, opener_dim_z]
+
+tilting_angle_rotx_deg=0
+tilting_angle_roty_deg=0
+tilting_angle_rotz_deg=0
+mode = 'rpy'
+collision_flag, first_collision_sample, last_collision_sample = cd.collision_detection(optim_gen_results.Obj_pos,optim_gen_results.Obj_frames,obj_pos,opener_geom,tilting_angle_rotx_deg,tilting_angle_roty_deg,tilting_angle_rotz_deg,mode,ax)
+
+if collision_flag:
+    print("COLLISION DETECTED")
+    print("First collision sample: " + str(first_collision_sample))
+    print("Last collision sample: " + str(last_collision_sample))
+else:
+    print("NO COLLISION DETECTED")
+
+plt.show()
 #%% Visualization
 
 window_len = 20
