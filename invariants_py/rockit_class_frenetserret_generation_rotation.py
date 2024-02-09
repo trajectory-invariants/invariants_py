@@ -139,7 +139,7 @@ class FrenetSerret_gen_rot:
 
         # Solve the NLP
         sol = self.ocp.solve()
-        tot_time = self.ocp._method.myOCP.get_stats().time_total
+        tot_time = 1#self.ocp._method.myOCP.get_stats().time_total
         
         self.sol = sol
               

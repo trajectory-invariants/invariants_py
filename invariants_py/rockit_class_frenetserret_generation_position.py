@@ -137,7 +137,7 @@ class FrenetSerret_gen_pos:
         # Solve the NLP
         start_time = time.time()
         sol = self.ocp.solve()
-        tot_time = self.ocp._method.myOCP.get_stats().time_total
+        tot_time = 1#self.ocp._method.myOCP.get_stats().time_total
         end_time = time.time()
         
         self.sol = sol
