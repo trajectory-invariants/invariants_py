@@ -19,7 +19,7 @@ class FrenetSerret_gen_pos:
     def tril_vec_no_diag(self,input):
         return cas.vertcat(input[1,0], input[2,0], input[2,1])
     
-    def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, w_invars = (10**-3)*np.array([1.0, 1.0, 1.0]), max_iters = 300, fatrop_solver = False):
+    def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, max_iters = 300, fatrop_solver = False):
        
         #%% Create decision variables and parameters for the optimization problem
         
@@ -47,6 +47,7 @@ class FrenetSerret_gen_pos:
         
         U_demo = ocp.parameter(3,grid='control',include_last=True) # model invariants
         
+        w_invars = ocp.parameter(3,grid='control',include_last=True) # weights for invariants
 
         #%% Specifying the constraints
         
@@ -100,6 +101,7 @@ class FrenetSerret_gen_pos:
         self.p_obj = p_obj
         self.U = U
         self.U_demo = U_demo
+        self.w_invars = w_invars
         self.R_t_start = R_t_start
         self.R_t_end = R_t_end
         self.p_obj_start = p_obj_start
@@ -109,7 +111,7 @@ class FrenetSerret_gen_pos:
         self.ocp = ocp
         
         
-    def generate_trajectory(self,U_demo,p_obj_init,R_t_init,R_t_start,R_t_end,p_obj_start,p_obj_end,step_size):
+    def generate_trajectory(self,U_demo,p_obj_init,R_t_init,R_t_start,R_t_end,p_obj_start,p_obj_end, step_size, w_invars = (10**-3)*np.array([1.0, 1.0, 1.0]), w_high_start = 1, w_high_end = 0, w_high_invars = (10**-3)*np.array([1.0, 1.0, 1.0]), w_high_active = 0):
         #%%
         start_time = time.time()
 
@@ -130,14 +132,25 @@ class FrenetSerret_gen_pos:
 
         # Set values parameters
         self.ocp.set_value(self.h,step_size)
-        self.ocp.set_value(self.U_demo, U_demo.T)     
+        self.ocp.set_value(self.U_demo, U_demo.T)   
+        weights = np.zeros((len(U_demo),3))
+        if w_high_active:
+            for i in range(len(U_demo)):
+                if i >= w_high_start and i <= w_high_end:
+                    weights[i,:] = w_high_invars
+                else:
+                    weights[i,:] = w_invars
+        else:
+            for i in range(len(U_demo)):
+                weights[i,:] = w_invars
+        self.ocp.set_value(self.w_invars, weights.T)  
 
         end_time = time.time()
 
         # Solve the NLP
         start_time = time.time()
         sol = self.ocp.solve()
-        tot_time = 1#self.ocp._method.myOCP.get_stats().time_total
+        tot_time = 1#self.ocp._method.myOCP.get_stats().time_total # UNCOMMENT to calculate solution time with fatrop
         end_time = time.time()
         
         self.sol = sol
