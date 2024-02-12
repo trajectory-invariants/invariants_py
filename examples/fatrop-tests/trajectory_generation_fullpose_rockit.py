@@ -128,15 +128,24 @@ FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
 optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
 
 # specify optimization problem symbolically
-FS_online_generation_problem_pos = FS_gen_pos(window_len=number_samples,w_invars = np.array([5*10**1, 1.0, 1.0]), fatrop_solver = use_fatrop_solver)
-FS_online_generation_problem_rot = FS_gen_rot(window_len=number_samples,w_invars = 10**2*np.array([10**1, 1.0, 1.0]), fatrop_solver = use_fatrop_solver)
+FS_online_generation_problem_pos = FS_gen_pos(window_len=number_samples, fatrop_solver = use_fatrop_solver)
+FS_online_generation_problem_rot = FS_gen_rot(window_len=number_samples, fatrop_solver = use_fatrop_solver)
 
 # Linear initialization
 R_obj_init = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end]))
 R_r_init = interpR(np.linspace(0, 1, len(optim_calc_results.FSr_frames)), [0,1], np.array([FSr_start, FSr_end]))
 
+# Define OCP weights
+w_invars_pos = np.array([5*10**1, 1.0, 1.0])
+w_pos_high_active = 0
+w_pos_high_start = 60
+w_pos_high_end = number_samples
+w_invars_pos_high = 10*w_invars_pos
+
+w_invars_rot = 10**2*np.array([10**1, 1.0, 1.0])
+
 # Solve
-optim_gen_results.invariants[:,3:], optim_gen_results.Obj_pos, optim_gen_results.FSt_frames, tot_time_pos = FS_online_generation_problem_pos.generate_trajectory(U_demo = model_invariants[:,3:], p_obj_init = optim_calc_results.Obj_pos, R_t_init = optim_calc_results.FSt_frames, R_t_start = FSt_start, R_t_end = FSt_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize)
+optim_gen_results.invariants[:,3:], optim_gen_results.Obj_pos, optim_gen_results.FSt_frames, tot_time_pos = FS_online_generation_problem_pos.generate_trajectory(U_demo = model_invariants[:,3:], p_obj_init = optim_calc_results.Obj_pos, R_t_init = optim_calc_results.FSt_frames, R_t_start = FSt_start, R_t_end = FSt_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize, w_high_start = w_pos_high_start, w_high_end = w_pos_high_end, w_high_invars = w_invars_pos_high, w_invars = w_invars_pos, w_high_active = w_pos_high_active)
 optim_gen_results.invariants[:,:3], optim_gen_results.Obj_frames, optim_gen_results.FSr_frames, tot_time_rot = FS_online_generation_problem_rot.generate_trajectory(U_demo = model_invariants[:,:3], R_obj_init = R_obj_init, R_r_init = optim_calc_results.FSr_frames, R_r_start = FSr_start, R_r_end = FSr_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
 print('')
 print("TOTAL time to generate new trajectory: ")
@@ -206,8 +215,8 @@ window_len = 20
 optim_iter_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((window_len,6)))
 
 # specify optimization problem symbolically
-FS_online_generation_problem_pos = FS_gen_pos(window_len=window_len,w_invars = np.array([5*10**1, 1.0, 1.0]), fatrop_solver = use_fatrop_solver)
-FS_online_generation_problem_rot = FS_gen_rot(window_len=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]), fatrop_solver = use_fatrop_solver)
+FS_online_generation_problem_pos = FS_gen_pos(window_len=window_len, fatrop_solver = use_fatrop_solver)
+FS_online_generation_problem_rot = FS_gen_rot(window_len=window_len, fatrop_solver = use_fatrop_solver)
 
 
 current_progress = 0.0
@@ -239,8 +248,8 @@ while current_progress <= 1.0:
     FSr_end = optim_iter_results.FSr_frames[-1] 
 
     # Calculate remaining trajectory
-    optim_iter_results.invariants[:,3:], optim_iter_results.Obj_pos, optim_iter_results.FSt_frames, tot_time_pos = FS_online_generation_problem_pos.generate_trajectory(U_demo = model_invariants[:,3:], p_obj_init = optim_calc_results.Obj_pos, R_t_init = optim_calc_results.FSt_frames, R_t_start = FSt_start, R_t_end = FSt_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize)
-    optim_iter_results.invariants[:,:3], optim_iter_results.Obj_frames, optim_iter_results.FSr_frames, tot_time_rot = FS_online_generation_problem_rot.generate_trajectory(U_demo = model_invariants[:,:3], R_obj_init = optim_calc_results.Obj_frames, R_r_init = optim_calc_results.FSr_frames, R_r_start = FSr_start, R_r_end = FSr_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
+    optim_iter_results.invariants[:,3:], optim_iter_results.Obj_pos, optim_iter_results.FSt_frames, tot_time_pos = FS_online_generation_problem_pos.generate_trajectory(U_demo = model_invariants[:,3:], p_obj_init = optim_calc_results.Obj_pos, R_t_init = optim_calc_results.FSt_frames, R_t_start = FSt_start, R_t_end = FSt_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize, w_invars = w_invars_pos)
+    optim_iter_results.invariants[:,:3], optim_iter_results.Obj_frames, optim_iter_results.FSr_frames, tot_time_rot = FS_online_generation_problem_rot.generate_trajectory(U_demo = model_invariants[:,:3], R_obj_init = optim_calc_results.Obj_frames, R_r_init = optim_calc_results.FSr_frames, R_r_start = FSr_start, R_r_end = FSr_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize, w_invars = w_invars_rot)
     print('')
     print("TOTAL time to generate new trajectory: ")
     print(str(tot_time_pos + tot_time_rot) + "[s]")
@@ -295,8 +304,8 @@ FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
 optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
 
 # specify optimization problem symbolically
-FS_online_generation_problem_pos = FS_gen_pos(window_len=number_samples,w_invars = np.array([5*10**1, 1.0, 1.0]), fatrop_solver = use_fatrop_solver)
-FS_online_generation_problem_rot = FS_gen_rot(window_len=number_samples,w_invars = 10**2*np.array([10**1, 1.0, 1.0]), fatrop_solver = use_fatrop_solver)
+FS_online_generation_problem_pos = FS_gen_pos(window_len=number_samples, fatrop_solver = use_fatrop_solver)
+FS_online_generation_problem_rot = FS_gen_rot(window_len=number_samples, fatrop_solver = use_fatrop_solver)
 
 fig = plt.figure(figsize=(14,8))
 ax = fig.add_subplot(111, projection='3d')
