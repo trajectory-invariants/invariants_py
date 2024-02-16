@@ -15,6 +15,7 @@ from invariants_py.robotics_functions.orthonormalize_rotation import orthonormal
 import invariants_py.plotters as pl
 from invariants_py.reparameterization import interpR
 import pickle
+import invariants_py.SO3 as SO3
 
 # define class for OCP results
 class OCP_results:
@@ -39,7 +40,7 @@ new_stepsize = progress_values[1] - progress_values[0]
 current_index = 0
 R_obj_start = orthonormalize(optim_calc_results.Obj_frames[current_index])
 FSr_start = orthonormalize(optim_calc_results.FSr_frames[current_index])
-alpha = 150
+alpha = 130
 rotate = R.from_euler('z', alpha, degrees=True)
 R_obj_end =  orthonormalize(rotate.as_matrix() @ optim_calc_results.Obj_frames[-1])
 FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
@@ -48,14 +49,17 @@ FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
 optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
 
 # specify optimization problem symbolically
-FS_online_generation_problem_rot = FS_gen_rot(window_len=number_samples, fatrop_solver = 1)
+FS_online_generation_problem_rot = FS_gen_rot(window_len=number_samples, fatrop_solver = 0)
 
 # Linear initialization
 R_obj_init = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end]))
 R_r_init = interpR(np.linspace(0, 1, len(optim_calc_results.FSr_frames)), [0,1], np.array([FSr_start, FSr_end]))
 
+angle = np.linalg.norm(SO3.logm(R_obj_start.T @ R_obj_end)/np.sqrt(2))
+U_init = np.tile(np.array([angle,0,0]),(100,1))
+
 # Solve
-optim_gen_results.invariants[:,:3], optim_gen_results.Obj_frames, optim_gen_results.FSr_frames, tot_time_rot = FS_online_generation_problem_rot.generate_trajectory(U_demo = model_invariants[:,:3], R_obj_init = R_obj_init, R_r_init = R_r_init, R_r_start = FSr_start, R_r_end = FSr_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
+optim_gen_results.invariants[:,:3], optim_gen_results.Obj_frames, optim_gen_results.FSr_frames, tot_time_rot = FS_online_generation_problem_rot.generate_trajectory(U_demo = model_invariants[:,:3], U_init = U_init, R_obj_init = R_obj_init, R_r_init = R_r_init, R_r_start = FSr_start, R_r_end = FSr_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
 
 
 for i in range(len(optim_gen_results.Obj_frames)):
