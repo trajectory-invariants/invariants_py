@@ -118,7 +118,7 @@ R_obj_start = orthonormalize(optim_calc_results.Obj_frames[current_index])
 FSt_start = orthonormalize(optim_calc_results.FSt_frames[current_index])
 FSr_start = orthonormalize(optim_calc_results.FSr_frames[current_index])
 p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([0.1,0.1,0.1])
-alpha = 120
+alpha = 30
 rotate = R.from_euler('z', alpha, degrees=True)
 R_obj_end =  orthonormalize(rotate.as_matrix() @ optim_calc_results.Obj_frames[-1])
 FSt_end = orthonormalize(rotate.as_matrix() @ optim_calc_results.FSt_frames[-1])
