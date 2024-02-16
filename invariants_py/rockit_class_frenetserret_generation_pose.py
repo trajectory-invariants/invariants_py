@@ -109,7 +109,7 @@ class FrenetSerret_gen_pose:
             import random
             import string
             rand = "".join(random.choices(string.ascii_lowercase))
-            ocp._method.set_name("generation_pose_"+rand)
+            ocp._method.set_name("/codegen/generation_pose_"+rand)
         else:
             ocp.method(rockit.MultipleShooting(N=window_len-1))
             ocp.solver('ipopt', {'expand':True})

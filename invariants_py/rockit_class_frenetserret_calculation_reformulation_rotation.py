@@ -90,7 +90,7 @@ class FrenetSerret_calc_rot:
         ocp.add_objective(objective)
         if fatrop_solver:
             ocp.method(rockit.external_method('fatrop' , N=window_len-1))
-            ocp._method.set_name("reformulation_rotation")
+            ocp._method.set_name("/codegen/reformulation_rotation")
         else:
             ocp.method(rockit.MultipleShooting(N=window_len-1))
             ocp.solver('ipopt', {'expand':True})

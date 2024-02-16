@@ -18,6 +18,8 @@ class FrenetSerret_gen_rot:
         return cas.vertcat(input[0,0], input[1,1], input[2,2], input[1,0], input[2,0], input[2,1])
     def tril_vec_no_diag(self,input):
         return cas.vertcat(input[1,0], input[2,0], input[2,1])
+    def diag(self,input):
+        return cas.vertcat(input[0,0], input[1,1], input[2,2])
     
     def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, max_iters = 300, fatrop_solver = False):
        
@@ -87,7 +89,7 @@ class FrenetSerret_gen_rot:
             import random
             import string
             rand = "".join(random.choices(string.ascii_lowercase))
-            ocp._method.set_name("generation_rotation_"+rand)
+            ocp._method.set_name("/codegen/generation_rotation_"+rand)
         else:
             ocp.method(rockit.MultipleShooting(N=window_len-1))
             ocp.solver('ipopt', {'expand':True, 'ipopt.print_info_string': 'yes'})

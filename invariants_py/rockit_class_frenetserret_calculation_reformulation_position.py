@@ -87,7 +87,7 @@ class FrenetSerret_calc_pos:
         ocp.add_objective(objective)
         if fatrop_solver:
             ocp.method(rockit.external_method('fatrop' , N=window_len-1))
-            ocp._method.set_name("reformulation_position")
+            ocp._method.set_name("codegen/reformulation_position")
         else:
             ocp.method(rockit.MultipleShooting(N=window_len-1))
             ocp.solver('ipopt', {'expand':True, 'ipopt.print_info_string':'yes'})
