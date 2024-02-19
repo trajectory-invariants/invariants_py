@@ -85,6 +85,44 @@ def geo_integrator_tra(R_t, p_obj, u, h):
 
     return (R_t_plus1, p_obj_plus1)
 
+def geo_integrator_tra_sequential(R_t, p_obj, u, h):
+    """Integrate invariants over interval h starting from a current state (object pose + moving frames)"""
+    # Define a geometric integrator for eFSI,
+    # (meaning rigid-body motion is perfectly integrated assuming constant invariants)
+    
+    
+    # object translation speed
+    # curvature speed translational Frenet-Serret
+    # torsion speed translational Frenet-Serret
+    
+    i4 = u[0]@h
+    i5 = u[1]@h
+    i6 = u[2]@h
+
+    v = cas.vertcat(i4,0,0)
+    
+    rot_z = R_t*0.
+    rot_z[0,0] = cas.cos(i5)
+    rot_z[1,1] = cas.cos(i5)
+    rot_z[0,1] = -cas.sin(i5)
+    rot_z[1,0] = cas.sin(i5)
+    rot_z[2,2] = 1
+    
+    rot_x = R_t*0.
+    rot_x[0,0] = 1
+    rot_x[1,1] = cas.cos(i6)
+    rot_x[2,2] = cas.cos(i6)
+    rot_x[1,2] = -cas.sin(i6)
+    rot_x[2,1] = cas.sin(i6)
+
+    deltaR = rot_z @ rot_x
+    
+    R_t_plus1 = R_t @ deltaR
+    p_obj_plus1 = R_t @ v + p_obj
+
+    return (R_t_plus1, p_obj_plus1)
+
+
 def geo_integrator_rot(R_r, R_obj, u, h):
     """Integrate invariants over interval h starting from a current state (object pose + moving frames)"""
     # Define a geometric integrator for eFSI,
@@ -178,6 +216,24 @@ def define_geom_integrator_tra_FSI_casadi(h):
 
     ## Define a geometric integrator for eFSI, (meaning rigid-body motion is perfectly integrated assuming constant invariants)
     (R_t_plus1, p_obj_plus1) = geo_integrator_tra(R_t, p_obj, u, h)
+    out_plus1 = cas.vertcat(cas.vec(R_t_plus1),  p_obj_plus1)
+    integrator = cas.Function("phi", [x,u,h] , [out_plus1])
+    
+    return integrator
+
+def define_geom_integrator_tra_FSI_casadi_sequential(h):
+    ## Generate optimal eFSI trajectory
+    # System states
+    R_t  = cas.MX.sym('R_t',3,3) # translational Frenet-Serret frame
+    p_obj = cas.MX.sym('p_obj',3,1) # object position
+    x = cas.vertcat(cas.vec(R_t), p_obj)
+    #np = length(R_obj(:)) + length(p_obj)
+
+    # System controls (invariants)
+    u = cas.MX.sym('i',3,1)
+
+    ## Define a geometric integrator for eFSI, (meaning rigid-body motion is perfectly integrated assuming constant invariants)
+    (R_t_plus1, p_obj_plus1) = geo_integrator_tra_sequential(R_t, p_obj, u, h)
     out_plus1 = cas.vertcat(cas.vec(R_t_plus1),  p_obj_plus1)
     integrator = cas.Function("phi", [x,u,h] , [out_plus1])
     

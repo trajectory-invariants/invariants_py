@@ -152,9 +152,11 @@ def reparameterize_positiontrajectory_arclength(trajectory, N=0):
     P = trajectory
    
     Pdiff = np.linalg.norm(np.diff(P,axis=0),axis=1)
-    s = np.append(np.zeros(1),np.cumsum(Pdiff))
-    s_n = np.linspace(0,s[-1],N)
-    P_geom = np.array([np.interp(s_n, s, P[:,i]) for i in range(3)]).T
+    arclength_wrt_time = np.append(np.zeros(1),np.cumsum(Pdiff))
+    arclength_equidistant = np.linspace(0,arclength_wrt_time[-1],N)
+    arclength_stepsize = arclength_equidistant[1]-arclength_equidistant[0]
+    
+    P_geom = np.array([np.interp(arclength_equidistant, arclength_wrt_time, P[:,i]) for i in range(3)]).T
     trajectory_geom = P_geom
        
-    return trajectory_geom, s, s_n, len(s_n), 1/len(s)
+    return trajectory_geom, arclength_wrt_time, arclength_equidistant, len(arclength_equidistant), 1/len(arclength_equidistant)
