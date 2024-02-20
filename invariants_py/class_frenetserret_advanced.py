@@ -25,13 +25,12 @@ def set_default_ocp_formulation_generic():
         pass
     ocp_formulation = formulation()
     ocp_formulation.progress_domain = 'geometric'                    # options: 'time', 'geometric'
-    ocp_formulation.window_len = 100                                 # options:  100, 'data_length'
+    ocp_formulation.window_len = 100                                 # number of samples
     ocp_formulation.orientation_representation = 'matrix_9'          # options: 'matrix_9', 'matrix_6'
     ocp_formulation.orientation_ortho_constraint = 'upper_triangular_6' # options for matrix_9: 'full_matrix', 'upper_triangular_6' 
                                                                      # additional options for 'matrix_6': 'upper_triangular_3' 
     ocp_formulation.integrator = 'sequential'                        # options: 'continuous', 'sequential'
     ocp_formulation.objective = 'weighted_sum'                       # options: 'weighted_sum', 'epsilon_constrained'
-    ocp_formulation.force_smooth_invariants = True                   # when true, the difference in invariants will also be minimized
     ocp_formulation.initialization = 'analytical_formulas'           # options: 'analytical_formulas'
     ocp_formulation.bool_enforce_positive_invariants = [False,False] # options:  [True, True]   -> first two invariants positive
                                                                      #           [True, False]  -> first invariant positive
@@ -40,17 +39,15 @@ def set_default_ocp_formulation_generic():
 
 def set_default_ocp_formulation_calculation_specific(ocp_formulation):
     ocp_formulation.reparametrize_bool = True                        # options:  True, False
-    ocp_formulation.reparametrize_order = 'before_ocp'               # options: 'before_ocp', 'after_ocp'
-    if ocp_formulation.objective == 'weighted_sum':     
-        ocp_formulation.objective_weights = [10**(3), 10**(-4), 10**(-4)] # weight on [MS position error, MS invariants, MS difference in invariants]
-    elif ocp_formulation.objective == 'epsilon_constrained':  
-        ocp_formulation.objective_rms_tol = 0.001                    # tolerance on RMS position error
-                                                      
+    ocp_formulation.reparametrize_order = 'before_ocp'               # options: 'before_ocp', 'after_ocp'  
+    ocp_formulation.objective_weights = [10**(7), 1, 10**(-1)]       # weight on [MS position error, MS invariants = 1!, MS difference in invariants]
+    ocp_formulation.objective_rms_tol = 0.001                        # tolerance on RMS position error
     return ocp_formulation
 
 def set_default_ocp_formulation_generation_specific(ocp_formulation):
     
     ocp_formulation.objective_weights = [10**(-2), 10**(2), 10**(0)]  # weight on [MS position error, MS invariants, MS difference in invariants]
+    ocp_formulation.activation_function = 'off'                       # activation function on weights. options: 'off', 'exp'
     
     ocp_formulation.initial_pos = [0,0,0]                          
     ocp_formulation.magnitude_vel_start = 0                           # numeric value or 'free'
@@ -98,15 +95,19 @@ class FrenetSerret_calculation:
         self = define_generic_OCP_problem(self)
         
         # Set extra application specific features (applicable to calculation)
+        self = set_parameters_ocp_calculation_specific(self)
         self = define_system_objective_calculation_specific(self)
         self.opti.minimize(self.objective)    
         
     def calculate_invariants_global(self,input_data):
-        if self.ocp_formulation.reparametrize_bool: # geometric
-            self = reparametrize_input_data(self,input_data)
-        else:                                       # timebased
-            self.position_data = input_data.position_data
-            self.stepsize = input_data.time_vector[1]-input_data.time_vector[0]
+        # Set timebased settings
+        self = resample_position_data_time(self,input_data)
+            
+        # If geometric domain + reparameterization ---> overwrite timebased settings with geometric settings
+        if self.ocp_formulation.progress_domain == 'geometric': 
+            if self.ocp_formulation.reparametrize_bool: 
+                if self.ocp_formulation.reparametrize_order == 'before_ocp':
+                    self = reparametrize_input_data(self,input_data)
         
         self.reference_invariants = np.zeros([self.window_len-1,3])  # case calculation, reference invariants are set to zero!
         self = set_parameters_ocp_generic(self)
@@ -230,6 +231,9 @@ def define_system_parameters_generic(self):
     # ---> for generation, these parameters correspond to the invariants retrieved from the invariants calculation (shape-preserving trajectory generation)
     self.U_ref = self.opti.parameter(3,self.window_len-1) # FS-invariants (v,w2,w3)
     
+    # Weights ---> corresponding to activation function
+    self.activation_weights = self.opti.parameter(1,self.window_len-1)
+    
     # stepsize in the OCP
     self.h = self.opti.parameter(1,1)
     return self
@@ -286,18 +290,15 @@ def define_system_objective_generic(self):
     ms_U_error = 0
     for k in range(self.window_len-1):
         err_U = self.U[:,k]-self.U_ref[:,k]
-        ms_U_error = ms_U_error + cas.dot(err_U,err_U)
+        ms_U_error = ms_U_error + self.activation_weights[k]*cas.dot(err_U,err_U)
     self.ms_U_error = ms_U_error/(self.window_len-1)
     
-    if self.ocp_formulation.force_smooth_invariants:
-        # Smoothing penalization to ensure smooth invariants (for both calculation and generation)
-        ms_U_diff = 0
-        for k in range(self.window_len-2):
-            U_diff = self.U[:,k+1] - self.U[:,k] # deviation in invariants
-            ms_U_diff = ms_U_diff + cas.dot(U_diff,U_diff)
-        self.ms_U_diff = ms_U_diff/(self.window_len-2)
-    else:
-        self.ms_U_diff = 0
+    # Smoothing penalization to ensure smooth invariants (for both calculation and generation)
+    ms_U_diff = 0
+    for k in range(self.window_len-2):
+        U_diff = self.U[:,k+1] - self.U[:,k] # deviation in invariants
+        ms_U_diff = ms_U_diff + cas.dot(U_diff,U_diff)
+    self.ms_U_diff = ms_U_diff/(self.window_len-2)
     
     return self
 
@@ -305,7 +306,7 @@ def set_parameters_ocp_generic(self):
     # Set values parameters
     N = self.window_len
     for k in range(N):
-        self.opti.set_value(self.p_obj_m[:,k], self.position_data[k,:].T)    
+        self.opti.set_value(self.p_obj_m[:,k], self.position_data[k,:].T)   
         
     for k in range(N-1):
         self.opti.set_value(self.U_ref[:,k], self.reference_invariants[k,:].T)  
@@ -316,27 +317,36 @@ def set_parameters_ocp_generic(self):
 
 #%% Specific features for invariants calculation
 
+def set_parameters_ocp_calculation_specific(self):
+    # Set values parameters
+    for k in range(self.window_len-1):
+        self.opti.set_value(self.activation_weights[k], 1)   # just everywhere one
+    return self
+
 def define_system_objective_calculation_specific(self):
+    w = self.ocp_formulation.objective_weights
+    self.objective = w[1]*self.ms_U_error + w[2]*self.ms_U_diff
     if self.ocp_formulation.objective == 'weighted_sum':
-        w = self.ocp_formulation.objective_weights
-        self.objective = w[0]*self.ms_pos_error + w[1]*self.ms_U_error + w[2]*self.ms_U_diff
+        self.objective = self.objective + w[0]*self.ms_pos_error
     elif self.ocp_formulation.objective == 'epsilon_constrained':
         self.opti.subject_to(self.ms_pos_error/self.ocp_formulation.objective_rms_tol**2 < 1)
-        self.objective = self.ms_U_error # minimize absolute value invariants
     return self
             
+def resample_position_data_time(self,input_data):
+    total_time = input_data.time_vector[-1]-input_data.time_vector[0]
+    time_vector_new = np.linspace(0,total_time,self.ocp_formulation.window_len)
+    self.position_data = np.array([np.interp(time_vector_new, input_data.time_vector, input_data.position_data[:,i]) for i in range(3)]).T
+    self.stepsize = time_vector_new[1]-time_vector_new[0]
+    self.progress_vector = time_vector_new
+    return self
+
 def reparametrize_input_data(self,input_data):
     ocp_formulation = self.ocp_formulation
-    if ocp_formulation.reparametrize_bool == True:
-        if ocp_formulation.reparametrize_order == 'before_ocp':
-            if ocp_formulation.window_len == 'data_length': # number of samples defined by the data
-                position_data, arclength_wrt_time, arclength_equidistant, N, N_inv = reparam.reparameterize_positiontrajectory_arclength(input_data.position_data)
-            else:
-                N = ocp_formulation.window_len # predefined number of samples
-                position_data, arclength_wrt_time, arclength_equidistant, N, N_inv = reparam.reparameterize_positiontrajectory_arclength(input_data.position_data,N)
-            self.stepsize = arclength_equidistant[1]-arclength_equidistant[0]
-            self.position_data = position_data # rewrite raw position data with new reparametrized position data
-            self.progress_vector = arclength_equidistant 
+    N = ocp_formulation.window_len # predefined number of samples
+    position_data, arclength_wrt_time, arclength_equidistant, N, N_inv = reparam.reparameterize_positiontrajectory_arclength(input_data.position_data,N)
+    self.stepsize = arclength_equidistant[1]-arclength_equidistant[0]
+    self.position_data = position_data # rewrite raw position data with new reparametrized position data
+    self.progress_vector = arclength_equidistant 
     return self
         
 #%% Specific features for invariants generation
@@ -359,10 +369,16 @@ def set_initial_pos_generation_specific(self):
 
 def set_parameters_ocp_generation_specific(self):
     # Set values parameters
+    for k in range(self.window_len-1):
+        if self.ocp_formulation.activation_function == 'off':
+            self.opti.set_value(self.activation_weights[k], 1)  
+        elif self.ocp_formulation.activation_function == 'exp':
+            current_weight = np.e**(20*k/self.window_len)-1
+            if current_weight > 10**(6):
+                current_weight = 10**(6)
+            self.opti.set_value(self.activation_weights[k], current_weight) 
     self.opti.set_value(self.initial_pos, self.ocp_formulation.initial_pos)  
     self.opti.set_value(self.final_pos, self.ocp_formulation.final_pos) 
-    # self.opti.set_value(self.initial_R_fs, self.ocp_formulation.initial_R_fs) 
-    # self.opti.set_value(self.final_R_fs, self.ocp_formulation.final_R_fs) 
     return self
 
 def define_system_objective_generation_specific(self):
@@ -371,7 +387,8 @@ def define_system_objective_generation_specific(self):
     self = set_initial_FS_frame_gen_SOFT(self)
     self = set_final_FS_frame_gen_SOFT(self)
     self = set_final_pos_gen_SOFT(self)
-    self = set_geom_constraint_SOFT(self)
+    if self.ocp_formulation.progress_domain == 'geometric':
+        self = set_geom_constraint_SOFT(self)
     return self
 
 def set_initial_FS_frame_gen_SOFT(self):

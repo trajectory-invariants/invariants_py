@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
-import invariants_py.class_frenetserret_calculation_advanced as FS
+import invariants_py.class_frenetserret_advanced as FS
 import list_of_different_formulations_calculation as form
 
 
@@ -30,7 +30,7 @@ plt.ylabel('y')
 class input_data:
     pass
 input_data.position_data = position_data
-input_data.time_vector = np.linspace(0,10,200)
+input_data.time_vector = np.linspace(0,10,len(position_data[:,1]))
 
 
 #%%

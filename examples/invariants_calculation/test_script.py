@@ -9,7 +9,7 @@ from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
-import invariants_py.class_frenetserret_calculation_advanced as FS
+import invariants_py.class_frenetserret_advanced as FS
 
 #%%
 plt.close('all')
@@ -20,7 +20,7 @@ position_data = np.loadtxt(data_location, dtype='float')
 class input_data:
     pass
 input_data.position_data = position_data
-input_data.time_vector = np.linspace(0,10,200)
+input_data.time_vector = np.linspace(0,10,len(position_data[:,1]))
 
 #%% NOTES
 # As implemented below, the default settings of the OCP are used. If you would like to use custom settings, do the following : 
