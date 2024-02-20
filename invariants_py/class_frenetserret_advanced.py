@@ -45,7 +45,7 @@ def set_default_ocp_formulation_calculation_specific(ocp_formulation):
     return ocp_formulation
 
 def set_default_ocp_formulation_generation_specific(ocp_formulation):
-    
+
     ocp_formulation.objective_weights = [10**(-2), 10**(2), 10**(0)]  # weight on [MS position error, MS invariants, MS difference in invariants]
     ocp_formulation.activation_function = 'off'                       # activation function on weights. options: 'off', 'exp'
     
