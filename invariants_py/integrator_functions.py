@@ -117,6 +117,49 @@ def geo_integrator_rot(R_r, R_obj, u, h):
 
     return (R_r_plus1, R_obj_plus1)
 
+def geo_integrator_rot_sequential(R_r, R_obj, u, h):
+    """Integrate invariants over interval h starting from a current state (object pose + moving frames)"""
+    # Define a geometric integrator for eFSI,
+    # (meaning rigid-body motion is perfectly integrated assuming constant invariants)
+    
+    
+    # object rotational speed
+    # curvature speed rotational Frenet-Serret
+    # torsion speed rotational Frenet-Serret
+    
+    # TO DO: make this implementation more compact
+    i1 = u[0]@h
+    i2 = u[1]@h
+    i3 = u[2]@h
+    
+    rot_x_obj = R_obj*0.
+    rot_x_obj[0,0] = 1
+    rot_x_obj[1,1] = cas.cos(i1)
+    rot_x_obj[2,2] = cas.cos(i1)
+    rot_x_obj[1,2] = -cas.sin(i1)
+    rot_x_obj[2,1] = cas.sin(i1)
+    
+    rot_z = R_r*0.
+    rot_z[0,0] = cas.cos(i2)
+    rot_z[1,1] = cas.cos(i2)
+    rot_z[0,1] = -cas.sin(i2)
+    rot_z[1,0] = cas.sin(i2)
+    rot_z[2,2] = 1
+    
+    rot_x = R_r*0.
+    rot_x[0,0] = 1
+    rot_x[1,1] = cas.cos(i3)
+    rot_x[2,2] = cas.cos(i3)
+    rot_x[1,2] = -cas.sin(i3)
+    rot_x[2,1] = cas.sin(i3)
+
+    deltaR = rot_z @ rot_x
+    
+    R_obj_plus1 = (R_r @ rot_x_obj @ R_r.T) @ R_obj
+    R_r_plus1 = R_r @ deltaR
+
+    return (R_r_plus1, R_obj_plus1)
+
 def rodriguez_rot_form2(omega,h):
     """Return a rotation matrix which is the result of rotating with omega over time interval h"""
     omega_norm = cas.norm_2(omega)
