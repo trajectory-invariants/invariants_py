@@ -132,21 +132,21 @@ def geo_integrator_rot_sequential(R_r, R_obj, u, h):
     i2 = u[1]*h
     i3 = u[2]*h
     
-    rot_x_obj = cas.SX.zeros(3,3)
+    rot_x_obj = cas.MX.zeros(3,3)
     rot_x_obj[0,0] = 1
     rot_x_obj[1,1] = cas.cos(i1)
     rot_x_obj[2,2] = cas.cos(i1)
     rot_x_obj[1,2] = -cas.sin(i1)
     rot_x_obj[2,1] = cas.sin(i1)
     
-    rot_z = cas.SX.zeros(3,3)
+    rot_z = cas.MX.zeros(3,3)
     rot_z[0,0] = cas.cos(i2)
     rot_z[1,1] = cas.cos(i2)
     rot_z[0,1] = -cas.sin(i2)
     rot_z[1,0] = cas.sin(i2)
     rot_z[2,2] = 1
     
-    rot_x = cas.SX.zeros(3,3)
+    rot_x = cas.MX.zeros(3,3)
     rot_x[0,0] = 1
     rot_x[1,1] = cas.cos(i3)
     rot_x[2,2] = cas.cos(i3)
