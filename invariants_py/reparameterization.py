@@ -56,7 +56,7 @@ def interpR(x_n, x_p, R_p):
             R_n[i,:,:] = R0 @ SO3.expm( ((x_n[i]-x0)/(x1-x0)) * SO3.logm(R0.T @ R1) ) 
         else:
             R_n[i,:,:] = R0
-            
+
     return R_n
 
             
@@ -160,3 +160,40 @@ def reparameterize_positiontrajectory_arclength(trajectory, N=0):
     trajectory_geom = P_geom
        
     return trajectory_geom, arclength_wrt_time, arclength_equidistant, len(arclength_equidistant), 1/len(arclength_equidistant)
+
+
+def reparameterize_orientationtrajectory_angle(Rot,N_new=0):
+    """
+    Reparameterize a given orientation trajectory R(t) so that it becomes 
+    a function of angle T(s). The agnle is found from the rotational velocity vector
+
+    Parameters
+    ----------
+    trajectory : array [N,3,3]
+        Sequence of rotation matrices with original parameterization
+
+    Returns
+    -------
+    trajectory_geom : array [N,3,3]
+        Sequence of rotation matrices with angle parameterization
+    s : array
+        angle as a function of original parameterization
+
+    """
+    
+    N = np.size(Rot,0)
+    if N_new==0:
+        N_new = N
+    
+    theta = np.zeros((N-1,3))
+    for i in range(N-1):
+        diff_R = SO3.logm( Rot[i].T @ Rot[i+1] ) 
+        theta[i,:] = SO3.crossvec(diff_R)
+
+    theta_norm = np.linalg.norm(theta,axis=1)
+    s = np.append(np.zeros(1),np.cumsum(theta_norm))
+    s_n = np.linspace(0,s[-1],N_new)
+    
+    Rot_geom = interpR(s_n, s, Rot)
+            
+    return Rot_geom, s, s_n

@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
-import invariants_py.class_frenetserret_advanced as FS
+import invariants_py.FS_pos_bench as FS
 import list_of_different_formulations_generation as form
 
 
@@ -71,15 +71,15 @@ FS_generation_problem = FS.FrenetSerret_generation()
 
 # Ideally retrieved by other module (e.g. estimator of current location)
 initial_pos = calculated_trajectory[0,:]
-magnitude_vel_start = 1   # ---> geometric 
+magnitude_vel_start = 1.0   # ---> geometric 
 direction_vel_start = calculated_R_fs[0][0:3,0]   
 direction_acc_start = calculated_R_fs[0][0:3,1]   
  
 # Ideally retrieved by other module (e.g. grasp location identification)
-final_pos = calculated_trajectory[-1,:] + [0.05,-0.1,0]
-magnitude_vel_end = 1   # ---> geometric 
-direction_vel_end = [0,1,0]                      
-direction_acc_end = [-1,0,0]  
+final_pos = calculated_trajectory[-1,:] + np.array([0.05,-0.1,0])
+magnitude_vel_end = 1.0   # ---> geometric 
+direction_vel_end = np.array([0,1,0])                 
+direction_acc_end = np.array([-1,0,0])  
 
 
 #%% BENCHMARK DIFFERENT FORMULATIONS
