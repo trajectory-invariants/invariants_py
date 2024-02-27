@@ -127,9 +127,12 @@ class FrenetSerret_gen_rot:
         self.ocp = ocp
         
          
-    def generate_trajectory(self,U_demo,U_init,R_obj_init,R_r_init,R_r_start,R_r_end,R_obj_start,R_obj_end,step_size, w_invars = (10**-3)*np.array([1.0, 1.0, 1.0]), w_high_start = 1, w_high_end = 0, w_high_invars = (10**-3)*np.array([10**6, 1.0, 1.0]), w_high_active = 0):
+    def generate_trajectory(self,U_demo,R_obj_init,R_r_init,R_r_start,R_r_end,R_obj_start,R_obj_end,step_size, U_init=None,w_invars = (10**-3)*np.array([1.0, 1.0, 1.0]), w_high_start = 1, w_high_end = 0, w_high_invars = (10**-3)*np.array([10**6, 1.0, 1.0]), w_high_active = 0):
         #%%
       
+        if U_init==None:
+            U_init = U_demo
+        
         # Initialize states
         self.ocp.set_initial(self.R_obj_x, R_obj_init[:self.window_len,:,0].T) 
         self.ocp.set_initial(self.R_obj_y, R_obj_init[:self.window_len,:,1].T) 
