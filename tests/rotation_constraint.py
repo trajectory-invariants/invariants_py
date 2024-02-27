@@ -16,7 +16,7 @@ import invariants_py.plotters as pl
 from invariants_py.reparameterization import interpR
 import pickle
 import invariants_py.SO3 as SO3
-
+import os
 plt.close('all')
 # define class for OCP results
 class OCP_results:
@@ -29,7 +29,8 @@ class OCP_results:
         self.invariants = invariants
         
 # Read dictionary pkl file
-with open('inv_model.pkl', 'rb') as fp:
+data_location = os.path.dirname(os.path.realpath(__file__)) + '/inv_model.pkl'
+with open(data_location, 'rb') as fp:
     optim_calc_results = pickle.load(fp)
 
 number_samples = 100
@@ -86,7 +87,7 @@ plt.plot(optim_gen_results.invariants[:,0])
 
 fig99 = plt.figure(figsize=(14,8))
 ax99 = fig99.add_subplot(111, projection='3d')
-opener_location = '../data/opener.stl'
+opener_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/opener.stl'
 pl.plot_stl(opener_location,[0,0,0],optim_calc_results.Obj_frames[-1],colour="r",alpha=0.5,ax=ax99)
 pl.plot_stl(opener_location,[0,0,0],R_obj_end,colour="b",alpha=0.5,ax=ax99)
 pl.plot_stl(opener_location,[0,0,0],optim_gen_results.Obj_frames[-1],colour="g",alpha=0.5,ax=ax99)
