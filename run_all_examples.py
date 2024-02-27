@@ -1,37 +1,45 @@
 import os
 import subprocess
 
-# Directory containing the examples
-dir_name = "examples"
+# Directories containing the examples and tests
+directories = ["examples", "tests"]
 
-# Initialize an empty list to hold examples that fail to execute
-failed_examples = []
+# Initialize an empty list to hold examples and tests that fail to execute
+failed_scripts = []
 
-# Use os.walk to traverse all subdirectories
-for root, dirs, files in os.walk(dir_name):
-    # Get a list of all Python examples in the current directory
-    examples = [f for f in files if f.endswith('.py')]
+# Function to run scripts in a directory
+def run_scripts(directory):
+    failed_scripts_local = []
+    for root, dirs, files in os.walk(directory):
+        # Get a list of all Python scripts in the current directory
+        scripts = [f for f in files if f.endswith('.py')]
 
-    # Iterate over each example
-    for example in examples:
-        # Construct the full example path
-        example_path = os.path.join(root, example)
-        
-        # Print the name of the example being run
-        print(f"Running example: {example_path}")
-       
-        # Try to execute the example
-        try:
-            subprocess.check_output(["python", example_path])
-        except subprocess.CalledProcessError:
-            # If an error occurs, add the example to the list of failed examples
-            failed_examples.append(example_path)
+        # Iterate over each script
+        for script in scripts:
+            # Construct the full script path
+            script_path = os.path.join(root, script)
 
-# Print out the examples that failed to execute
-if failed_examples:
-    print("The following examples failed to execute:")
-    for example in failed_examples:
-        print(example)
-    raise Exception('One or more examples failed, see the above output')
+            # Print the name of the script being run
+            print(f"Running script: {script_path}")
+
+            # Try to execute the script
+            try:
+                subprocess.check_output(["python", script_path])
+            except subprocess.CalledProcessError:
+                # If an error occurs, add the script to the list of failed scripts
+                failed_scripts_local.append(script_path)
+
+    return failed_scripts_local
+
+# Run scripts for each directory
+for directory in directories:
+    failed_scripts.extend(run_scripts(directory))
+
+# Print out the scripts that failed to execute
+if failed_scripts:
+    print("The following scripts failed to execute:")
+    for script in failed_scripts:
+        print(script)
+    raise Exception('One or more scripts failed, see the above output')
 else:
-    print("All examples executed successfully.")
+    print("All scripts executed successfully.")
