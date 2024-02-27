@@ -6,40 +6,83 @@ Created on Sat Feb 24 09:47:35 2024
 """
 
 import numpy as np
-import scipy
-import casadi as cas
 import invariants_py.reparameterization as reparam
-import invariants_py.integrator_functions as integrators
-import FS_pos_advanced as FS_pos
-
+import invariants_py.FS_pos_bench as FS_pos
+import invariants_py.FS_rot_bench as FS_rot
 
 #%% OCP formulation FS invariants calculation
 
-# def preprocess_input_data_pose(self,input_data):
-#     # Set timebased settings
-#     self = resample_pose_data_time(self,input_data)
+def preprocess_input_data_pose(self,input_data):
+    # Set timebased settings
+    input_data = resample_pose_data_time(self,input_data)
+    # If geometric domain + reparameterization ---> overwrite timebased settings with geometric settings
+    if self.ocp_formulation_pos.progress_domain == 'geometric': 
+        if self.ocp_formulation_pos.reparametrize_bool: 
+                input_data = reparametrize_input_data_pose(self,input_data)
+    return input_data
+
+def null_operation(self,input_data):
+    self.position_data = input_data.position_data
+    self.rot_data = input_data.rotation_data
+    self.progress_vector = input_data.progress_vector
+    self.stepsize = input_data.stepsize
+    return self
+
+class FrenetSerret_calculation:
+
+    def __init__(self, ocp_formulation_pos = False, ocp_formulation_rot = False):
+
+        # if no custom properties are given in 'ocp_formulation', use our default ocp formulation
+        if not ocp_formulation_pos:
+            ocp_formulation_pos = FS_pos.set_default_ocp_formulation()
+            ocp_formulation_pos.progress_constraint = True                       
+        # if no custom properties are given in 'ocp_formulation', use our default ocp formulation
+        if not ocp_formulation_rot:
+            ocp_formulation_rot = FS_rot.set_default_ocp_formulation()
+            ocp_formulation_rot.progress_constraint = False
+        self.ocp_formulation_pos = ocp_formulation_pos
+        self.ocp_formulation_rot = ocp_formulation_rot
         
-#     # If geometric domain + reparameterization ---> overwrite timebased settings with geometric settings
-#     if self.ocp_formulation.progress_domain == 'geometric': 
-#         if self.ocp_formulation.reparametrize_bool: 
-#                 self = reparametrize_input_data_pose(self,input_data)
+    def calculate_invariants_global(self,input_data):
+        
+        input_data = preprocess_input_data_pose(self,input_data)
     
-#     return self
+        FS_calculation_problem_pos = FS_pos.FrenetSerret_calculation(self.ocp_formulation_pos)
+        calculation_output_pos = FS_calculation_problem_pos.calculate_invariants_global(input_data,null_operation)
+        
+        FS_calculation_problem_rot = FS_rot.FrenetSerret_calculation(self.ocp_formulation_rot)
+        calculation_output_rot = FS_calculation_problem_rot.calculate_invariants_global(input_data,null_operation)
+        
+        return calculation_output_pos, calculation_output_rot
 
-# def null_operation(self):
-#     return self
 
-# def calculate_invariants_global(input_data,ocp_formulation = False):
-    
-#     self = preprocess_input_data_pose(self,input_data)
+def resample_pose_data_time(self,input_data):
+    total_time = input_data.time_vector[-1]-input_data.time_vector[0]
+    time_vector_new = np.linspace(0,total_time,self.ocp_formulation_pos.window_len)
+    time_vector_old = input_data.time_vector-input_data.time_vector[0]
+    input_data.rot_data = reparam.interpR(time_vector_new, time_vector_old, input_data.rot_data)
+    input_data.position_data = np.array([np.interp(time_vector_new, time_vector_old, input_data.position_data[:,i]) for i in range(3)]).T
+    input_data.stepsize = time_vector_new[1]-time_vector_new[0]
+    input_data.progress_vector = time_vector_new
+    return input_data
 
-#     FS_calculation_problem_pos = FS_pos.FrenetSerret_calculation(ocp_formulation)
-#     calculation_output_pos = FS_calculation_problem_pos.calculate_invariants_global(input_data,null_operation)
+def reparametrize_input_data_pose(self,input_data):
+
+    N = self.ocp_formulation_pos.window_len # predefined number of samples
     
-#     FS_calculation_problem_rot = FS_rot.FrenetSerret_calculation(ocp_formulation)
-#     calculation_output_rot = FS_calculation_problem_rot.calculate_invariants_global(input_data,null_operation)
+    Pdiff = np.linalg.norm(np.diff(input_data.position_data,axis=0),axis=1)
+    arclength_wrt_time = np.append(np.zeros(1),np.cumsum(Pdiff))
+    arclength_equidistant = np.linspace(0,arclength_wrt_time[-1],N)
+    arclength_stepsize = arclength_equidistant[1]-arclength_equidistant[0]
     
-#     return calculation_output_pos, calculation_output_rot
+    pos_geom = np.array([np.interp(arclength_equidistant, arclength_wrt_time, input_data.position_data[:,i]) for i in range(3)]).T
+    rot_geom = reparam.interpR(arclength_equidistant, arclength_wrt_time, input_data.rot_data)
+
+    input_data.stepsize = arclength_stepsize
+    input_data.position_data = pos_geom 
+    input_data.rotation_data = rot_geom
+    input_data.progress_vector = arclength_equidistant 
+    return input_data
     
 
     

@@ -23,6 +23,7 @@ def set_default_ocp_formulation():
     ocp_formulation = formulation()
     ocp_formulation.progress_domain = 'geometric'                    # options: 'time', 'geometric'
     ocp_formulation.reparametrize_bool = True                        # options:  True, False
+    ocp_formulation.progress_constraint = True                       # Hard constraint on unit velocity
     ocp_formulation.window_len = 100                                 # number of samples
     ocp_formulation.orientation_representation_obj = 'quat'        # options: 'matrix', 'quat'
     
@@ -337,7 +338,8 @@ def define_system_constraints_generic(self):
         
     if self.ocp_formulation.progress_domain == 'geometric':
         if self.ocp_formulation.reparametrize_bool:
-           self = set_geom_constraint_HARD(self)
+            if self.ocp_formulation.progress_constraint:
+                self = set_geom_constraint_HARD(self)
 
     return self
 

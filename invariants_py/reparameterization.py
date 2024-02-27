@@ -39,24 +39,28 @@ def interpR(x_n, x_p, R_p):
         np.all(np.diff(xp) > 0)
     """
     
-    j = 0
-    R_n = np.zeros((len(x_n),3,3))
     
+    R_n = np.zeros((len(x_n),3,3))
+
     for i in range(len(x_n)):
         
-        while (x_n[i] > x_p[j+1]):
+        j = 0
+        while j < len(x_p)-1 and (x_n[i] >= x_p[j]):
             j = j+1
-
-        x0 = x_p[j]
-        x1 = x_p[j+1]
-        R0 = R_p[j]
-        R1 = R_p[j+1]
+        
+        x0 = x_p[j-1]
+        x1 = x_p[j]
+        R0 = R_p[j-1]
+        R1 = R_p[j]
+        
+        assert(x_n[i] >= x0)
+        assert(x_n[i] <= x1)
 
         if x1-x0 > 0:
             R_n[i,:,:] = R0 @ SO3.expm( ((x_n[i]-x0)/(x1-x0)) * SO3.logm(R0.T @ R1) ) 
         else:
-            R_n[i,:,:] = R0
-
+            R_n[i,:,:] = R0    
+    
     return R_n
 
             
