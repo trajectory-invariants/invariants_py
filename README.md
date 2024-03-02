@@ -84,7 +84,7 @@ Status of current functionality:
 
 # Contributors
 
-Main developers: Maxim Vochten, Riccardo Burlizzi
+Main developers: Maxim Vochten, Riccardo Burlizzi, Arno Verduyn
 
 This package has also received contributions by Victor van Wymeersch, Zeno Gillis, Toon Daemen, Glenn Maes, Ali Mousavi, Lander Vanroye
 
