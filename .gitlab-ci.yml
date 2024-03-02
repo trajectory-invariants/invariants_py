@@ -31,7 +31,7 @@ install_and_test:
     - cd ..
 
     # Run examples
-    - python run_all_examples.py
+    - python run_all_examples_and_tests.py
     #python -m pytest tests/
 
 
