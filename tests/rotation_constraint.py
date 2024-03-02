@@ -52,7 +52,7 @@ R_obj_end =  orthonormalize(rotate.as_matrix() @ optim_calc_results.Obj_frames[-
 optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
 
 # specify optimization problem symbolically
-FS_online_generation_problem_rot = FS_gen_rot(window_len=number_samples, fatrop_solver = 1)
+FS_online_generation_problem_rot = FS_gen_rot(window_len=number_samples, fatrop_solver = 0)
 
 # Linear initialization
 R_obj_init = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end]))
