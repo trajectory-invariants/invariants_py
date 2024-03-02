@@ -104,16 +104,59 @@ def geo_integrator_rot(R_r, R_obj, u, h):
     v_world = R_r @ v
 
     omega_norm = cas.norm_2(omega)
-    omega_norm = cas.if_else(omega_norm == 0.0, 1.0, omega_norm)
+    omega_norm = cas.if_else(omega_norm == 0.0, 0.00001, omega_norm)
     e_omega = omega/omega_norm
     deltaR_r = np.eye(3) + cas.sin(omega_norm @ h)*cas.skew(e_omega) + (1-cas.cos(omega_norm @ h)) * cas.mtimes(cas.skew(e_omega),cas.skew(e_omega))
     v_norm = cas.norm_2(v_world) 
-    v_norm = cas.if_else(v_norm == 0.0, 1.0, v_norm)
+    v_norm = cas.if_else(v_norm == 0.0, 0.00001, v_norm)
     e_v = v_world/v_norm
     deltaR_obj = np.eye(3) + cas.sin(v_norm @ h)*cas.skew(e_v) + (1-cas.cos(v_norm @ h)) * cas.mtimes(cas.skew(e_v),cas.skew(e_v))
 
     R_r_plus1 = R_r @ deltaR_r
     R_obj_plus1 = deltaR_obj @ R_obj
+
+    return (R_r_plus1, R_obj_plus1)
+
+def geo_integrator_rot_sequential(R_r, R_obj, u, h):
+    """Integrate invariants over interval h starting from a current state (object pose + moving frames)"""
+    # Define a geometric integrator for eFSI,
+    # (meaning rigid-body motion is perfectly integrated assuming constant invariants)
+    
+    
+    # object rotational speed
+    # curvature speed rotational Frenet-Serret
+    # torsion speed rotational Frenet-Serret
+    
+    # TO DO: make this implementation more compact
+    i1 = u[0]*h
+    i2 = u[1]*h
+    i3 = u[2]*h
+    
+    rot_x_obj = cas.MX.zeros(3,3)
+    rot_x_obj[0,0] = 1
+    rot_x_obj[1,1] = cas.cos(i1)
+    rot_x_obj[2,2] = cas.cos(i1)
+    rot_x_obj[1,2] = -cas.sin(i1)
+    rot_x_obj[2,1] = cas.sin(i1)
+    
+    rot_z = cas.MX.zeros(3,3)
+    rot_z[0,0] = cas.cos(i2)
+    rot_z[1,1] = cas.cos(i2)
+    rot_z[0,1] = -cas.sin(i2)
+    rot_z[1,0] = cas.sin(i2)
+    rot_z[2,2] = 1
+    
+    rot_x = cas.MX.zeros(3,3)
+    rot_x[0,0] = 1
+    rot_x[1,1] = cas.cos(i3)
+    rot_x[2,2] = cas.cos(i3)
+    rot_x[1,2] = -cas.sin(i3)
+    rot_x[2,1] = cas.sin(i3)
+
+    deltaR = rot_z @ rot_x
+    
+    R_obj_plus1 = (R_r @ rot_x_obj @ R_r.T) @ R_obj
+    R_r_plus1 = R_r @ deltaR
 
     return (R_r_plus1, R_obj_plus1)
 
