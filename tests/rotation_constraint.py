@@ -35,16 +35,16 @@ with open(data_location, 'rb') as fp:
 
 number_samples = 100
 progress_values = np.linspace(0, 1, number_samples)
-model_invariants = optim_calc_results.invariants*0.
-model_invariants[:,1] = -optim_calc_results.invariants[:,1]
+model_invariants = optim_calc_results.invariants
+#model_invariants[:,1] = -optim_calc_results.invariants[:,1]
 new_stepsize = progress_values[1] - progress_values[0] 
 
 # new constraints
 current_index = 0
 R_obj_start = orthonormalize(optim_calc_results.Obj_frames[current_index])
 # FSr_start = orthonormalize(optim_calc_results.FSr_frames[current_index])
-alpha = 180
-rotate = R.from_euler('x', alpha, degrees=True)
+alpha = 150
+rotate = R.from_euler('z', alpha, degrees=True)
 R_obj_end =  orthonormalize(rotate.as_matrix() @ optim_calc_results.Obj_frames[-1])
 # FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
 
@@ -52,7 +52,7 @@ R_obj_end =  orthonormalize(rotate.as_matrix() @ optim_calc_results.Obj_frames[-
 optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
 
 # specify optimization problem symbolically
-FS_online_generation_problem_rot = FS_gen_rot(window_len=number_samples, fatrop_solver = 0)
+FS_online_generation_problem_rot = FS_gen_rot(window_len=number_samples, fatrop_solver = 1)
 
 # Linear initialization
 R_obj_init = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end]))

@@ -104,11 +104,11 @@ def geo_integrator_rot(R_r, R_obj, u, h):
     v_world = R_r @ v
 
     omega_norm = cas.norm_2(omega)
-    omega_norm = cas.if_else(omega_norm == 0.0, 1.0, omega_norm)
+    omega_norm = cas.if_else(omega_norm == 0.0, 0.00001, omega_norm)
     e_omega = omega/omega_norm
     deltaR_r = np.eye(3) + cas.sin(omega_norm @ h)*cas.skew(e_omega) + (1-cas.cos(omega_norm @ h)) * cas.mtimes(cas.skew(e_omega),cas.skew(e_omega))
     v_norm = cas.norm_2(v_world) 
-    v_norm = cas.if_else(v_norm == 0.0, 1.0, v_norm)
+    v_norm = cas.if_else(v_norm == 0.0, 0.00001, v_norm)
     e_v = v_world/v_norm
     deltaR_obj = np.eye(3) + cas.sin(v_norm @ h)*cas.skew(e_v) + (1-cas.cos(v_norm @ h)) * cas.mtimes(cas.skew(e_v),cas.skew(e_v))
 
