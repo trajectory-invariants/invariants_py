@@ -24,6 +24,7 @@ import invariants_py.plotters as pl
 import random
 import invariants_py.robotics_functions.collision_detection as cd
 from invariants_py.reparameterization import interpR
+import invariants_py.SO3 as SO3
 
 #%%
 data_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/beer_1.txt'
@@ -116,13 +117,13 @@ current_index = round(current_progress*len(trajectory))
 p_obj_start = optim_calc_results.Obj_pos[current_index]
 R_obj_start = orthonormalize(optim_calc_results.Obj_frames[current_index])
 FSt_start = orthonormalize(optim_calc_results.FSt_frames[current_index])
-FSr_start = orthonormalize(optim_calc_results.FSr_frames[current_index])
+# FSr_start = orthonormalize(optim_calc_results.FSr_frames[current_index])
 p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([0.1,0.1,0.1])
 alpha = 30
 rotate = R.from_euler('z', alpha, degrees=True)
 R_obj_end =  orthonormalize(rotate.as_matrix() @ optim_calc_results.Obj_frames[-1])
 FSt_end = orthonormalize(rotate.as_matrix() @ optim_calc_results.FSt_frames[-1])
-FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
+# FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
 
 # define new class for OCP results
 optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
@@ -133,7 +134,24 @@ FS_online_generation_problem_rot = FS_gen_rot(window_len=number_samples, fatrop_
 
 # Linear initialization
 R_obj_init = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end]))
-R_r_init = interpR(np.linspace(0, 1, len(optim_calc_results.FSr_frames)), [0,1], np.array([FSr_start, FSr_end]))
+# R_r_init = interpR(np.linspace(0, 1, len(optim_calc_results.FSr_frames)), [0,1], np.array([FSr_start, FSr_end]))
+
+skew_angle = SO3.logm(R_obj_start.T @ R_obj_end)
+angle_vec_in_body = np.array([skew_angle[2,1],skew_angle[0,2],skew_angle[1,0]])
+angle_vec_in_world = R_obj_start@angle_vec_in_body
+angle_norm = np.linalg.norm(angle_vec_in_world)
+U_init = np.tile(np.array([angle_norm,0.001,0.001]),(100,1))
+e_x_fs_init = angle_vec_in_world/angle_norm
+e_y_fs_init = [0,1,0]
+e_y_fs_init = e_y_fs_init - np.dot(e_y_fs_init,e_x_fs_init)*e_x_fs_init
+e_y_fs_init = e_y_fs_init/np.linalg.norm(e_y_fs_init)
+e_z_fs_init = np.cross(e_x_fs_init,e_y_fs_init)
+R_fs_init = np.array([e_x_fs_init,e_y_fs_init,e_z_fs_init]).T
+
+R_fs_init_array = []
+for k in range(100):
+    R_fs_init_array.append(R_fs_init)
+R_r_init = np.array(R_fs_init_array)
 
 # Define OCP weights
 w_invars_pos = np.array([5*10**1, 1.0, 1.0])
@@ -146,7 +164,7 @@ w_invars_rot = 10**2*np.array([10**1, 1.0, 1.0])
 
 # Solve
 optim_gen_results.invariants[:,3:], optim_gen_results.Obj_pos, optim_gen_results.FSt_frames, tot_time_pos = FS_online_generation_problem_pos.generate_trajectory(U_demo = model_invariants[:,3:], p_obj_init = optim_calc_results.Obj_pos, R_t_init = optim_calc_results.FSt_frames, R_t_start = FSt_start, R_t_end = FSt_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize, w_high_start = w_pos_high_start, w_high_end = w_pos_high_end, w_high_invars = w_invars_pos_high, w_invars = w_invars_pos, w_high_active = w_pos_high_active)
-optim_gen_results.invariants[:,:3], optim_gen_results.Obj_frames, optim_gen_results.FSr_frames, tot_time_rot = FS_online_generation_problem_rot.generate_trajectory(U_demo = model_invariants[:,:3], R_obj_init = R_obj_init, R_r_init = optim_calc_results.FSr_frames, R_r_start = FSr_start, R_r_end = FSr_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
+optim_gen_results.invariants[:,:3], optim_gen_results.Obj_frames, optim_gen_results.FSr_frames, tot_time_rot = FS_online_generation_problem_rot.generate_trajectory(U_demo = model_invariants[:,:3]*0., U_init = U_init, R_obj_init = R_obj_init, R_r_init = R_r_init, R_r_start = R_fs_init, R_r_end = R_fs_init, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
 print('')
 print("TOTAL time to generate new trajectory: ")
 print(str(tot_time_pos + tot_time_rot) + "[s]")

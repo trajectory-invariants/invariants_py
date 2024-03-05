@@ -23,6 +23,8 @@ from invariants_py.plotting_functions.plot_stl import plot_stl
 from scipy.spatial.transform import Rotation as R
 from invariants_py.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 import invariants_py.plotters as pl
+from invariants_py.reparameterization import interpR
+import invariants_py.SO3 as SO3
 #%%
 data_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/beer_1.txt'
 trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
@@ -98,19 +100,39 @@ pl.plot_interpolated_invariants(invariants, model_invariants, arclength_n, progr
 # new constraints
 current_index = round(current_progress*len(trajectory))
 R_obj_start = orthonormalize(calculate_trajectory[current_index,:,:])
-rotate = R.from_euler('z', 20, degrees=True)
-R_obj_end =  orthonormalize(rotate.apply(calculate_trajectory[-1]))
-R_r_start = orthonormalize(movingframes[current_index])
-R_r_end = orthonormalize(movingframes[-1])
+rotate = R.from_euler('z', 30, degrees=True)
+R_obj_end =  orthonormalize(rotate.as_matrix() @ calculate_trajectory[-1])
+# R_r_start = orthonormalize(movingframes[current_index])
+# R_r_end = orthonormalize(movingframes[-1])
 
 
 # specify optimization problem symbolically
 FS_online_generation_problem = FS_gen(window_len=number_samples, fatrop_solver = use_fatrop_solver)
 
+# Linear initialization
+R_obj_init = interpR(np.linspace(0, 1, len(calculate_trajectory)), [0,1], np.array([R_obj_start, R_obj_end]))
+
+skew_angle = SO3.logm(R_obj_start.T @ R_obj_end)
+angle_vec_in_body = np.array([skew_angle[2,1],skew_angle[0,2],skew_angle[1,0]])
+angle_vec_in_world = R_obj_start@angle_vec_in_body
+angle_norm = np.linalg.norm(angle_vec_in_world)
+U_init = np.tile(np.array([angle_norm,0.001,0.001]),(100,1))
+e_x_fs_init = angle_vec_in_world/angle_norm
+e_y_fs_init = [0,1,0]
+e_y_fs_init = e_y_fs_init - np.dot(e_y_fs_init,e_x_fs_init)*e_x_fs_init
+e_y_fs_init = e_y_fs_init/np.linalg.norm(e_y_fs_init)
+e_z_fs_init = np.cross(e_x_fs_init,e_y_fs_init)
+R_fs_init = np.array([e_x_fs_init,e_y_fs_init,e_z_fs_init]).T
+
+R_fs_init_array = []
+for k in range(100):
+    R_fs_init_array.append(R_fs_init)
+R_r_init = np.array(R_fs_init_array)
+
 w_invars_rot = 10**2*np.array([10**1, 1.0, 1.0])
 
 # Solve
-new_invars, new_trajectory, new_movingframes, tot_time_rot = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, R_obj_init = calculate_trajectory, R_r_init = movingframes, R_r_start = R_r_start, R_r_end = R_r_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize, w_invars = w_invars_rot)
+new_invars, new_trajectory, new_movingframes, tot_time_rot = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants*0., U_init = U_init, R_obj_init = R_obj_init, R_r_init = R_r_init, R_r_start = R_fs_init, R_r_end = R_fs_init, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
 print('')
 print("TOTAL time to generate new trajectory: ")
 print(str(tot_time_rot) + '[s]')
@@ -135,6 +157,12 @@ for i in indx_online:
 plot_orientation(calculate_trajectory, new_trajectory,current_index)
 
 pl.plot_invariants(invariants,new_invars,arclength_n,progress_values,inv_type='FS_rot')
+
+fig99 = plt.figure(figsize=(14,8))
+ax99 = fig99.add_subplot(111, projection='3d')
+pl.plot_stl(opener_location,[0,0,0],calculate_trajectory[-1],colour="r",alpha=0.5,ax=ax99)
+pl.plot_stl(opener_location,[0,0,0],R_obj_end,colour="b",alpha=0.5,ax=ax99)
+pl.plot_stl(opener_location,[0,0,0],new_trajectory[-1],colour="g",alpha=0.5,ax=ax99)
 
 plt.show()
 
