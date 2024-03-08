@@ -5,10 +5,15 @@ Created on Mon Dec  6 15:23:48 2021
 @author: u0091864
 """
 
-
+import invariants_py.data as data_folder
 import numpy as np
 from scipy.spatial.transform import Rotation
+import os
 
+def find_example(file_name):
+    module_dir = os.path.dirname(data_folder.__file__)
+    data_path = os.path.join(module_dir,file_name)
+    return data_path
 
 def read_pose_trajectory_from_txt(filepath):
     """
