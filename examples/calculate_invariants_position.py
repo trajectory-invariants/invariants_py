@@ -1,9 +1,9 @@
 # Example calculation invariants using the full horizon
 
-import matplotlib.pyplot as plt
 import invariants_py as invars
 
 # Find the path to the data file
+# TODO convert sinus.txt to sinus.csv for consistency?
 path_data = invars.read_and_write_data.find_example("sinus.txt")
 
 # Load the trajectory data from the file
@@ -21,14 +21,6 @@ result = FS_calculation_problem.calculate_invariants_global(trajectory_geom, ste
 invariants = result[0]
 
 # Plot the calculated invariants
-# TODO move plot outside of this file
-plt.figure()
-plt.plot(arclength, invariants[:, 0], label='$v$ [m]', color='r')
-plt.plot(arclength, invariants[:, 1], label='$\omega_\kappa$ [rad/m]', color='g')
-plt.plot(arclength, invariants[:, 2], label='$\omega_\u03C4$ [rad/m]', color='b')
-plt.xlabel('s [m]')
-plt.legend()
-plt.title('Calculated invariants (full horizon)')
-plt.show()
-plt.close()
+invars.plotters.plot_invariants_new(invariants, arclength)
+
 

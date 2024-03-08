@@ -469,6 +469,16 @@ def plot_orientation(trajectory1,trajectory2,current_index = 0):
     # arrow3(trajectory2.Obj_location,trajectory2.Obj_location+0.05*axang2(:,1:3),['_b' 0.2],0.5,1)
     # axis equal; grid on; box on;
 
+def plot_invariants_new(invariants,arclength):
+    plt.figure()
+    plt.plot(arclength, invariants[:, 0], label='$v$ [m]', color='r')
+    plt.plot(arclength, invariants[:, 1], label='$\omega_\kappa$ [rad/m]', color='g')
+    plt.plot(arclength, invariants[:, 2], label='$\omega_\u03C4$ [rad/m]', color='b')
+    plt.xlabel('s [m]')
+    plt.legend()
+    plt.title('Calculated invariants (full horizon)')
+    plt.show()
+    plt.close()
 
 def plot_3d_frame(p,R,scale_arrow,length_arrow,my_color,ax3d):
     """
