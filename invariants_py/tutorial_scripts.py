@@ -94,7 +94,7 @@ def calculate_invariants(data_location, plot_demo = True, use_fatrop_solver = Fa
     return optim_calc_results
 
 #%%
-def generate_trajectory(data_location, optim_calc_results, p_obj_end, use_fatrop_solver = False, plot_new_trajectory = True, traj_type = "position"):
+def generate_trajectory(data_location, optim_calc_results, p_obj_end, rotate, use_fatrop_solver = False, plot_new_trajectory = True, traj_type = "position"):
     trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
     pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
     arclength_n = arclength/arclength[-1]
@@ -123,8 +123,8 @@ def generate_trajectory(data_location, optim_calc_results, p_obj_end, use_fatrop
     current_index = round(current_progress*len(trajectory))
     p_obj_start = optim_calc_results.Obj_pos[current_index]
     R_obj_start = orthonormalize(optim_calc_results.Obj_frames[current_index])
-    alpha = 180
-    rotate = R.from_euler('z', alpha, degrees=True)
+    # alpha = 180
+    # rotate = R.from_euler('z', alpha, degrees=True)
     R_obj_end =  orthonormalize(rotate.as_matrix() @ optim_calc_results.Obj_frames[-1])
     if not traj_type == "rotation":
         FSt_start = orthonormalize(optim_calc_results.FSt_frames[current_index])
