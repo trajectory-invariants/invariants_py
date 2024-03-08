@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "invariants-py"
-version = "0.3.1"
-description = "Invariant descriptors for recognition and trajectory generation"
+version = "0.3.2"
+description = "Trajectory Invariants for trajectory analysis and generation"
 authors = ["Maxim Vochten", "Riccardo Burlizzi", "Arno Verduyn"]
 packages = [{include = "invariants_py"}]
 
