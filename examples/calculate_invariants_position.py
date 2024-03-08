@@ -9,6 +9,7 @@ path_data = invars.read_and_write_data.find_example("sinus.txt")
 # Load the trajectory data from the file
 trajectory, time = invars.read_and_write_data.read_pose_trajectory_from_txt(path_data)
 
+# different progress definition: {time, default: arclength, arcangle, screwbased}
 # Reparameterize the trajectory based on arclength
 trajectory_geom, arclength, arclength_n, nb_samples, stepsize = invars.reparameterization.reparameterize_trajectory_arclength(trajectory)
 
