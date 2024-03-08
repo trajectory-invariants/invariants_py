@@ -24,7 +24,7 @@ from scipy.spatial.transform import Rotation as R
 from invariants_py.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 import invariants_py.plotters as pl
 from invariants_py.reparameterization import interpR
-import invariants_py.SO3 as SO3
+from invariants_py.FSr_init import FSr_init
 #%%
 data_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/beer_1.txt'
 trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
@@ -112,27 +112,12 @@ FS_online_generation_problem = FS_gen(window_len=number_samples, fatrop_solver =
 # Linear initialization
 R_obj_init = interpR(np.linspace(0, 1, len(calculate_trajectory)), [0,1], np.array([R_obj_start, R_obj_end]))
 
-skew_angle = SO3.logm(R_obj_start.T @ R_obj_end)
-angle_vec_in_body = np.array([skew_angle[2,1],skew_angle[0,2],skew_angle[1,0]])
-angle_vec_in_world = R_obj_start@angle_vec_in_body
-angle_norm = np.linalg.norm(angle_vec_in_world)
-U_init = np.tile(np.array([angle_norm,0.001,0.001]),(100,1))
-e_x_fs_init = angle_vec_in_world/angle_norm
-e_y_fs_init = [0,1,0]
-e_y_fs_init = e_y_fs_init - np.dot(e_y_fs_init,e_x_fs_init)*e_x_fs_init
-e_y_fs_init = e_y_fs_init/np.linalg.norm(e_y_fs_init)
-e_z_fs_init = np.cross(e_x_fs_init,e_y_fs_init)
-R_fs_init = np.array([e_x_fs_init,e_y_fs_init,e_z_fs_init]).T
-
-R_fs_init_array = []
-for k in range(100):
-    R_fs_init_array.append(R_fs_init)
-R_r_init = np.array(R_fs_init_array)
+R_r_init, R_r_init_array, U_init = FSr_init(R_obj_start, R_obj_end)
 
 w_invars_rot = 10**2*np.array([10**1, 1.0, 1.0])
 
 # Solve
-new_invars, new_trajectory, new_movingframes, tot_time_rot = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants*0., U_init = U_init, R_obj_init = R_obj_init, R_r_init = R_r_init, R_r_start = R_fs_init, R_r_end = R_fs_init, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
+new_invars, new_trajectory, new_movingframes, tot_time_rot = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants*0., U_init = U_init, R_obj_init = R_obj_init, R_r_init = R_r_init_array, R_r_start = R_r_init, R_r_end = R_r_init, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
 print('')
 print("TOTAL time to generate new trajectory: ")
 print(str(tot_time_rot) + '[s]')
