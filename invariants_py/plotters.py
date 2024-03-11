@@ -477,8 +477,8 @@ def plot_invariants_new(invariants,arclength):
     plt.xlabel('s [m]')
     plt.legend()
     plt.title('Calculated invariants (full horizon)')
-    plt.show()
-    plt.close()
+    #plt.show()
+    #plt.close()
 
 def plot_3d_frame(p,R,scale_arrow,length_arrow,my_color,ax3d):
     """

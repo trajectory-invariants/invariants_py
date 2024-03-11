@@ -10,9 +10,13 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 import os
 
-def find_example(file_name):
-    module_dir = os.path.dirname(data_folder.__file__)
-    data_path = os.path.join(module_dir,file_name)
+def find_data_path(file_name):
+    try:
+        module_dir = os.path.dirname(data_folder.__file__)
+        data_path = os.path.join(module_dir,file_name)
+    except FileNotFoundError:
+        print(f"File {file_name} not found.")
+        return
     return data_path
 
 def read_pose_trajectory_from_txt(filepath):
@@ -39,7 +43,12 @@ def read_pose_trajectory_from_txt(filepath):
         array of timestamps 
     """
     
-    data = np.loadtxt(filepath, dtype='float')
+    try: 
+        data = np.loadtxt(filepath, dtype='float')
+    except IOError:
+        print(f"File {filepath} not found.")
+        return
+    
     N = np.size(data,0)
     
     timestamps = np.zeros(N)
