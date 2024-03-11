@@ -17,6 +17,15 @@ class FrenetSerret_gen_pose:
         return cas.vertcat(input[0,0], input[1,1], input[2,2], input[1,0], input[2,0], input[2,1])
     def tril_vec_no_diag(self,input):
         return cas.vertcat(input[1,0], input[2,0], input[2,1])
+    def three_elements(self,input):
+        return cas.vertcat(input[0,0], input[1,0], input[2,1])
+    def diffR(self,input1,input2):
+        dotproduct = cas.dot(input1[:,1],input2[:,1]) - 1
+        error_x0 = input1[0,0] - input2[0,0]
+        error_x1 = input1[1,0] - input2[1,0]
+        return cas.vertcat(dotproduct, error_x0, error_x1)
+    def diag(self,input):
+        return cas.vertcat(input[0,0], input[1,1], input[2,2])
     
     def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, max_iters = 300, fatrop_solver = False):
        
@@ -68,8 +77,8 @@ class FrenetSerret_gen_pose:
         
         # Boundary constraints
         ocp.subject_to(ocp.at_t0(self.tril_vec_no_diag(R_t.T @ R_t_start - np.eye(3))) == 0.)
-        ocp.subject_to(ocp.at_tf(self.tril_vec_no_diag(R_t.T @ R_t_end - np.eye(3)) == 0.))
         ocp.subject_to(ocp.at_t0(self.tril_vec_no_diag(R_r.T @ R_r_start - np.eye(3)) == 0.))
+        ocp.subject_to(ocp.at_tf(self.tril_vec_no_diag(R_t.T @ R_t_end - np.eye(3)) == 0.))
         ocp.subject_to(ocp.at_tf(self.tril_vec_no_diag(R_r.T @ R_r_end - np.eye(3)) == 0.))
         ocp.subject_to(ocp.at_t0(p_obj == p_obj_start))
         ocp.subject_to(ocp.at_tf(p_obj == p_obj_end))
@@ -146,8 +155,10 @@ class FrenetSerret_gen_pose:
         self.ocp = ocp
         
         
-    def generate_trajectory(self,U_demo,p_obj_init,R_obj_init,R_t_init,R_r_init,R_t_start,R_r_start,R_t_end,R_r_end,p_obj_start,R_obj_start,p_obj_end,R_obj_end, step_size, w_invars = (10**-3)*np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), w_high_start = 1, w_high_end = 0, w_high_invars = (10**-3)*np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), w_high_active = 0):
+    def generate_trajectory(self,U_demo,p_obj_init,R_obj_init,R_t_init,R_r_init,R_t_start,R_r_start,R_t_end,R_r_end,p_obj_start,R_obj_start,p_obj_end,R_obj_end, step_size, U_init = None, w_invars = (10**-3)*np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), w_high_start = 1, w_high_end = 0, w_high_invars = (10**-3)*np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), w_high_active = 0):
         #%%
+        if U_init is None:
+            U_init = U_demo
 
         # Initialize states
         self.ocp.set_initial(self.p_obj, p_obj_init[:self.window_len,:].T)
@@ -162,7 +173,7 @@ class FrenetSerret_gen_pose:
         self.ocp.set_initial(self.R_r_z, R_r_init[:self.window_len,:,2].T) 
             
         # Initialize controls
-        self.ocp.set_initial(self.U,U_demo[:-1,:].T)
+        self.ocp.set_initial(self.U,U_init[:-1,:].T)
 
         # Set values boundary constraints
         self.ocp.set_value(self.R_t_start,R_t_start)
