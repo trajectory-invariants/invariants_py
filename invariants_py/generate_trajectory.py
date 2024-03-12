@@ -1,16 +1,31 @@
 from invariants_py.class_frenetserret_generation_position import FrenetSerret_gen_pos
 import numpy as np
+import invariants_py.spline_handler as sh
 
 def generate_initvals_from_bounds(boundary_constraints,N):
     
-    
+    # Generate initial trajectory using linear interpolation
     p1 = boundary_constraints["position"]["final"]
     p0 = boundary_constraints["position"]["initial"]
+    initial_trajectory = np.linspace(p0, p1, N)
+
+    # Generate corresponding initial invariants
+    diff_vector = np.array(p1) - np.array(p0)
+    L = np.linalg.norm(diff_vector)
+    initial_invariants = np.tile(np.array([L,0,0]),(N,1))
+
+    # Generate corresponding initial moving frames using Gram-Schmidt process
+    e_x = diff_vector / L
+    e_y = np.array([0, 1, 0]) - np.dot(np.array([0, 1, 0]), e_x) * e_x
+    e_y = e_y / np.linalg.norm(e_y)
+    e_z = np.cross(e_x, e_y)
+    R_mf = np.column_stack((e_x, e_y, e_z))
+    initial_movingframes = np.tile(R_mf, (N,1,1))
 
     initial_values = {
-        "trajectory": calculate_trajectory,
-        "moving frames": movingframes,
-        "invariants": model_invariants
+        "trajectory": initial_trajectory,
+        "moving-frames": initial_movingframes,
+        "invariants": initial_invariants
     }
 
     return initial_values
@@ -18,26 +33,20 @@ def generate_initvals_from_bounds(boundary_constraints,N):
 def generate_trajectory_translation(invariant_model, boundary_constraints, N=40):
     
     # Specify optimization problem symbolically
-    OCP_gen_pos = FrenetSerret_gen_pos(window_len = window_len)
+    OCP_gen_pos = FrenetSerret_gen_pos(N = N)
 
     # Initial values
-    initial_values = generate_initvals_from_bounds(boundary_constraints)
+    initial_values = generate_initvals_from_bounds(boundary_constraints, N)
 
-    # Resample invariants for current progress
-    progress_values = np.linspace(current_progress, arclength_n[-1], window_len)
-    model_invariants,new_stepsize = interpolate_model_invariants(spline_model_trajectory,progress_values)
+    # Resample model invariants to desired number of N samples
+    spline_invariant_model = sh.create_spline_model(invariant_model[:,0], invariant_model[:,1:])
+    progress_values = np.linspace(invariant_model[0,0],invariant_model[-1,0],N)
+    model_invariants,progress_step = sh.interpolate_invariants(spline_invariant_model, progress_values)
     
-    # Boundary constraints
-    current_index = round( (current_progress - old_progress) * len(calculate_trajectory))
-    p_obj_start = calculate_trajectory[current_index]
-    p_obj_end = trajectory[-1] - current_progress*np.array([-0.2, 0.0, 0.0])
-    R_FS_start = movingframes[current_index] 
-    R_FS_end = movingframes[-1] 
-
-    
-
     # Calculate remaining trajectory
-    results = OCP_gen_pos.generate_trajectory(model_invariants, initial_values, boundary_constraints, step_size)
+    invariants, trajectory, mf = OCP_gen_pos.generate_trajectory_global(model_invariants,initial_values,boundary_constraints,progress_step)
+
+    return invariants, trajectory, mf
 
         
         

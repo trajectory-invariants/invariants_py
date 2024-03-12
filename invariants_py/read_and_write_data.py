@@ -103,17 +103,10 @@ def read_invariants_from_csv(filepath):
     invariants : pandas.DataFrame
         The last three columns of the csv file.
     """
-    # Read the csv file
-    data = pd.read_csv(filepath)
+    invariants = pd.read_csv(filepath).values
 
-    # Store the first column in 'progress'
-    progress = data.iloc[:, 0]
+    return invariants
 
-    # Store the last three columns in 'invariants'
-    invariants = data.iloc[:, -3:]
-
-    return invariants, progress
-    
 def read_pose_trajectory_from_csv(filepath):
     """
     
