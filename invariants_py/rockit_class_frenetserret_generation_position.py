@@ -112,20 +112,22 @@ class FrenetSerret_gen_pos:
         self.window_len = window_len
         self.ocp = ocp
         self.sol = None
-        
+        self.first_window = True
         self.dummy_solve()
 
-        #if fatrop_solver:
-            #self.ocp._method.set_option("print_level",0)
-            #self.ocp._method.set_option("tol",1e-11)
+        if fatrop_solver:
+            self.ocp._method.set_option("print_level",0)
+            self.ocp._method.set_option("tol",1e-11)
 
         # Transform the whole OCP to a Casadi function
         
         U_sampled = cas.MX()
         w_sampled = cas.MX()
-        for k in range(window_len):
+        for k in range(window_len-1):
             U_sampled = cas.horzcat(U_sampled, ocp._method.eval_at_control(ocp, U_demo, k))
             w_sampled = cas.horzcat(w_sampled, ocp._method.eval_at_control(ocp, w_invars, k))
+        U_sampled = cas.horzcat(U_sampled, ocp._method.eval_at_control(ocp, U_demo, -1))
+        w_sampled = cas.horzcat(w_sampled, ocp._method.eval_at_control(ocp, w_invars, -1))
 
         #U_sampled = cas.horzcat(U_sampled, ocp._method.eval_at_control(ocp, U, -1))
 
@@ -159,9 +161,10 @@ class FrenetSerret_gen_pos:
         self.ocp.set_initial(self.R_t_x, np.array([1,0,0]))                 
         self.ocp.set_initial(self.R_t_y, np.array([0,1,0]))                
         self.ocp.set_initial(self.R_t_z, np.array([0,0,1]))
-        self.ocp.set_value(self.h,1)
-        self.ocp.set_value(self.U_demo, np.zeros((3,self.window_len)))
-        self.ocp.set_value(self.w_invars, np.zeros((3,self.window_len)))
+        self.ocp.set_initial(self.U, 0.001+np.zeros((3,self.window_len)))
+        self.ocp.set_value(self.h,0.1)
+        self.ocp.set_value(self.U_demo, 0.001+np.zeros((3,self.window_len)))
+        self.ocp.set_value(self.w_invars, 0.001+np.zeros((3,self.window_len)))
         self.ocp.set_value(self.p_obj_start, np.array([0,0,0]))
         self.ocp.set_value(self.p_obj_end, np.array([1,0,0]))
         self.ocp.solve_limited()
@@ -225,58 +228,44 @@ class FrenetSerret_gen_pos:
     
     def generate_trajectory_online(self, invariant_model, boundary_constraints, step_size):
         
-        if self.sol is None:
+        p_obj_start = boundary_constraints["position"]["initial"]
+        p_obj_end = boundary_constraints["position"]["final"]
+        U_demo = invariant_model.T
+        w_invars = (10**-2)*np.array([1.0*10**2, 1.0, 1.0])
 
+        if self.first_window:
             # Initial values
             initial_values = generate_trajectory.generate_initvals_from_bounds(boundary_constraints, self.window_len)
             R_t_init = initial_values["moving-frames"]
             p_obj_init = initial_values["trajectory"]
-            U_init = initial_values["invariants"]
-
+            U_init = initial_values["invariants"]+0.001
             # Initialize states
-            self.ocp.set_initial(self.p_obj, p_obj_init[:self.window_len,:].T)
-            self.ocp.set_initial(self.R_t_x, R_t_init[:self.window_len,:,0].T)
-            self.ocp.set_initial(self.R_t_y, R_t_init[:self.window_len,:,1].T)
-            self.ocp.set_initial(self.R_t_z, R_t_init[:self.window_len,:,2].T)
-                
-            # Initialize controls
-            self.ocp.set_initial(self.U,U_init[:-1,:].T)
+            self.R_t_x_sol = R_t_init[:self.window_len,:,0].T
+            self.R_t_y_sol = R_t_init[:self.window_len,:,1].T
+            self.R_t_z_sol = R_t_init[:self.window_len,:,2].T
+            self.U_sol = U_init[:-1,:].T
+            self.p_obj_sol = p_obj_init[:self.window_len,:].T
+            self.first_window = False
 
-            # Set values boundary constraints
-            #self.ocp.set_value(self.R_t_start,R_t_start)
-            #self.ocp.set_value(self.R_t_end,R_t_end)
-            self.ocp.set_value(self.p_obj_start,boundary_constraints["position"]["initial"])
-            self.ocp.set_value(self.p_obj_end,boundary_constraints["position"]["final"])
+        # Call solve function
+        [self.R_t_x_sol,
+        self.R_t_y_sol,
+        self.R_t_z_sol,
+        self.p_obj_sol,
+        self.U_sol] = self.ocp_to_function(
+        step_size,
+        p_obj_start,
+        p_obj_end,
+        U_demo,
+        w_invars,
+        self.R_t_x_sol,
+        self.R_t_y_sol,
+        self.R_t_z_sol,
+        self.p_obj_sol,
+        self.U_sol,)
 
-            # Set values parameters
-            self.ocp.set_value(self.h,step_size)
-            w_invars = (10**0)*np.array([1.0, 1.0, 1.0])
-            self.ocp.set_value(self.w_invars, w_invars.T)  
-            self.ocp.set_value(self.U_demo, invariant_model.T)   
-
-            # Solve the NLP
-            sol = self.ocp.solve()            
-            self.sol = sol
-                        
-            # Extract the solved variables
-            _,i_t1 = sol.sample(self.U[0],grid='control')
-            _,i_t2 = sol.sample(self.U[1],grid='control')
-            _,i_t3 = sol.sample(self.U[2],grid='control')
-            invariants = np.array((i_t1,i_t2,i_t3)).T
-            _,calculated_trajectory = sol.sample(self.p_obj,grid='control')
-            _,calculated_movingframe = sol.sample(self.R_t,grid='control')
-
-        else:
-             # Solve the NLP
-            sol = self.ocp.solve()            
-            self.sol = sol
-                        
-            # Extract the solved variables
-            _,i_t1 = sol.sample(self.U[0],grid='control')
-            _,i_t2 = sol.sample(self.U[1],grid='control')
-            _,i_t3 = sol.sample(self.U[2],grid='control')
-            invariants = np.array((i_t1,i_t2,i_t3)).T
-            _,calculated_trajectory = sol.sample(self.p_obj,grid='control')
-            _,calculated_movingframe = sol.sample(self.R_t,grid='control')
+        invariants = np.array(self.U_sol).T
+        calculated_trajectory = np.array(self.p_obj_sol).T
+        calculated_movingframe = 0# sol.sample(self.R_t_x,grid='control')
 
         return invariants, calculated_trajectory, calculated_movingframe
