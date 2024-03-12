@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
 import invariants_py.FS_pos_bench as FS
-import list_of_different_formulations_generation as form
+import list_of_different_formulations_generation_rot as form
 
 
 #%%
