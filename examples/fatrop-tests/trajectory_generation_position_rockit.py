@@ -23,7 +23,7 @@ import invariants_py.plotters as pl
 
 #%%
 
-data_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/beer_1.txt'
+data_location = rw.find_data_path('beer_1.txt')
 trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]

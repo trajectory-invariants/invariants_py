@@ -5,14 +5,7 @@ Created on Wed Jul 19 2023
 @author: u0148800
 """
 
-import sys
-import os 
-# setting the path to invariants_py
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-parent = os.path.dirname(parent)
-if not parent in sys.path:
-    sys.path.append(parent)
+
 
 # Imports
 import numpy as np
@@ -25,7 +18,7 @@ from invariants_py.class_frenetserret_calculation_reformulation_position import 
 from invariants_py.class_frenetserret_generation_position import FrenetSerret_gen_pos
 from IPython.display import clear_output
 
-data_location = parent + '/data/beer_1.txt'
+data_location = rw.find_data_path('beer_1.txt')
 trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]

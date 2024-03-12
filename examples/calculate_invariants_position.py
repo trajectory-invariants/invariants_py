@@ -12,7 +12,7 @@ path_data = rw.find_data_path("sinus.txt") # TODO convert sinus.txt to sinus.csv
 trajectory, time = rw.read_pose_trajectory_from_txt(path_data)
 
 # Calculate the invariants of the translation trajectory
-invariants, progress = calculate_invariants.calculate_invariants(trajectory,"translation")
+invariants, progress = calculate_invariants.calculate_invariants_translation(trajectory)
 
 # Plot the calculated invariants
 plotters.plot_invariants_new(invariants, progress)

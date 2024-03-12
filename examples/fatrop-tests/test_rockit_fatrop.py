@@ -12,13 +12,14 @@ import invariants_py.rockit_frenetserret_calculation_minimumjerk as FS
 import invariants_py.plotters as plotters
 import os
 import time
+from invariants_py import read_and_write_data as rw
 
 use_fatrop_solver = True  # True = fatrop, False = ipopt
 
 #%% Load data
 
 # load data
-data_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/contour_coordinates.out'
+data_location = rw.find_data_path("contour_coordinates.out")
 position_data = np.loadtxt(data_location, dtype='float')
 
 # reparameterize to arc length

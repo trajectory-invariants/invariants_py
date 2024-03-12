@@ -5,14 +5,6 @@ Created on Mon Jul 10 2023
 @author: Riccardo
 """
 
-import sys
-import os 
-# setting the path to invariants_py
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-parent = os.path.dirname(parent)
-if not parent in sys.path:
-    sys.path.append(parent)
 
 # Imports
 import numpy as np
@@ -32,10 +24,8 @@ from stl import mesh
 from scipy.spatial.transform import Rotation as R
 from invariants_py.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 #%%
-data_location = parent + '/data/beer_1.txt'
-opener_location = parent + '/data/opener.stl'
-#data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/beer_1.txt'
-#opener_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/opener.stl'
+data_location = rw.find_data_path('beer_1.txt')
+opener_location = rw.find_data_path('opener.stl')
 trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
