@@ -30,7 +30,7 @@ class OCP_results:
         self.invariants = invariants
         
 # Read dictionary pkl file
-data_location = rw.find_data_path('/inv_model.pkl')
+data_location = rw.find_data_path('inv_model.pkl')
 with open(data_location, 'rb') as fp:
     optim_calc_results = pickle.load(fp)
 

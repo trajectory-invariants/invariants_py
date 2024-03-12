@@ -123,7 +123,7 @@ FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
 optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
 
 # specify optimization problem symbolically
-FS_online_generation_problem_pos = FrenetSerret_gen_pos(window_len=number_samples,w_invars = np.array([5*10**1, 1.0, 1.0]))
+FS_online_generation_problem_pos = FrenetSerret_gen_pos(N=number_samples,w_invars = np.array([5*10**1, 1.0, 1.0]))
 FS_online_generation_problem_rot = FrenetSerret_gen_rot(window_len=number_samples,w_invars = 10**2*np.array([10**1, 1.0, 1.0]))
 
 # Solve
@@ -160,7 +160,7 @@ window_len = 20
 optim_iter_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((window_len,6)))
 
 # specify optimization problem symbolically
-FS_online_generation_problem_pos = FrenetSerret_gen_pos(window_len=window_len,w_invars = np.array([5*10**1, 1.0, 1.0]))
+FS_online_generation_problem_pos = FrenetSerret_gen_pos(N=window_len,w_invars = np.array([5*10**1, 1.0, 1.0]))
 FS_online_generation_problem_rot = FrenetSerret_gen_rot(window_len=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
 
 
