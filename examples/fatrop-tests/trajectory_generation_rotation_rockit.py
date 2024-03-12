@@ -26,7 +26,7 @@ import invariants_py.plotters as pl
 from invariants_py.reparameterization import interpR
 from invariants_py.FSr_init import FSr_init
 #%%
-data_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/beer_1.txt'
+data_location = rw.find_data_path('beer_1.txt')
 trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
@@ -40,7 +40,7 @@ ax.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,
 n_frames = 10
 indx = np.trunc(np.linspace(0,len(trajectory_orientation)-1,n_frames))
 indx = indx.astype(int)
-opener_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/opener.stl'
+opener_location = rw.find_data_path('opener.stl')
 for i in indx:
     plot_3d_frame(trajectory_position[i,:],trajectory_orientation[i,:,:],1,0.05,['red','green','blue'],ax)
     plot_stl(opener_location,trajectory_position[i,:],trajectory_orientation[i,:,:],colour="c",alpha=0.2,ax=ax)
@@ -72,7 +72,7 @@ plot_orientation(trajectory_orientation,init_vals_calculate_trajectory)
 
 pl.plot_invariants(invariants,[],arclength_n,[],inv_type='FS_rot')
 
-plt.show()
+plt.show(block=False)
 
 #%%
 # Spline of model
@@ -149,7 +149,7 @@ pl.plot_stl(opener_location,[0,0,0],calculate_trajectory[-1],colour="r",alpha=0.
 pl.plot_stl(opener_location,[0,0,0],R_obj_end,colour="b",alpha=0.5,ax=ax99)
 pl.plot_stl(opener_location,[0,0,0],new_trajectory[-1],colour="g",alpha=0.5,ax=ax99)
 
-plt.show()
+plt.show(block=False)
 
 #%% Visualization
 
@@ -209,7 +209,7 @@ while current_progress <= 1.0:
     
     pl.plot_invariants(invariants,new_invars,arclength_n,progress_values,inv_type='FS_rot')
 
-    plt.show()
+    plt.show(block=False)
     
     old_progress = current_progress
     current_progress = old_progress + 1/window_len

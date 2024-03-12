@@ -1,13 +1,3 @@
-import sys
-import os 
-# setting the path to invariants_py
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-parent = os.path.dirname(parent)
-parent = os.path.dirname(parent)
-parent = os.path.dirname(parent)
-if not parent in sys.path:
-    sys.path.append(parent)
 
 from invariants_py import read_and_write_data
 import invariants_py.read_and_write_data as rw
@@ -19,7 +9,7 @@ import os
 
 plt.close('all')
           
-data_location = parent + '/data/sinus.txt'
+data_location = rw.find_data_path('sinus.txt')
 parameterization = 'arclength' # {time,arclength,screwprogress}
 
 """
@@ -50,7 +40,7 @@ plt.plot(arclength,invariants[:,2],label = '$\omega_\u03C4$ [rad/m]',color='b')
 plt.xlabel('s [m]')
 plt.legend()
 plt.title('Calculated invariants (full horizon)')
-plt.show()
+plt.show(block=False)
 
 """
 Example calculation invariants using a smaller moving horizon
@@ -86,5 +76,5 @@ plt.plot(arclength,invariants[:,2],label = '$\omega_\u03C4$ [rad/m]',color='b')
 plt.xlabel('s [m]')
 plt.legend()
 plt.title('Calculated invariants (moving horizon)')
-plt.show()
+plt.show(block=False)
 

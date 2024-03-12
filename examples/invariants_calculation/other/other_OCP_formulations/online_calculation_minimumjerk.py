@@ -1,12 +1,4 @@
-import sys
-import os 
-# setting the path to invariants_py
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-parent = os.path.dirname(parent)
-parent = os.path.dirname(parent)
-parent = os.path.dirname(parent)
-sys.path.append(parent)
+
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,10 +6,10 @@ import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
 from invariants_py.class_frenetserret_calculation_minimumjerk import FrenetSerret_calc
 from IPython.display import clear_output
+import invariants_py.read_and_write_data as rw
 
 #%%
-data_location = parent + '/data/contour_coordinates.out'
-#data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/contour_coordinates.out'
+data_location = rw.find_data_path('contour_coordinates.out')
 position_data = np.loadtxt(data_location, dtype='float')
 trajectory,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_positiontrajectory_arclength(position_data)
 stepsize_orig = stepsize
@@ -130,7 +122,7 @@ while current_progress <= arclength[-1]:
     plt.plot(0,1)
     plt.title('Torsion [rad/-]')
 
-    plt.show()
+    plt.show(block=False)
     
     
     current_progress = round(current_progress + window_increment*stepsize,3) # start index next window

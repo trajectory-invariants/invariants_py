@@ -5,14 +5,7 @@ Created on Wed Jul 19 2023
 @author: u0148800
 """
 
-import sys
-import os 
-# setting the path to invariants_py
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-parent = os.path.dirname(parent)
-if not parent in sys.path:
-    sys.path.append(parent)
+
 
 # Imports
 import numpy as np
@@ -25,7 +18,7 @@ from invariants_py.class_frenetserret_calculation_reformulation_position import 
 from invariants_py.class_frenetserret_generation_position import FrenetSerret_gen_pos
 from IPython.display import clear_output
 
-data_location = parent + '/data/beer_1.txt'
+data_location = rw.find_data_path('beer_1.txt')
 trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
@@ -104,7 +97,7 @@ R_FS_end = movingframes[-1]
 
 
 # specify optimization problem symbolically
-FS_online_generation_problem = FrenetSerret_gen_pos(window_len=number_samples,w_invars = np.array([5*10**1, 1.0, 1.0]))
+FS_online_generation_problem = FrenetSerret_gen_pos(N=number_samples,w_invars = np.array([5*10**1, 1.0, 1.0]))
 
 # Solve
 new_invars, new_trajectory, new_movingframes = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = calculate_trajectory, R_t_init = movingframes, R_t_start = R_FS_start, R_t_end = R_FS_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize)
@@ -133,7 +126,7 @@ plt.plot(arclength_n,invariants[:,2],'b')
 plt.plot(0,0)
 plt.title('Torsion [rad/m]')
 
-plt.show()
+plt.show(block=False)
 
 
 #%% Visualization
@@ -141,7 +134,7 @@ plt.show()
 window_len = 20
 
 # specify optimization problem symbolically
-FS_online_generation_problem = FrenetSerret_gen_pos(window_len=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
+FS_online_generation_problem = FrenetSerret_gen_pos(N=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
 
 current_progress = 0.0
 old_progress = 0.0
@@ -195,7 +188,7 @@ while current_progress <= 1.0:
     plt.plot(0,0)
     plt.title('torsion [rad/m]')
 
-    plt.show()
+    plt.show(block=False)
     
     old_progress = current_progress
     current_progress = old_progress + 1/window_len

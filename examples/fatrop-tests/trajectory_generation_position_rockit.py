@@ -23,7 +23,7 @@ import invariants_py.plotters as pl
 
 #%%
 
-data_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/beer_1.txt'
+data_location = rw.find_data_path('beer_1.txt')
 trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
@@ -54,7 +54,7 @@ ax.plot(calculate_trajectory[:,0],calculate_trajectory[:,1],calculate_trajectory
 
 pl.plot_invariants(invariants,[],arclength_n,[],inv_type='FS_pos')
 
-plt.show()
+plt.show(block=False)
 
 #%%
 # Spline of model
@@ -111,7 +111,7 @@ ax.set_zlabel('z')
 
 pl.plot_invariants(invariants,new_invars,arclength_n,progress_values,inv_type='FS_pos')
 
-plt.show()
+plt.show(block=False)
 
 
 #%% Visualization

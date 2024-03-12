@@ -10,3 +10,5 @@ foobar/
 reformulation_*
 generation_*
 codegen/
+__pycache__/
+casadi_codegen.obj

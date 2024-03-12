@@ -5,14 +5,7 @@ Created on Thu Aug 3 2023
 @author: Riccardo
 """
 
-import sys
-import os 
-# setting the path to invariants_py
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-parent = os.path.dirname(parent)
-if not parent in sys.path:
-    sys.path.append(parent)
+
 
 # Imports
 import numpy as np
@@ -31,10 +24,9 @@ from invariants_py.robotics_functions.orthonormalize_rotation import orthonormal
 from stl import mesh
 import invariants_py.plotters as pl
 #%%
-data_location = parent + '/data/beer_1.txt'
-opener_location = parent + '/data/opener.stl'
-#data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/beer_1.txt'
-#opener_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/opener.stl'
+data_location = rw.find_data_path('beer_1.txt')
+opener_location =  rw.find_data_path('opener.stl')
+
 trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
@@ -90,7 +82,7 @@ pl.plot_orientation(optim_calc_results.Obj_frames,trajectory_orientation)
 
 pl.plot_invariants(optim_calc_results.invariants,[],arclength_n)
 
-plt.show()
+plt.show(block=False)
 
 #%%
 # Spline of model
@@ -131,7 +123,7 @@ FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
 optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
 
 # specify optimization problem symbolically
-FS_online_generation_problem_pos = FrenetSerret_gen_pos(window_len=number_samples,w_invars = np.array([5*10**1, 1.0, 1.0]))
+FS_online_generation_problem_pos = FrenetSerret_gen_pos(N=number_samples,w_invars = np.array([5*10**1, 1.0, 1.0]))
 FS_online_generation_problem_rot = FrenetSerret_gen_rot(window_len=number_samples,w_invars = 10**2*np.array([10**1, 1.0, 1.0]))
 
 # Solve
@@ -158,7 +150,7 @@ pl.plot_orientation(optim_calc_results.Obj_frames,optim_gen_results.Obj_frames,c
 
 pl.plot_invariants(optim_calc_results.invariants, optim_gen_results.invariants, arclength_n, progress_values)
 
-plt.show()
+plt.show(block=False)
 
 #%% Visualization
 
@@ -168,7 +160,7 @@ window_len = 20
 optim_iter_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((window_len,6)))
 
 # specify optimization problem symbolically
-FS_online_generation_problem_pos = FrenetSerret_gen_pos(window_len=window_len,w_invars = np.array([5*10**1, 1.0, 1.0]))
+FS_online_generation_problem_pos = FrenetSerret_gen_pos(N=window_len,w_invars = np.array([5*10**1, 1.0, 1.0]))
 FS_online_generation_problem_rot = FrenetSerret_gen_rot(window_len=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
 
 
@@ -224,7 +216,7 @@ while current_progress <= 1.0:
 
     pl.plot_invariants(optim_calc_results.invariants,optim_iter_results.invariants,arclength_n,progress_values)
     
-    plt.show()
+    plt.show(block=False)
     
     old_progress = current_progress
     current_progress = old_progress + 1/window_len
