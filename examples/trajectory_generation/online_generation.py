@@ -5,14 +5,7 @@ Created on Wed Feb  9 21:27:38 2022
 @author: u0091864
 """
 
-import sys
-import os 
-# setting the path to invariants_py
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-parent = os.path.dirname(parent)
-if not parent in sys.path:
-    sys.path.append(parent)
+
 
 # Imports
 import numpy as np
@@ -26,7 +19,7 @@ import invariants_py.plotters as plotters
 
 """Input data"""
 
-data_location = parent + '/data/sinus.txt'
+data_location = rw.find_data_path("sinus.txt")
 #data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/sinus.txt'
 trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
@@ -92,7 +85,7 @@ R_FS_end = movingframes[-1]
 
 
 # specify optimization problem symbolically
-FS_online_generation_problem = FrenetSerret_gen_pos(window_len=number_samples,w_invars = 10**2*np.array([10**1, 1.0, 1.0]))
+FS_online_generation_problem = FrenetSerret_gen_pos(N=number_samples,w_invars = 10**2*np.array([10**1, 1.0, 1.0]))
 
 # Solve
 new_invars, new_trajectory, new_movingframes = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = calculate_trajectory, R_t_init = movingframes, R_t_start = R_FS_start, R_t_end = R_FS_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize)
@@ -130,7 +123,7 @@ plt.show(block=False)
 window_len = 20
 
 # specify optimization problem symbolically
-FS_online_generation_problem = FrenetSerret_gen_pos(window_len=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
+FS_online_generation_problem = FrenetSerret_gen_pos(N=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
 
 
 

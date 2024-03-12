@@ -46,7 +46,7 @@ def generate_trajectory_translation(invariant_model, boundary_constraints, N=40)
     # Calculate remaining trajectory
     invariants, trajectory, mf = OCP_gen_pos.generate_trajectory_global(model_invariants,initial_values,boundary_constraints,progress_step)
 
-    return invariants, trajectory, mf
+    return invariants, trajectory, mf, progress_values
 
         
         
