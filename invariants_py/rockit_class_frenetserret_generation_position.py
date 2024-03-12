@@ -19,7 +19,7 @@ class FrenetSerret_gen_pos:
     def tril_vec_no_diag(self,input):
         return cas.vertcat(input[1,0], input[2,0], input[2,1])
     
-    def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, max_iters = 300, fatrop_solver = False):
+    def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, max_iters = 300, fatrop_solver = False, bounds_mf = True):
        
         #%% Create decision variables and parameters for the optimization problem
         
@@ -35,18 +35,17 @@ class FrenetSerret_gen_pos:
         # Define system controls (invariants at every time step)
         U = ocp.control(3)
 
-
         # Define system parameters P (known values in optimization that need to be set right before solving)
         h = ocp.parameter(1)
         
         # Boundary values
-        R_t_start = ocp.parameter(3,3)
-        R_t_end = ocp.parameter(3,3)
+        if bounds_mf:
+            R_t_start = ocp.parameter(3,3)
+            R_t_end = ocp.parameter(3,3)
         p_obj_start = ocp.parameter(3)
         p_obj_end = ocp.parameter(3)
         
         U_demo = ocp.parameter(3,grid='control',include_last=True) # model invariants
-        
         w_invars = ocp.parameter(3,grid='control',include_last=True) # weights for invariants
 
         #%% Specifying the constraints
@@ -55,13 +54,15 @@ class FrenetSerret_gen_pos:
         ocp.subject_to(ocp.at_t0(self.tril_vec(R_t.T @ R_t - np.eye(3))==0.))
         
         # Boundary constraints
-        ocp.subject_to(ocp.at_t0(self.tril_vec_no_diag(R_t.T @ R_t_start - np.eye(3))) == 0.)
-        ocp.subject_to(ocp.at_tf(self.tril_vec_no_diag(R_t.T @ R_t_end - np.eye(3)) == 0.))
+        if bounds_mf:
+            ocp.subject_to(ocp.at_t0(self.tril_vec_no_diag(R_t.T @ R_t_start - np.eye(3))) == 0.)
+            ocp.subject_to(ocp.at_tf(self.tril_vec_no_diag(R_t.T @ R_t_end - np.eye(3)) == 0.))
         ocp.subject_to(ocp.at_t0(p_obj == p_obj_start))
         ocp.subject_to(ocp.at_tf(p_obj == p_obj_end))
 
         # Dynamic constraints
         (R_t_plus1, p_obj_plus1) = integrators.geo_integrator_tra(R_t, p_obj, U, h)
+
         # Integrate current state to obtain next state (next rotation and position)
         ocp.set_next(p_obj,p_obj_plus1)
         ocp.set_next(R_t_x,R_t_plus1[:,0])
@@ -92,7 +93,7 @@ class FrenetSerret_gen_pos:
             ocp.solver('ipopt', {'expand':True})
             # ocp.solver('ipopt',{"print_time":True,"expand":True},{'tol':1e-4,'print_level':0,'ma57_automatic_scaling':'no','linear_solver':'mumps','max_iter':100})
 
-        
+        # Solve already once with dummy measurements
         # Save variables
         self.R_t_x = R_t_x
         self.R_t_y = R_t_y
@@ -102,15 +103,69 @@ class FrenetSerret_gen_pos:
         self.U = U
         self.U_demo = U_demo
         self.w_invars = w_invars
-        self.R_t_start = R_t_start
-        self.R_t_end = R_t_end
+        if bounds_mf:
+            self.R_t_start = R_t_start
+            self.R_t_end = R_t_end
         self.p_obj_start = p_obj_start
         self.p_obj_end = p_obj_end
         self.h = h
         self.window_len = window_len
         self.ocp = ocp
+        self.sol = None
         
+        self.dummy_solve()
+
+        if fatrop_solver:
+            self.ocp._method.set_option("print_level",0)
+            #self.ocp._method.set_option("tol",1e-11)
+
+        # Transform the whole OCP to a Casadi function
         
+        U_sampled = cas.MX()
+        w_sampled = cas.MX()
+        for k in range(window_len):
+            U_sampled = cas.horzcat(U_sampled, ocp._method.eval_at_control(ocp, U_demo, k))
+            w_sampled = cas.horzcat(w_sampled, ocp._method.eval_at_control(ocp, w_invars, k))
+
+        #U_sampled = cas.horzcat(U_sampled, ocp._method.eval_at_control(ocp, U, -1))
+
+        self.ocp_to_function = ocp.to_function('fastsolve', 
+        [ # Inputs
+          ocp.value(h),
+          ocp.value(p_obj_start),
+          ocp.value(p_obj_end),
+          ocp.value(U_sampled),
+          ocp.value(w_sampled),
+          ocp.sample(R_t_x, grid='control',include_last='True')[1], #self.ocp.x
+          ocp.sample(R_t_y, grid='control',include_last='True')[1],
+          ocp.sample(R_t_z, grid='control',include_last='True')[1],
+          ocp.sample(p_obj, grid='control',include_last='True')[1],
+          ocp.sample(U,     grid='control-')[1], 
+         ],
+         [  # Outputs
+          ocp.sample(R_t_x, grid='control',include_last='True')[1],
+          ocp.sample(R_t_y, grid='control',include_last='True')[1],
+          ocp.sample(R_t_z, grid='control',include_last='True')[1],
+          ocp.sample(p_obj, grid='control',include_last='True')[1],
+          ocp.sample(U,     grid='control-')[1],
+         ],
+         ["stepsize","p_obj_start","imodel","wsampled","p_obj_end","R_t_x","R_t_y","R_t_z","p_obj","i1"],   # Input labels
+         ["R_t_x2","R_t_y2","R_t_z2","p_obj2","i2"],   # Output labels
+         )
+
+
+
+    def dummy_solve(self):
+        self.ocp.set_initial(self.R_t_x, np.array([1,0,0]))                 
+        self.ocp.set_initial(self.R_t_y, np.array([0,1,0]))                
+        self.ocp.set_initial(self.R_t_z, np.array([0,0,1]))
+        self.ocp.set_value(self.h,1)
+        self.ocp.set_value(self.U_demo, np.zeros((3,self.window_len)))
+        self.ocp.set_value(self.w_invars, np.zeros((3,self.window_len)))
+        self.ocp.set_value(self.p_obj_start, np.array([0,0,0]))
+        self.ocp.set_value(self.p_obj_end, np.array([1,0,0]))
+        self.ocp.solve_limited()
+
     def generate_trajectory(self,U_demo,p_obj_init,R_t_init,R_t_start,R_t_end,p_obj_start,p_obj_end, step_size, w_invars = (10**-3)*np.array([1.0, 1.0, 1.0]), w_high_start = 1, w_high_end = 0, w_high_invars = (10**-3)*np.array([1.0, 1.0, 1.0]), w_high_active = 0):
         #%%
         start_time = time.time()
@@ -167,3 +222,10 @@ class FrenetSerret_gen_pos:
         
         end_time = time.time()
         return invariants, calculated_trajectory, calculated_movingframe, tot_time
+    
+    def generate_trajectory_online(self, invariant_model, boundary_constraints):
+        
+        if self.sol is None:
+
+            # Initial values
+            initial_values = generate_initvals_from_bounds(boundary_constraints, N)
