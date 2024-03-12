@@ -6,10 +6,10 @@ import invariants_py.reparameterization as reparam
 import invariants_py.class_frenetserret_calculation as FS1
 import invariants_py.class_frenetserret_calculation_reformulation_position as FS2
 #import invariants_py.class_frenetserret_calculation_minimumjerk as FS3
-
+from invariants_py import read_and_write_data as rw
 #%%
 
-data_location = Path(__file__).resolve().parent.parent.parent / 'data' / 'contour_coordinates.out'
+data_location = rw.find_data_path('contour_coordinates.out')
 
 
 position_data = np.loadtxt(data_location, dtype='float')
@@ -56,7 +56,7 @@ plt.plot(arclength_n,invariants[:,2])
 plt.plot(0,1)
 plt.title('Torsion [rad/-]')
 
-plt.show()
+plt.show(block=False)
 
 
 
@@ -92,7 +92,7 @@ plt.show()
 # plt.plot(0,1)
 # plt.title('Torsion [rad/-]')
 
-# plt.show()
+# plt.show(block=False)
 
 
 """ 
@@ -128,4 +128,4 @@ plt.plot(arclength_n,invariants[:,2])
 plt.plot(0,1)
 plt.title('Torsion [rad/-]')
 
-plt.show()
+plt.show(block=False)

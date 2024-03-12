@@ -5,10 +5,36 @@ Created on Mon Dec  6 15:23:48 2021
 @author: u0091864
 """
 
-
+import invariants_py.data as data_folder
 import numpy as np
 from scipy.spatial.transform import Rotation
+import os
+import pandas as pd
 
+def find_data_path(file_name):
+    try:
+        module_dir = os.path.dirname(data_folder.__file__)
+        data_path = os.path.join(module_dir,file_name)
+    except FileNotFoundError:
+        print(f"File {file_name} not found.")
+        return
+    return data_path
+
+def save_invariants_to_csv(progress, invariants, file_name):
+    """
+    Save the progress and invariants into a CSV file.
+
+    Args:
+        progress (ndarray): Array of progress values.
+        invariants (ndarray): Array of invariant values.
+        filename (str): Name of the CSV file to save.
+
+    Returns:
+        None
+    """
+    module_dir = os.path.dirname(data_folder.__file__)
+    data_path = os.path.join(module_dir,file_name)
+    np.savetxt(data_path, np.hstack((progress.reshape(-1, 1), invariants)), delimiter=",", header="progress,invariant1,invariant2,invariant3", comments="")
 
 def read_pose_trajectory_from_txt(filepath):
     """
@@ -34,7 +60,12 @@ def read_pose_trajectory_from_txt(filepath):
         array of timestamps 
     """
     
-    data = np.loadtxt(filepath, dtype='float')
+    try: 
+        data = np.loadtxt(filepath, dtype='float')
+    except IOError:
+        print(f"File {filepath} not found.")
+        return
+    
     N = np.size(data,0)
     
     timestamps = np.zeros(N)
@@ -55,7 +86,27 @@ def read_pose_trajectory_from_txt(filepath):
     return T_all,timestamps
 
   
-    
+
+def read_invariants_from_csv(filepath):
+    """
+    Read a csv file and store the first column in 'progress' and the last three columns in 'invariants'.
+
+    Parameters
+    ----------
+    filepath : str
+        The path to the csv file.
+
+    Returns
+    -------
+    progress : pandas.Series
+        The first column of the csv file.
+    invariants : pandas.DataFrame
+        The last three columns of the csv file.
+    """
+    invariants = pd.read_csv(filepath).values
+
+    return invariants
+
 def read_pose_trajectory_from_csv(filepath):
     """
     

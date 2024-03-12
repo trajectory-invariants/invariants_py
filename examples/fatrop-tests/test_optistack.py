@@ -12,6 +12,7 @@ import invariants_py.class_frenetserret_calculation_minimumjerk as FS3
 import invariants_py.plotters as plotters
 import os
 import time
+from invariants_py import read_and_write_data as rw
 
 #%% Settings
 
@@ -22,7 +23,7 @@ weight_regularization = 10**-10
 #%% Load data
 
 # load data
-data_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/contour_coordinates.out'
+data_location = rw.find_data_path("contour_coordinates.out")
 position_data = np.loadtxt(data_location, dtype='float')
 
 # reparameterize to arc length

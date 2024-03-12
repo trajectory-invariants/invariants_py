@@ -27,7 +27,7 @@ from invariants_py.reparameterization import interpR
 from invariants_py.FSr_init import FSr_init
 
 #%%
-data_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/beer_1.txt'
+data_location = rw.find_data_path('beer_1.txt')
 trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
@@ -41,8 +41,8 @@ ax.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,
 n_frames = 10
 indx = np.trunc(np.linspace(0,len(trajectory_orientation)-1,n_frames))
 indx = indx.astype(int)
-opener_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/opener.stl'
-bottle_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/bottle.stl'
+opener_location = rw.find_data_path('opener.stl')
+bottle_location = rw.find_data_path('bottle.stl')
 for i in indx:
     pl.plot_3d_frame(trajectory_position[i,:],trajectory_orientation[i,:,:],1,0.01,['red','green','blue'],ax)
     pl.plot_stl(opener_location,trajectory_position[i,:],trajectory_orientation[i,:,:],colour="c",alpha=0.2,ax=ax)    
@@ -87,7 +87,7 @@ pl.plot_orientation(optim_calc_results.Obj_frames,trajectory_orientation)
 
 pl.plot_invariants(optim_calc_results.invariants,[],arclength_n)
 
-plt.show()
+plt.show(block=False)
 
 #%%
 # Spline of model
@@ -209,7 +209,7 @@ if collision_flag:
 else:
     print("NO COLLISION DETECTED")
 
-plt.show()
+plt.show(block=False)
 #%% Visualization
 
 window_len = 20
@@ -277,7 +277,7 @@ while current_progress <= 1.0:
 
     pl.plot_invariants(optim_calc_results.invariants,optim_iter_results.invariants,arclength_n,progress_values)
     
-    plt.show()
+    plt.show(block=False)
     
     old_progress = current_progress
     current_progress = old_progress + 1/window_len
@@ -349,7 +349,7 @@ for k in range(len(targets)):
     tot_time = tot_time + new_time
     
     counter += 1
-    # plt.show()
+    # plt.show(block=False)
 
 print('')
 print("AVERAGE time to generate new trajectory: ")
@@ -368,4 +368,4 @@ fig = plt.figure(figsize=(5,5))
 ax2 = fig.add_subplot()
 ax2.plot(targets[:,-1],'r.')
 
-plt.show()
+plt.show(block=False)

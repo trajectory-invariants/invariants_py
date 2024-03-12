@@ -102,12 +102,8 @@ class FrenetSerret_gen_rot:
         ocp.add_objective(objective)
         if fatrop_solver:
             ocp.method(rockit.external_method('fatrop' , N=window_len-1))
-            # ocp._method.set_name("generation_rotation")
-            # TEMPORARY SOLUTION TO HAVE ONLINE GENERATION
-            import random
-            import string
-            rand = "".join(random.choices(string.ascii_lowercase))
-            ocp._method.set_name("/codegen/generation_rotation_"+rand)
+            # ocp._method.set_name("generation_rotation")            
+            ocp._method.set_name("/codegen/generation_rotation")
         else:
             ocp.method(rockit.MultipleShooting(N=window_len-1))
             ocp.solver('ipopt', {'expand':True, 'ipopt.print_info_string': 'yes'})

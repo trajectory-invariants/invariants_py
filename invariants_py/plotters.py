@@ -29,7 +29,30 @@ import matplotlib.pyplot as plt
 #sns.set(style='whitegrid',context='paper')
 #from IPython import get_ipython
 
+def plot_trajectory_and_bounds(boundary_constraints, trajectory):
+    # Extract x, y, and z coordinates from the trajectory
+    x = trajectory[:, 0]
+    y = trajectory[:, 1]
+    z = trajectory[:, 2]
 
+    # Create a 3D plot
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(x, y, z)
+
+    # Plot the boundary constraints as red dots
+    initial_point = boundary_constraints["position"]["initial"]
+    final_point = boundary_constraints["position"]["final"]
+    ax.scatter(initial_point[0], initial_point[1], initial_point[2], color='red', label='Initial Point')
+    ax.scatter(final_point[0], final_point[1], final_point[2], color='red', label='Final Point')
+
+    # Set labels for the axes
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+
+    # Show the plot
+    plt.show()
 
 def plot_trajectory_test(trajectory):
     fig = plt.figure(figsize=(8,8))
@@ -93,7 +116,7 @@ def plotPose(pose, figure = '', label = '', c='b', m='.', orientation = False):
 
 #    plt.autoscale(True, 'both', True)
 #    plt.ion()
-    plt.show()
+    plt.show(block=False)
 
     return fig, p
 
@@ -183,7 +206,7 @@ def plotTrajectory(trajectory, figure = None, label = "trajectory", title = '', 
 
 
 #    plt.title(title)
-    plt.show()
+    plt.show(block=False)
 
     return fig, p_lst
 
@@ -236,7 +259,7 @@ def plot_trajectory_invariants(trajectory,trajectory_recon,arclength_n,invariant
     plt.plot(0,1)
     plt.title('Torsion [rad/-]')
     
-    plt.show()
+    plt.show(block=False)
 
 def removeMultipleAxis(pList):
     for i in range(len(pList)):
@@ -421,6 +444,29 @@ def plot_stl(stl_file_location,pos,R,colour,alpha,ax):
     ax.add_collection3d(collection)
 
 
+def compare_invariants(invariants, new_invariants, arclength_n, progress_values):
+
+    fig = plt.figure()
+    plt.subplot(1,3,1)
+    plt.plot(progress_values,new_invariants[:,0],'r')
+    plt.plot(arclength_n,invariants[:,0],'b')
+    plt.plot(0,0)
+    plt.title('Velocity [m/m]')
+
+    plt.subplot(1,3,2)
+    plt.plot(progress_values,(new_invariants[:,1]),'r')
+    plt.plot(arclength_n,invariants[:,1],'b')
+    plt.plot(0,0)
+    plt.title('Curvature [rad/m]')
+
+    plt.subplot(1,3,3)
+    plt.plot(progress_values,(new_invariants[:,2]),'r')
+    plt.plot(arclength_n,invariants[:,2],'b')
+    plt.plot(0,0)
+    plt.title('Torsion [rad/m]')
+
+    plt.show()
+
 def plot_orientation(trajectory1,trajectory2,current_index = 0):
     """
     plots the value of qx,qy,qz,qw of two rotational trajectories expressed as quaternions, starting from rotational matrices
@@ -469,6 +515,16 @@ def plot_orientation(trajectory1,trajectory2,current_index = 0):
     # arrow3(trajectory2.Obj_location,trajectory2.Obj_location+0.05*axang2(:,1:3),['_b' 0.2],0.5,1)
     # axis equal; grid on; box on;
 
+def plot_invariants_new(invariants,arclength):
+    plt.figure()
+    plt.plot(arclength, invariants[:, 0], label='$v$ [m]', color='r')
+    plt.plot(arclength, invariants[:, 1], label='$\omega_\kappa$ [rad/m]', color='g')
+    plt.plot(arclength, invariants[:, 2], label='$\omega_\u03C4$ [rad/m]', color='b')
+    plt.xlabel('s [m]')
+    plt.legend()
+    plt.title('Calculated invariants (full horizon)')
+    #plt.show(block=False)
+    #plt.close()
 
 def plot_3d_frame(p,R,scale_arrow,length_arrow,my_color,ax3d):
     """

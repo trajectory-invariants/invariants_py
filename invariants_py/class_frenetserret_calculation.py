@@ -5,10 +5,14 @@ Created on Tue Dec  7 11:24:19 2021
 @author: u0091864
 """
 
+# OCP_vectorinvars_from_transl
+
+
+
 import numpy as np
 import casadi as cas
 import invariants_py.integrator_functions as integrators
-
+import invariants_py.ocp_helper as ocp_helper
 
 class FrenetSerret_calc:
 
@@ -41,7 +45,7 @@ class FrenetSerret_calc:
         #%% Specifying the constraints
         
         # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
-        opti.subject_to( R_t[-1].T @ R_t[-1] == np.eye(3))
+        opti.subject_to(ocp_helper.tril_vec(R_t[0].T @ R_t[0] - np.eye(3)) == 0)
         
         # Dynamic constraints
         integrator = integrators.define_geom_integrator_tra_FSI_casadi(h)
