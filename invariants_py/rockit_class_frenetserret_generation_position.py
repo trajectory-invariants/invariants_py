@@ -10,7 +10,7 @@ import casadi as cas
 import rockit
 import invariants_py.integrator_functions as integrators
 import time
-
+import invariants_py.generate_trajectory as generate_trajectory
 
 class FrenetSerret_gen_pos:
 
@@ -115,8 +115,8 @@ class FrenetSerret_gen_pos:
         
         self.dummy_solve()
 
-        if fatrop_solver:
-            self.ocp._method.set_option("print_level",0)
+        #if fatrop_solver:
+            #self.ocp._method.set_option("print_level",0)
             #self.ocp._method.set_option("tol",1e-11)
 
         # Transform the whole OCP to a Casadi function
@@ -223,9 +223,60 @@ class FrenetSerret_gen_pos:
         end_time = time.time()
         return invariants, calculated_trajectory, calculated_movingframe, tot_time
     
-    def generate_trajectory_online(self, invariant_model, boundary_constraints):
+    def generate_trajectory_online(self, invariant_model, boundary_constraints, step_size):
         
         if self.sol is None:
 
             # Initial values
-            initial_values = generate_initvals_from_bounds(boundary_constraints, N)
+            initial_values = generate_trajectory.generate_initvals_from_bounds(boundary_constraints, self.window_len)
+            R_t_init = initial_values["moving-frames"]
+            p_obj_init = initial_values["trajectory"]
+            U_init = initial_values["invariants"]
+
+            # Initialize states
+            self.ocp.set_initial(self.p_obj, p_obj_init[:self.window_len,:].T)
+            self.ocp.set_initial(self.R_t_x, R_t_init[:self.window_len,:,0].T)
+            self.ocp.set_initial(self.R_t_y, R_t_init[:self.window_len,:,1].T)
+            self.ocp.set_initial(self.R_t_z, R_t_init[:self.window_len,:,2].T)
+                
+            # Initialize controls
+            self.ocp.set_initial(self.U,U_init[:-1,:].T)
+
+            # Set values boundary constraints
+            #self.ocp.set_value(self.R_t_start,R_t_start)
+            #self.ocp.set_value(self.R_t_end,R_t_end)
+            self.ocp.set_value(self.p_obj_start,boundary_constraints["position"]["initial"])
+            self.ocp.set_value(self.p_obj_end,boundary_constraints["position"]["final"])
+
+            # Set values parameters
+            self.ocp.set_value(self.h,step_size)
+            w_invars = (10**0)*np.array([1.0, 1.0, 1.0])
+            self.ocp.set_value(self.w_invars, w_invars.T)  
+            self.ocp.set_value(self.U_demo, invariant_model.T)   
+
+            # Solve the NLP
+            sol = self.ocp.solve()            
+            self.sol = sol
+                        
+            # Extract the solved variables
+            _,i_t1 = sol.sample(self.U[0],grid='control')
+            _,i_t2 = sol.sample(self.U[1],grid='control')
+            _,i_t3 = sol.sample(self.U[2],grid='control')
+            invariants = np.array((i_t1,i_t2,i_t3)).T
+            _,calculated_trajectory = sol.sample(self.p_obj,grid='control')
+            _,calculated_movingframe = sol.sample(self.R_t,grid='control')
+
+        else:
+             # Solve the NLP
+            sol = self.ocp.solve()            
+            self.sol = sol
+                        
+            # Extract the solved variables
+            _,i_t1 = sol.sample(self.U[0],grid='control')
+            _,i_t2 = sol.sample(self.U[1],grid='control')
+            _,i_t3 = sol.sample(self.U[2],grid='control')
+            invariants = np.array((i_t1,i_t2,i_t3)).T
+            _,calculated_trajectory = sol.sample(self.p_obj,grid='control')
+            _,calculated_movingframe = sol.sample(self.R_t,grid='control')
+
+        return invariants, calculated_trajectory, calculated_movingframe
