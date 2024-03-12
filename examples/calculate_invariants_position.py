@@ -1,7 +1,6 @@
 # Calculate the invariants of a translation trajectory
 
 # Import necessary modules
-import invariants_py as invars
 from invariants_py import read_and_write_data as rw
 import invariants_py.plotters as plotters
 from invariants_py import calculate_invariants
@@ -17,3 +16,6 @@ invariants, progress = calculate_invariants.calculate_invariants(trajectory,"tra
 
 # Plot the calculated invariants
 plotters.plot_invariants_new(invariants, progress)
+
+# Save invariant model to a file
+rw.save_invariants_to_csv(progress, invariants, "sinus_invariants.csv")

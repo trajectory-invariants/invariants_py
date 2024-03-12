@@ -84,7 +84,7 @@ pl.plot_orientation(optim_calc_results.Obj_frames,trajectory_orientation)
 
 pl.plot_invariants(optim_calc_results.invariants,[],arclength_n)
 
-plt.show()
+plt.show(block=False)
 
 #%%
 # Spline of model
@@ -216,4 +216,4 @@ if collision_flag:
 else:
     print("NO COLLISION DETECTED")
 
-plt.show()
+plt.show(block=False)

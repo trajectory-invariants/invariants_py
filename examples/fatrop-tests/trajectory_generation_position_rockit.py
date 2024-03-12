@@ -54,7 +54,7 @@ ax.plot(calculate_trajectory[:,0],calculate_trajectory[:,1],calculate_trajectory
 
 pl.plot_invariants(invariants,[],arclength_n,[],inv_type='FS_pos')
 
-plt.show()
+plt.show(block=False)
 
 #%%
 # Spline of model
@@ -111,7 +111,7 @@ ax.set_zlabel('z')
 
 pl.plot_invariants(invariants,new_invars,arclength_n,progress_values,inv_type='FS_pos')
 
-plt.show()
+plt.show(block=False)
 
 
 #%% Visualization

@@ -128,7 +128,6 @@ class FrenetSerret_gen_pos:
         sol = self.opti.solve_limited()
         self.sol = sol
         
-        
         # Extract the solved variables
         invariants = sol.value(self.U).T
         invariants =  np.vstack((invariants,[invariants[-1,:]]))

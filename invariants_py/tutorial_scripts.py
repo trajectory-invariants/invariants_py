@@ -80,7 +80,7 @@ def calculate_invariants(data_location, plot_demo = True, use_fatrop_solver = Fa
 
         pl.plot_invariants(optim_calc_results.invariants,[],arclength_n)
 
-    plt.show()
+    plt.show(block=False)
 
     return optim_calc_results
 
@@ -179,4 +179,4 @@ def generate_trajectory(data_location, optim_calc_results, p_obj_end, use_fatrop
 
         pl.plot_invariants(optim_calc_results.invariants, optim_gen_results.invariants, arclength_n, progress_values)
 
-    plt.show()
+    plt.show(block=False)

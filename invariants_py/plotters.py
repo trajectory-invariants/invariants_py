@@ -93,7 +93,7 @@ def plotPose(pose, figure = '', label = '', c='b', m='.', orientation = False):
 
 #    plt.autoscale(True, 'both', True)
 #    plt.ion()
-    plt.show()
+    plt.show(block=False)
 
     return fig, p
 
@@ -183,7 +183,7 @@ def plotTrajectory(trajectory, figure = None, label = "trajectory", title = '', 
 
 
 #    plt.title(title)
-    plt.show()
+    plt.show(block=False)
 
     return fig, p_lst
 
@@ -236,7 +236,7 @@ def plot_trajectory_invariants(trajectory,trajectory_recon,arclength_n,invariant
     plt.plot(0,1)
     plt.title('Torsion [rad/-]')
     
-    plt.show()
+    plt.show(block=False)
 
 def removeMultipleAxis(pList):
     for i in range(len(pList)):
@@ -477,7 +477,7 @@ def plot_invariants_new(invariants,arclength):
     plt.xlabel('s [m]')
     plt.legend()
     plt.title('Calculated invariants (full horizon)')
-    #plt.show()
+    #plt.show(block=False)
     #plt.close()
 
 def plot_3d_frame(p,R,scale_arrow,length_arrow,my_color,ax3d):

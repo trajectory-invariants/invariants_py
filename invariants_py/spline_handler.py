@@ -1,3 +1,5 @@
+# Interpolating splines
+
 import scipy.interpolate as ip
 import numpy as np
 

@@ -84,7 +84,7 @@ ax2.set_title('Curvature [rad/m]')
 ax3.plot(arclength_n,invariants[:,2])
 ax3.set_title('Torsion [rad/m]')
 
-plt.show()
+plt.show(block=False)
 
 #%%
 # Spline of model
@@ -170,7 +170,7 @@ plt.plot(arclength_n,invariants[:,2],'b')
 plt.plot(0,0)
 plt.title('Torsion [rad/m]')
 
-plt.show()
+plt.show(block=False)
 
 #%% Visualization
 
@@ -244,7 +244,7 @@ while current_progress <= 1.0:
     plt.plot(0,0)
     plt.title('torsion [rad/m]')
 
-    plt.show()
+    plt.show(block=False)
     
     old_progress = current_progress
     current_progress = old_progress + 1/window_len

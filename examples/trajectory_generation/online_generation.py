@@ -122,7 +122,7 @@ plt.plot(arclength_n,invariants[:,2],'b')
 plt.plot(0,0)
 plt.title('Torsion [rad/m]')
 
-plt.show()
+plt.show(block=False)
 
 
 #%% Visualization

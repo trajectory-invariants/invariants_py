@@ -72,7 +72,7 @@ plot_orientation(trajectory_orientation,init_vals_calculate_trajectory)
 
 pl.plot_invariants(invariants,[],arclength_n,[],inv_type='FS_rot')
 
-plt.show()
+plt.show(block=False)
 
 #%%
 # Spline of model
@@ -164,7 +164,7 @@ pl.plot_stl(opener_location,[0,0,0],calculate_trajectory[-1],colour="r",alpha=0.
 pl.plot_stl(opener_location,[0,0,0],R_obj_end,colour="b",alpha=0.5,ax=ax99)
 pl.plot_stl(opener_location,[0,0,0],new_trajectory[-1],colour="g",alpha=0.5,ax=ax99)
 
-plt.show()
+plt.show(block=False)
 
 #%% Visualization
 
@@ -224,7 +224,7 @@ while current_progress <= 1.0:
     
     pl.plot_invariants(invariants,new_invars,arclength_n,progress_values,inv_type='FS_rot')
 
-    plt.show()
+    plt.show(block=False)
     
     old_progress = current_progress
     current_progress = old_progress + 1/window_len

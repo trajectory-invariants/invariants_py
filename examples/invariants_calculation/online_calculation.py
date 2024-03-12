@@ -124,7 +124,7 @@ while current_progress <= arclength_n[-1]:
     plt.plot(0,1)
     plt.title('Torsion [rad/-]')
 
-    plt.show()
+    plt.show(block=False)
     
     
     current_progress = round(current_progress + window_increment*stepsize,3) # start index next window

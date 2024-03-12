@@ -50,7 +50,7 @@ plt.plot(arclength,invariants[:,2],label = '$\omega_\u03C4$ [rad/m]',color='b')
 plt.xlabel('s [m]')
 plt.legend()
 plt.title('Calculated invariants (full horizon)')
-plt.show()
+plt.show(block=False)
 
 """
 Example calculation invariants using a smaller moving horizon
@@ -86,5 +86,5 @@ plt.plot(arclength,invariants[:,2],label = '$\omega_\u03C4$ [rad/m]',color='b')
 plt.xlabel('s [m]')
 plt.legend()
 plt.title('Calculated invariants (moving horizon)')
-plt.show()
+plt.show(block=False)
 

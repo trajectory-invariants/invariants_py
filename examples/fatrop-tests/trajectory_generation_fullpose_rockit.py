@@ -87,7 +87,7 @@ pl.plot_orientation(optim_calc_results.Obj_frames,trajectory_orientation)
 
 pl.plot_invariants(optim_calc_results.invariants,[],arclength_n)
 
-plt.show()
+plt.show(block=False)
 
 #%%
 # Spline of model
@@ -224,7 +224,7 @@ if collision_flag:
 else:
     print("NO COLLISION DETECTED")
 
-plt.show()
+plt.show(block=False)
 #%% Visualization
 
 window_len = 20
@@ -292,7 +292,7 @@ while current_progress <= 1.0:
 
     pl.plot_invariants(optim_calc_results.invariants,optim_iter_results.invariants,arclength_n,progress_values)
     
-    plt.show()
+    plt.show(block=False)
     
     old_progress = current_progress
     current_progress = old_progress + 1/window_len
@@ -364,7 +364,7 @@ for k in range(len(targets)):
     tot_time = tot_time + new_time
     
     counter += 1
-    # plt.show()
+    # plt.show(block=False)
 
 print('')
 print("AVERAGE time to generate new trajectory: ")
@@ -383,4 +383,4 @@ fig = plt.figure(figsize=(5,5))
 ax2 = fig.add_subplot()
 ax2.plot(targets[:,-1],'r.')
 
-plt.show()
+plt.show(block=False)
