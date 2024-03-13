@@ -180,7 +180,8 @@ class FrenetSerret_calc:
                     
         invariants = np.array(np.vstack((self.i1_sol,self.i2_sol,self.i3_sol))).T
         calculated_trajectory = np.array(self.p_obj_sol).T
-        calculated_movingframe = 0# sol.sample(self.R_t_x,grid='control')
+        calculated_movingframe = np.reshape(np.vstack((self.R_t_x_sol, self.R_t_y_sol, self.R_t_z_sol)).T, (-1,3,3))
+
 
         return invariants, calculated_trajectory, calculated_movingframe
 
