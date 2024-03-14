@@ -113,7 +113,8 @@ class FrenetSerret_gen_pos:
         self.ocp = ocp
         self.sol = None
         self.first_window = True
-        self.dummy_solve()
+        
+        #self.dummy_solve()
 
         if fatrop_solver:
             self.ocp._method.set_option("print_level",0)
