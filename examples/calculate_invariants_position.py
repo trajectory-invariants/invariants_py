@@ -22,4 +22,4 @@ plotters.plot_trajectory(calc_trajectory)
 # Save invariant model to a file
 rw.save_invariants_to_csv(progress, invariants, "sinus_invariants.csv")
 
-input("Press Enter to continue...")
+#input("Press Enter to continue...")

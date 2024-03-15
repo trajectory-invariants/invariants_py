@@ -13,7 +13,7 @@ from invariants_py import read_and_write_data as rw
 # Set path to data file
 data_location = rw.find_data_path('beer_1.txt')
 # Set solver
-use_fatrop_solver = True
+use_fatrop_solver = False
 # Set type of trajectory, options: "pose", "position", "rotation"
 traj_type = "pose"
 """

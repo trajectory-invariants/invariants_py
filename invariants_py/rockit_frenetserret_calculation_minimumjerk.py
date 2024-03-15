@@ -6,7 +6,7 @@ import invariants_py.ocp_helper as ocp_helper
 
 class FrenetSerret_calc:
 
-    def __init__(self, nb_samples = 100, bool_unsigned_invariants = False, w_pos = 1, w_regul_jerk = 10**-6 , w_regul_invars = 10**-10, planar_task = False, fatrop_solver = False):
+    def __init__(self, nb_samples = 100, w_pos = 1, w_regul_jerk = 10**-6 , w_regul_invars = 10**-10, fatrop_solver = False):
 
         self.N_controls = nb_samples-1
 
@@ -74,7 +74,6 @@ class FrenetSerret_calc:
         if fatrop_solver: 
             method = rockit.external_method('fatrop', N=self.N_controls)
             self.ocp.method(method)
-
         else:
             self.ocp.method(rockit.MultipleShooting(N=self.N_controls))
             #ocp.solver('ipopt', {'expand':True})
@@ -83,8 +82,8 @@ class FrenetSerret_calc:
         
         # Solve already once with dummy measurements
         self.dummy_solve() 
-        self.ocp._method.set_option("print_level",0)
-        self.ocp._method.set_option("tol",1e-11)
+        #self.ocp._method.set_option("print_level",0)
+        #self.ocp._method.set_option("tol",1e-11)
         self.first_window = True
         
         # Transform the whole OCP to a Casadi function
@@ -92,41 +91,37 @@ class FrenetSerret_calc:
     
 
     def define_ocp_to_function(self):
-        p_sample = cas.MX()
-        for i in range(self.N_controls):
-            p_sample = cas.horzcat(p_sample, self.ocp._method.eval_at_control(self.ocp, self.p_obj_m, i))
-        p_sample = cas.horzcat(p_sample, self.ocp._method.eval_at_control(self.ocp, self.p_obj_m, -1))    
-        
+        # Encapsulate whole rockit specification in a Casadi function
         self.ocp_to_function = self.ocp.to_function('fastsolve', 
-        [ # Inputs
-          self.ocp.value(self.h),
-          self.ocp.value(p_sample),
-          self.ocp.sample(self.R_t_x, grid='control',include_last='True')[1], #self.ocp.x
-          self.ocp.sample(self.R_t_y, grid='control',include_last='True')[1],
-          self.ocp.sample(self.R_t_z, grid='control',include_last='True')[1],
-          self.ocp.sample(self.p_obj, grid='control',include_last='True')[1],
-          self.ocp.sample(self.i1dot, grid='control',include_last='True')[1],
-          self.ocp.sample(self.i1,    grid='control',include_last='True')[1],
-          self.ocp.sample(self.i2,    grid='control',include_last='True')[1],
-          self.ocp.sample(self.i1ddot,grid='control-')[1],
-          self.ocp.sample(self.i2dot, grid='control-')[1],
-          self.ocp.sample(self.i3,    grid='control-')[1], 
-         ],
-         [  # Outputs
-          self.ocp.sample(self.R_t_x, grid='control',include_last='True')[1],
-          self.ocp.sample(self.R_t_y, grid='control',include_last='True')[1],
-          self.ocp.sample(self.R_t_z, grid='control',include_last='True')[1],
-          self.ocp.sample(self.p_obj, grid='control',include_last='True')[1],
-          self.ocp.sample(self.i1dot, grid='control',include_last='True')[1],
-          self.ocp.sample(self.i1,    grid='control',include_last='True')[1],
-          self.ocp.sample(self.i2,    grid='control',include_last='True')[1],
-          self.ocp.sample(self.i1ddot,grid='control')[1],
-          self.ocp.sample(self.i2dot, grid='control')[1],
-          self.ocp.sample(self.i3,    grid='control')[1], 
-         ],
-         ["stepsize","p_obj_m","R_t_x","R_t_y","R_t_z","p_obj","i1dot","i1","i2","i1ddot","i2dot","i3"],   # Input labels
-         ["R_t_x2","R_t_y2","R_t_z2","p_obj2","i1dot2","i12","i22","i1ddot2","i2dot2","i32"],   # Output labels
-         )
+            [ # Inputs
+                self.ocp.value(self.h),
+                self.ocp.sample(self.p_obj_m, grid='control')[1],
+                self.ocp.sample(self.R_t_x, grid='control')[1], 
+                self.ocp.sample(self.R_t_y, grid='control')[1],
+                self.ocp.sample(self.R_t_z, grid='control')[1],
+                self.ocp.sample(self.p_obj, grid='control')[1],
+                self.ocp.sample(self.i1dot, grid='control')[1],
+                self.ocp.sample(self.i1,    grid='control')[1],
+                self.ocp.sample(self.i2,    grid='control')[1],
+                self.ocp.sample(self.i1ddot,grid='control-')[1],
+                self.ocp.sample(self.i2dot, grid='control-')[1],
+                self.ocp.sample(self.i3,    grid='control-')[1], 
+            ],
+            [  # Outputs
+                self.ocp.sample(self.R_t_x, grid='control')[1],
+                self.ocp.sample(self.R_t_y, grid='control')[1],
+                self.ocp.sample(self.R_t_z, grid='control')[1],
+                self.ocp.sample(self.p_obj, grid='control')[1],
+                self.ocp.sample(self.i1dot, grid='control')[1],
+                self.ocp.sample(self.i1,    grid='control')[1],
+                self.ocp.sample(self.i2,    grid='control')[1],
+                self.ocp.sample(self.i1ddot,grid='control')[1],
+                self.ocp.sample(self.i2dot, grid='control')[1],
+                self.ocp.sample(self.i3,    grid='control')[1], 
+            ],
+            ["h","p_obj_m","R_t_x","R_t_y","R_t_z","p_obj","i1dot","i1","i2","i1ddot","i2dot","i3"],   # Input labels
+            ["R_t_x2","R_t_y2","R_t_z2","p_obj2","i1dot2","i12","i22","i1ddot2","i2dot2","i32"],   # Output labels
+        )
         
     def dummy_solve(self):
         self.ocp.set_initial(self.R_t_x, np.array([1,0,0]))                 
@@ -166,7 +161,7 @@ class FrenetSerret_calc:
         self.i2dot_sol,
         self.i3_sol] = self.ocp_to_function(
         stepsize, 
-        measured_positions[:,:].T,
+        measured_positions.T,
         self.R_t_x_sol,
         self.R_t_y_sol,
         self.R_t_z_sol,
@@ -174,9 +169,9 @@ class FrenetSerret_calc:
         self.i1dot_sol,
         self.i1_sol,
         self.i2_sol,
-        self.i1ddot_sol[0:-1],
-        self.i2dot_sol[0:-1],
-        self.i3_sol[0:-1],)
+        self.i1ddot_sol,
+        self.i2dot_sol,
+        self.i3_sol,)
                     
         invariants = np.array(np.vstack((self.i1_sol,self.i2_sol,self.i3_sol))).T
         calculated_trajectory = np.array(self.p_obj_sol).T
@@ -185,7 +180,9 @@ class FrenetSerret_calc:
 
         return invariants, calculated_trajectory, calculated_movingframe
 
-    
+
+
+        
     #%%     
     # def calculate_invariants_global_old(self,trajectory_meas,stepsize):
     #     """
@@ -309,3 +306,21 @@ class FrenetSerret_calc:
     #     self.ocp.set_initial(self.i3,    self.sol.sample(self.i3,grid='control')[1].T)
 
     #     return invariants, calculated_trajectory, calculated_movingframe
+
+if __name__ == "__main__":
+    frenet_serret = FrenetSerret_calc(nb_samples=6)
+    
+    # Example data for measured positions and the stepsize
+    measured_positions = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12], [13, 14, 15], [16, 17, 18]])
+    stepsize = 0.1
+
+    # Call the calculate_invariants_online function
+    invariants, calculated_trajectory, calculated_movingframe = frenet_serret.calculate_invariants_online(measured_positions, stepsize)
+
+    # Print the results
+    print("Invariants:")
+    print(invariants)
+    print("Calculated Moving Frame:")
+    print(calculated_movingframe)
+    print("Calculated Trajectory:")
+    print(calculated_trajectory)
