@@ -42,7 +42,7 @@ input_data.time_vector = np.linspace(0,10,len(position_data[:,1]))
 #%% INVARIANTS CALCULATION
 
 # specify optimization problem symbolically
-FS_calculation_problem = FS.FrenetSerret_calculation()  # ---> default settings are used
+FS_calculation_problem = FS.invariants_calculation()  # ---> default settings are used
 
 # calculate invariants given measurements
 calculation_output = FS_calculation_problem.calculate_invariants_global(input_data)
@@ -51,7 +51,8 @@ calculated_R_fs = calculation_output.calculated_movingframe
 
 #%% TRAJECTORY GENERATION
 
-formulation = FS.set_default_ocp_formulation() 
+formulation = FS.default_ocp_formulation() 
+# formulation = FS.set_default_ocp_formulation() 
 
 # Ideally retrieved by other module (e.g. estimator of current location)
 formulation.initial_pos = calculated_trajectory[0,:]
@@ -66,7 +67,7 @@ formulation.direction_vel_end = np.array([0,1,0])
 formulation.direction_acc_end = np.array([-1,0,0])
 
 # specify optimization problem symbolically
-FS_generation_problem = FS.FrenetSerret_generation(formulation)
+FS_generation_problem = FS.trajectory_generation(formulation)
     
 generation_output = FS_generation_problem.generate_trajectory_global(calculation_output)
           

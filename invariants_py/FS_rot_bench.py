@@ -6,7 +6,6 @@ Created on Sat Feb 24 10:29:33 2024
 """
 
 import numpy as np
-import scipy
 import casadi as cas
 import invariants_py.reparameterization as reparam
 import invariants_py.integrator_functions_bench as integrators
@@ -16,80 +15,72 @@ import invariants_py.SO3 as SO3
 import matplotlib.pyplot as plt
 
     
-def set_default_ocp_formulation():
-    class formulation:
-        pass
-    # GENERIC PROPERTIES
-    ocp_formulation = formulation()
-    ocp_formulation.progress_domain = 'geometric'                    # options: 'time', 'geometric'
-    ocp_formulation.reparametrize_bool = True                        # options:  True, False
-    ocp_formulation.progress_constraint = True                       # Hard constraint on unit velocity
-    ocp_formulation.window_len = 100                                 # number of samples
-    ocp_formulation.orientation_representation_obj = 'quat'        # options: 'matrix', 'quat'
+class default_ocp_formulation:
     
-    # orientation representation of the moving frame
-    ocp_formulation.orientation_representation = 'matrix_6'          # options: 'matrix_9', 'matrix_6'
-    ocp_formulation.orientation_ortho_constraint = 'upper_triangular_3' # options for matrix_9: 'full_matrix', 'upper_triangular_6' 
-                                                                     # additional options for 'matrix_6': 'upper_triangular_3' 
-    
-    ocp_formulation.integrator = 'sequential'                        # options: 'continuous', 'sequential'
-    ocp_formulation.objective = 'weighted_sum'                       # options: 'weighted_sum', 'epsilon_constrained'
-    ocp_formulation.initialization = 'analytical_formulas'           # options: 'analytical_formulas'
-    ocp_formulation.bool_enforce_positive_invariants = [False,False]  # options:  [True, True]   -> first two invariants positive
-                                                                     #           [True, False]  -> first invariant positive
-                                                                     #           [False, False] -> nothing enforced                                             
-    # CALCULATION SPECIFIC PROPERTIES                                                                  
-    ocp_formulation.objective_weights_calc = [10**(4), 10**(0), 10**(-1)] # weight on [MS position error, MS invariants = 1!, MS difference in invariants]
-    ocp_formulation.objective_rms_tol_calc = 1/180*np.pi             # tolerance on RMS rotation error
-    
-    # GENERATION SPECIFIC PROPERTIES
-    ocp_formulation.objective_weights_gen = [10**(-4), 10**(2), 10**(0)]  # weight on [MS position error, MS invariants, MS difference in invariants]
-    ocp_formulation.activation_function = 'off'                      # activation function on weights. options: 'off', 'exp'
-    
-    ocp_formulation.initial_rot = np.eye(3)                        
-    ocp_formulation.magnitude_vel_start = 1.0                        # numeric value or 'free'
-    ocp_formulation.direction_vel_start = ['free']                   # numeric 3D vector or ['free']
-    ocp_formulation.magnitude_acc_start = 0.0                        # 0 or 'free'
-    ocp_formulation.direction_acc_start = ['free']                   # numeric 3D vector or ['free']
-    
-    ocp_formulation.final_rot = np.eye(3) 
-    ocp_formulation.magnitude_vel_end = 1.0                          # numeric value or 'free'
-    ocp_formulation.direction_vel_end = ['free']                     # numeric 3D vector or ['free']
-    ocp_formulation.magnitude_acc_end = 0.0                          # 0 or 'free'
-    ocp_formulation.direction_acc_end = ['free']                     # numeric 3D vector or ['free']
-                                                      
-    return ocp_formulation
-    
+    def __init__(self):
+        
+        # GENERIC PROPERTIES
+        self.progress_domain = 'geometric'                    # options: 'time', 'geometric'
+        self.reparametrize_bool = True                        # options:  True, False
+        self.progress_constraint = True                       # Hard constraint on unit velocity
+        self.window_len = 100                                 # number of samples
+        self.orientation_representation_obj = 'quat'          # options: 'matrix', 'quat'
+        
+        # orientation representation of the moving frame
+        self.orientation_representation = 'matrix_6'          # options: 'matrix_9', 'matrix_6'
+        self.orientation_ortho_constraint = 'upper_triangular_3' # options for matrix_9: 'full_matrix', 'upper_triangular_6' 
+                                                              # additional options for 'matrix_6': 'upper_triangular_3' 
+        self.integrator = 'sequential'                        # options: 'continuous', 'sequential'
+        self.objective = 'weighted_sum'                       # options: 'weighted_sum', 'epsilon_constrained'
+        self.initialization = 'analytical_formulas'           # options: 'analytical_formulas'
+        self.bool_enforce_positive_invariants = [False,False] # options:  [True, True]   -> first two invariants positive
+                                                              #           [True, False]  -> first invariant positive
+                                                              #           [False, False] -> nothing enforced                                             
+        # CALCULATION SPECIFIC PROPERTIES                                                                  
+        self.objective_weights_calc = [10**(4), 10**(0), 10**(-1)] # weight on [MS position error, MS invariants, MS difference in invariants]
+        self.objective_rms_tol_calc = 1/180*np.pi             # tolerance on RMS rotation error
+        
+        # GENERATION SPECIFIC PROPERTIES
+        self.objective_weights_gen = [10**(-4), 10**(2), 10**(0)]  # weight on [MS position error, MS invariants, MS difference in invariants]
+        self.activation_function = 'off'                      # activation function on weights. options: 'off', 'exp'
+        
+        self.initial_rot = np.eye(3)                        
+        self.magnitude_vel_start = 1.0                        # numeric value or 'free'
+        self.direction_vel_start = ['free']                   # numeric 3D vector or ['free']
+        self.magnitude_acc_start = 0.0                        # 0 or 'free'
+        self.direction_acc_start = ['free']                   # numeric 3D vector or ['free']
+        
+        self.final_rot = np.eye(3) 
+        self.magnitude_vel_end = 1.0                          # numeric value or 'free'
+        self.direction_vel_end = ['free']                     # numeric 3D vector or ['free']
+        self.magnitude_acc_end = 0.0                          # 0 or 'free'
+        self.direction_acc_end = ['free']                     # numeric 3D vector or ['free']
 
 #%% Define generic OCP problem
-def define_generic_OCP_problem(self):
+class generic_OCP_problem:
 
-    self.opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
-    self.window_len = self.ocp_formulation.window_len
-    
-    # Set generic features (applicable to both both calculation and generation)
-    self = define_system_states_generic(self)
-    self = define_system_controls_generic(self)
-    self = define_system_parameters_generic(self)
-    self = define_system_constraints_generic(self)
-    self = define_system_objective_generic(self)
-    
-    self.opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':300,'tol':1e-6,'nlp_scaling_method':'none','print_level':5}) 
-    
-    return self
-    
-#%% OCP formulation FS invariants calculation
-class FrenetSerret_calculation:
-
-    def __init__(self, ocp_formulation = False):
-
-        # if no custom properties are given in 'ocp_formulation', use our default ocp formulation
-        if not ocp_formulation:
-            ocp_formulation = set_default_ocp_formulation()
+    def __init__(self, ocp_formulation = default_ocp_formulation):
+        
         self.ocp_formulation = ocp_formulation
+        self.opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
+        self.window_len = self.ocp_formulation.window_len
+        
+        # Set generic features (applicable to both both calculation and generation)
+        self = define_system_states_generic(self)
+        self = define_system_controls_generic(self)
+        self = define_system_parameters_generic(self)
+        self = define_system_constraints_generic(self)
+        self = define_system_objective_generic(self)
+        
+        self.opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':300,'tol':1e-6,'nlp_scaling_method':'none','print_level':5}) 
+
+#%% OCP formulation FS invariants calculation
+class invariants_calculation(generic_OCP_problem):
+
+    def __init__(self, ocp_formulation = default_ocp_formulation()):
         
         # set generic features (applicable to both calculation and generation)
-        self = define_generic_OCP_problem(self)
+        super().__init__(ocp_formulation)
         
         # Set extra application specific features (applicable to calculation)
         self = set_parameters_ocp_calculation_specific(self)
@@ -120,7 +111,7 @@ class FrenetSerret_calculation:
         
         # Solve the NLP
         sol = self.opti.solve_limited()
-        self.sol = sol
+        
         N = self.window_len
         if self.ocp_formulation.orientation_representation_obj == 'matrix':
             self.calculated_orientation_trajectory = np.array([sol.value(i) for i in self.R_obj])
@@ -155,21 +146,17 @@ class FrenetSerret_calculation:
                 
         self.invariants = invariants
         self.calculated_movingframe = calculated_movingframe
+        self.sol = sol
         
         return self
     
-#%% OCP formulation FS invariants generation
-class FrenetSerret_generation:
+#%% OCP formulation trajectory generation from invariants
+class trajectory_generation(generic_OCP_problem):
 
-    def __init__(self, ocp_formulation = False):
-
-        # if no custom properties are given in 'ocp_formulation', use our default ocp formulation
-        if not ocp_formulation:
-            ocp_formulation = set_default_ocp_formulation()
-        self.ocp_formulation = ocp_formulation
+    def __init__(self, ocp_formulation = default_ocp_formulation()):
         
         # set generic features (applicable to both calculation and generation)
-        self = define_generic_OCP_problem(self)
+        super().__init__(ocp_formulation)
         
         # Set extra application specific features (applicable to generation)
         self = define_system_parameters_generation_specific(self)
@@ -179,12 +166,11 @@ class FrenetSerret_generation:
         
     def generate_trajectory_global(self,calculation_output = 'none'):
         
-        # linear interpolation from initial orientation to final rotation
-        rot_start_end = np.zeros([2,3,3])
-        rot_start_end[0,:,:] = self.ocp_formulation.initial_rot
-        rot_start_end[1,:,:] = self.ocp_formulation.final_rot
-
         if calculation_output == 'none':   # No shape preservation, instead the shape will be minimized 
+            # linear interpolation from initial orientation to final rotation
+            rot_start_end = np.zeros([2,3,3])
+            rot_start_end[0,:,:] = self.ocp_formulation.initial_rot
+            rot_start_end[1,:,:] = self.ocp_formulation.final_rot
             total_angle = SO3.crossvec(SO3.logm(rot_start_end[0,:,:].T @ rot_start_end[1,:,:]))
             self.stepsize = np.linalg.norm(total_angle)/(self.window_len-1)
             self.progress_vector = np.linspace(0,(self.window_len-1)*self.stepsize,self.window_len)
@@ -201,7 +187,6 @@ class FrenetSerret_generation:
         
         # Solve the NLP
         sol = self.opti.solve_limited()
-        self.sol = sol
         
         # Extract the solved variables
         invariants = sol.value(self.U).T
@@ -217,6 +202,7 @@ class FrenetSerret_generation:
             self.calculated_orientation_trajectory = calculated_orientation_trajectory
             
         self.calculated_movingframe = np.array([sol.value(i) for i in self.R_t])
+        self.sol = sol
         
         return self
     

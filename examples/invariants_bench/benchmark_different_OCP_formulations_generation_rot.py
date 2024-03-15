@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
 import invariants_py.FS_pos_bench as FS
-import list_of_different_formulations_generation as form
+import list_of_different_formulations_generation_rot as form
 
 
 #%%
@@ -33,7 +33,7 @@ input_data.position_data = position_data
 input_data.time_vector = np.linspace(0,10,len(position_data[:,1]))
 
 # specify optimization problem symbolically
-FS_calculation_problem = FS.FrenetSerret_calculation()
+FS_calculation_problem = FS.invariants_calculation()
 
 # calculate invariants given measurements
 calculation_output = FS_calculation_problem.calculate_invariants_global(input_data)
@@ -67,7 +67,7 @@ plt.suptitle('Reference invariants')
 plt.show()
 
 # specify optimization problem symbolically
-FS_generation_problem = FS.FrenetSerret_generation()
+FS_generation_problem = FS.trajectory_generation()
 
 # Ideally retrieved by other module (e.g. estimator of current location)
 initial_pos = calculated_trajectory[0,:]
@@ -103,7 +103,7 @@ for k in range(Nb_formulations):
     formulation.direction_vel_end = direction_vel_end                      
     formulation.direction_acc_end = direction_acc_end 
     
-    FS_generation_problem = FS.FrenetSerret_generation(formulation)
+    FS_generation_problem = FS.trajectory_generation(formulation)
     
     output = FS_generation_problem.generate_trajectory_global(calculation_output)
     invariants = output.invariants

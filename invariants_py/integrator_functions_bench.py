@@ -8,33 +8,72 @@ Created on Sat Feb 24 11:26:26 2024
 import casadi as cas
 import numpy as np
 
-
-
-def geo_integrator_pos(R_t, p_obj, u, h):
-    """Integrate invariants over interval h starting from a current state (object pose + moving frames)"""
-    # Define a geometric integrator for eFSI,
-    # (meaning rigid-body motion is perfectly integrated assuming constant invariants)
+def build_matrix(e_x,e_z):
+    R_t = cas.hcat([e_x,cas.cross(e_z,e_x),e_z])
+    return R_t
     
+def geo_integrator_mf_continuous(e_x, e_z, i2, i3, h):
+    """Integrate invariants over interval h starting from a current state (moving frame)"""
     
-    # object translation speed
-    # curvature speed translational Frenet-Serret
-    # torsion speed translational Frenet-Serret
-    
-    i4 = u[0]
-    i5 = u[1]
-    i6 = u[2]
-
-    omega = cas.vertcat(i6,0,i5)
+    R_t = build_matrix(e_x,e_z)
+    omega = cas.vertcat(i3,0,i2)
     omega_norm = cas.norm_2(omega)
-    v = cas.vertcat(i4,0,0)
-
-    deltaR = np.eye(3) + cas.sin(omega_norm @ h)/omega_norm*cas.skew(omega) + (1-cas.cos(omega_norm @ h))/omega_norm**2 * cas.mtimes(cas.skew(omega),cas.skew(omega))
-    deltaP = (np.eye(3)-deltaR) @ cas.skew(omega) @ v/omega_norm**2 + omega @ omega.T @ v/omega_norm**2*h
-    
+    deltaR = np.eye(3) + cas.sin(omega_norm @ h)/omega_norm*cas.skew(omega) + (1-cas.cos(omega_norm @ h))/omega_norm**2 * cas.mtimes(cas.skew(omega),cas.skew(omega))    
     R_t_plus1 = R_t @ deltaR
-    p_obj_plus1 = R_t @ deltaP + p_obj
+    e_x_plus1 = R_t_plus1[:,0]
+    e_z_plus1 = R_t_plus1[:,2]
+    
+    return e_x_plus1, e_z_plus1
 
-    return (R_t_plus1, p_obj_plus1)
+def geo_integrator_mf_sequential(e_x, e_z, i2, i3, h):
+    """Integrate invariants over interval h starting from a current state (moving frame)"""  
+    
+    R_t = build_matrix(e_x,e_z)
+    angle_z = i2*h ; angle_x = i3*h
+    R_t_plus1 = R_t @ (rot_z_casadi(angle_z) @ rot_x_casadi(angle_x))
+    e_x_plus1 = R_t_plus1[:,0]
+    e_z_plus1 = R_t_plus1[:,2]
+
+    return e_x_plus1, e_z_plus1
+
+def define_geom_integrator_mf(h,settings):
+
+    e_x  = cas.MX.sym('e_x',3,1) 
+    e_z  = cas.MX.sym('e_z',3,1) 
+    i2 = cas.MX.sym('i2')
+    i3 = cas.MX.sym('i3')
+
+    # Define a geometric integrator 
+    if settings['integrator_mf'] == 'continuous':
+        e_x_plus1, e_z_plus1 = geo_integrator_mf_continuous(e_x, e_z, i2, i3, h)
+    else:
+        e_x_plus1, e_z_plus1 = geo_integrator_mf_sequential(e_x, e_z, i2, i3, h)
+    integrator = cas.Function("phi", [e_x,e_z,i2,i3,h] , [e_x_plus1, e_z_plus1])
+    
+    return integrator
+
+def geo_integrator_pos(e_x, p_obj, i1, h):
+    
+    v = i1*e_x
+    p_obj_plus1 = v*h + p_obj
+
+    return p_obj_plus1
+
+def define_geom_integrator_pos(h):
+    ## Generate optimal eFSI trajectory
+    # System states
+    e_x  = cas.MX.sym('e_x',3,1) # moving frame
+    p_obj = cas.MX.sym('p_obj',3,1) # object position
+
+    # System controls (invariants)
+    i1 = cas.MX.sym('i1')
+
+    ## Define a geometric integrator for eFSI, (meaning rigid-body motion is perfectly integrated assuming constant invariants)
+    p_obj_plus1 = geo_integrator_pos(e_x, p_obj, i1, h)
+    integrator = cas.Function("phi", [e_x,p_obj,i1,h] , [p_obj_plus1])
+    
+    return integrator
+
 
 def rot_x_casadi(angle):
     

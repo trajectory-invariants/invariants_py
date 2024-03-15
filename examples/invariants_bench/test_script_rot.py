@@ -39,7 +39,7 @@ input_data.rot_data = rot_data
 #%% INVARIANTS CALCULATION
 
 # specify optimization problem symbolically
-FS_calculation_problem = FS.FrenetSerret_calculation()  # ---> default settings are used
+FS_calculation_problem = FS.invariants_calculation()  # ---> default settings are used
 
 # calculate invariants given measurements
 calculation_output = FS_calculation_problem.calculate_invariants_global(input_data)
@@ -49,8 +49,7 @@ calculated_R_fs = calculation_output.calculated_movingframe
 
 #%% TRAJECTORY GENERATION
 
-formulation = FS.set_default_ocp_formulation() 
-
+formulation = FS.default_ocp_formulation() 
 
 # Ideally retrieved by other module (e.g. estimator of current location)
 formulation.initial_rot = calculated_trajectory[0,:,:]
@@ -68,7 +67,7 @@ formulation.direction_acc_end = np.array([0,1,0])
 # formulation.direction_acc_end = calculated_R_fs[-1][0:3,1]
 
 # specify optimization problem symbolically
-FS_generation_problem = FS.FrenetSerret_generation(formulation)
+FS_generation_problem = FS.trajectory_generation(formulation)
     
 generation_output = FS_generation_problem.generate_trajectory_global(calculation_output)
 

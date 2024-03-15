@@ -30,16 +30,8 @@ def null_operation(self,input_data):
 
 class FrenetSerret_calculation:
 
-    def __init__(self, ocp_formulation_pos = False, ocp_formulation_rot = False):
+    def __init__(self, ocp_formulation_pos = FS_pos.default_ocp_formulation(), ocp_formulation_rot = FS_rot.default_ocp_formulation()):
 
-        # if no custom properties are given in 'ocp_formulation', use our default ocp formulation
-        if not ocp_formulation_pos:
-            ocp_formulation_pos = FS_pos.set_default_ocp_formulation()
-            ocp_formulation_pos.progress_constraint = True                       
-        # if no custom properties are given in 'ocp_formulation', use our default ocp formulation
-        if not ocp_formulation_rot:
-            ocp_formulation_rot = FS_rot.set_default_ocp_formulation()
-            ocp_formulation_rot.progress_constraint = False
         self.ocp_formulation_pos = ocp_formulation_pos
         self.ocp_formulation_rot = ocp_formulation_rot
         
@@ -47,10 +39,10 @@ class FrenetSerret_calculation:
         
         input_data = preprocess_input_data_pose(self,input_data)
     
-        FS_calculation_problem_pos = FS_pos.FrenetSerret_calculation(self.ocp_formulation_pos)
+        FS_calculation_problem_pos = FS_pos.invariants_calculation(self.ocp_formulation_pos)
         calculation_output_pos = FS_calculation_problem_pos.calculate_invariants_global(input_data,null_operation)
         
-        FS_calculation_problem_rot = FS_rot.FrenetSerret_calculation(self.ocp_formulation_rot)
+        FS_calculation_problem_rot = FS_rot.invariants_calculation(self.ocp_formulation_rot)
         calculation_output_rot = FS_calculation_problem_rot.calculate_invariants_global(input_data,null_operation)
         
         return calculation_output_pos, calculation_output_rot

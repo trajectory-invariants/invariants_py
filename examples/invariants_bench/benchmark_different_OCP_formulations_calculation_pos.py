@@ -42,7 +42,7 @@ for k in range(Nb_formulations):
     formulation = formulations[k]
     
     # specify optimization problem symbolically
-    FS_calculation_problem = FS.FrenetSerret_calculation(formulation)
+    FS_calculation_problem = FS.invariants_calculation(formulation)
     
     # calculate invariants given measurements
     output = FS_calculation_problem.calculate_invariants_global(input_data)

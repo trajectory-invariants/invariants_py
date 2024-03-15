@@ -30,11 +30,11 @@ def set_formulations():
     return formulations
 
 def set_formulation_0(): # default formulation
-    ocp_formulation = FS.set_default_ocp_formulation()
+    ocp_formulation = FS.default_ocp_formulation()
     return ocp_formulation
 
 def set_formulation_1():
-    ocp_formulation = FS.set_default_ocp_formulation()                               
+    ocp_formulation = FS.default_ocp_formulation()                               
     ocp_formulation.orientation_representation = 'matrix_9'          # options: 'matrix_9', 'matrix_6'
     ocp_formulation.orientation_ortho_constraint = 'full_matrix'     # options for matrix_9: 'full_matrix', 'upper_triangular_6' 
                                                                      # additional options for 'matrix_6': 'upper_triangular_3' 
@@ -44,7 +44,7 @@ def set_formulation_1():
     return ocp_formulation
 
 def set_formulation_2():
-    ocp_formulation = FS.set_default_ocp_formulation()                               
+    ocp_formulation = FS.default_ocp_formulation()                               
     ocp_formulation.orientation_representation = 'matrix_9'          # options: 'matrix_9', 'matrix_6'
     ocp_formulation.orientation_ortho_constraint = 'upper_triangular_6'     # options for matrix_9: 'full_matrix', 'upper_triangular_6' 
                                                                      # additional options for 'matrix_6': 'upper_triangular_3' 
@@ -54,7 +54,7 @@ def set_formulation_2():
     return ocp_formulation
 
 def set_formulation_3():
-    ocp_formulation = FS.set_default_ocp_formulation()                               
+    ocp_formulation = FS.default_ocp_formulation()                               
     ocp_formulation.orientation_representation = 'matrix_6'          # options: 'matrix_9', 'matrix_6'
     ocp_formulation.orientation_ortho_constraint = 'upper_triangular_6'     # options for matrix_9: 'full_matrix', 'upper_triangular_6' 
                                                                      # additional options for 'matrix_6': 'upper_triangular_3' 
@@ -64,7 +64,7 @@ def set_formulation_3():
     return ocp_formulation
 
 def set_formulation_4():
-    ocp_formulation = FS.set_default_ocp_formulation()                               
+    ocp_formulation = FS.default_ocp_formulation()                               
     ocp_formulation.orientation_representation = 'matrix_6'          # options: 'matrix_9', 'matrix_6'
     ocp_formulation.orientation_ortho_constraint = 'upper_triangular_3'     # options for matrix_9: 'full_matrix', 'upper_triangular_6' 
                                                                      # additional options for 'matrix_6': 'upper_triangular_3' 
@@ -74,7 +74,7 @@ def set_formulation_4():
     return ocp_formulation
 
 def set_formulation_5():
-    ocp_formulation = FS.set_default_ocp_formulation()                               
+    ocp_formulation = FS.default_ocp_formulation()                               
     ocp_formulation.orientation_representation = 'matrix_9'          # options: 'matrix_9', 'matrix_6'
     ocp_formulation.orientation_ortho_constraint = 'full_matrix'     # options for matrix_9: 'full_matrix', 'upper_triangular_6' 
                                                                      # additional options for 'matrix_6': 'upper_triangular_3' 
@@ -84,7 +84,7 @@ def set_formulation_5():
     return ocp_formulation
 
 def set_formulation_6():
-    ocp_formulation = FS.set_default_ocp_formulation()                               
+    ocp_formulation = FS.default_ocp_formulation()                               
     ocp_formulation.orientation_representation = 'matrix_9'          # options: 'matrix_9', 'matrix_6'
     ocp_formulation.orientation_ortho_constraint = 'upper_triangular_6'     # options for matrix_9: 'full_matrix', 'upper_triangular_6' 
                                                                      # additional options for 'matrix_6': 'upper_triangular_3' 
@@ -94,7 +94,7 @@ def set_formulation_6():
     return ocp_formulation
 
 def set_formulation_7():
-    ocp_formulation = FS.set_default_ocp_formulation()                               
+    ocp_formulation = FS.default_ocp_formulation()                               
     ocp_formulation.orientation_representation = 'matrix_6'          # options: 'matrix_9', 'matrix_6'
     ocp_formulation.orientation_ortho_constraint = 'upper_triangular_6'     # options for matrix_9: 'full_matrix', 'upper_triangular_6' 
                                                                      # additional options for 'matrix_6': 'upper_triangular_3' 
@@ -104,7 +104,7 @@ def set_formulation_7():
     return ocp_formulation
 
 def set_formulation_8():
-    ocp_formulation = FS.set_default_ocp_formulation()                               
+    ocp_formulation = FS.default_ocp_formulation()                               
     ocp_formulation.orientation_representation = 'matrix_6'          # options: 'matrix_9', 'matrix_6'
     ocp_formulation.orientation_ortho_constraint = 'upper_triangular_3'     # options for matrix_9: 'full_matrix', 'upper_triangular_6' 
                                                                      # additional options for 'matrix_6': 'upper_triangular_3' 
@@ -114,7 +114,7 @@ def set_formulation_8():
     return ocp_formulation
 
 def set_formulation_9():
-    ocp_formulation = FS.set_default_ocp_formulation()                               
+    ocp_formulation = FS.default_ocp_formulation()                               
     ocp_formulation.orientation_representation = 'matrix_9'          # options: 'matrix_9', 'matrix_6'
     ocp_formulation.orientation_ortho_constraint = 'full_matrix'     # options for matrix_9: 'full_matrix', 'upper_triangular_6' 
                                                                      # additional options for 'matrix_6': 'upper_triangular_3' 
@@ -124,7 +124,7 @@ def set_formulation_9():
     return ocp_formulation
 
 def set_formulation_10():
-    ocp_formulation = FS.set_default_ocp_formulation()                               
+    ocp_formulation = FS.default_ocp_formulation()                               
     ocp_formulation.orientation_representation = 'matrix_9'          # options: 'matrix_9', 'matrix_6'
     ocp_formulation.orientation_ortho_constraint = 'upper_triangular_6'     # options for matrix_9: 'full_matrix', 'upper_triangular_6' 
                                                                      # additional options for 'matrix_6': 'upper_triangular_3' 
@@ -134,7 +134,7 @@ def set_formulation_10():
     return ocp_formulation
 
 def set_formulation_11():
-    ocp_formulation = FS.set_default_ocp_formulation()                               
+    ocp_formulation = FS.default_ocp_formulation()                               
     ocp_formulation.orientation_representation = 'matrix_6'          # options: 'matrix_9', 'matrix_6'
     ocp_formulation.orientation_ortho_constraint = 'upper_triangular_6'     # options for matrix_9: 'full_matrix', 'upper_triangular_6' 
                                                                      # additional options for 'matrix_6': 'upper_triangular_3' 
@@ -144,7 +144,7 @@ def set_formulation_11():
     return ocp_formulation
 
 def set_formulation_12():
-    ocp_formulation = FS.set_default_ocp_formulation()                               
+    ocp_formulation = FS.default_ocp_formulation()                               
     ocp_formulation.orientation_representation = 'matrix_6'          # options: 'matrix_9', 'matrix_6'
     ocp_formulation.orientation_ortho_constraint = 'upper_triangular_3'     # options for matrix_9: 'full_matrix', 'upper_triangular_6' 
                                                                      # additional options for 'matrix_6': 'upper_triangular_3' 
@@ -154,7 +154,7 @@ def set_formulation_12():
     return ocp_formulation
 
 def set_formulation_13():
-    ocp_formulation = FS.set_default_ocp_formulation()                               
+    ocp_formulation = FS.default_ocp_formulation()                               
     ocp_formulation.orientation_representation = 'matrix_9'          # options: 'matrix_9', 'matrix_6'
     ocp_formulation.orientation_ortho_constraint = 'full_matrix'     # options for matrix_9: 'full_matrix', 'upper_triangular_6' 
                                                                      # additional options for 'matrix_6': 'upper_triangular_3' 
@@ -164,7 +164,7 @@ def set_formulation_13():
     return ocp_formulation
 
 def set_formulation_14():
-    ocp_formulation = FS.set_default_ocp_formulation()                               
+    ocp_formulation = FS.default_ocp_formulation()                               
     ocp_formulation.orientation_representation = 'matrix_9'          # options: 'matrix_9', 'matrix_6'
     ocp_formulation.orientation_ortho_constraint = 'upper_triangular_6'     # options for matrix_9: 'full_matrix', 'upper_triangular_6' 
                                                                      # additional options for 'matrix_6': 'upper_triangular_3' 
@@ -174,7 +174,7 @@ def set_formulation_14():
     return ocp_formulation
 
 def set_formulation_15():
-    ocp_formulation = FS.set_default_ocp_formulation()                               
+    ocp_formulation = FS.default_ocp_formulation()                               
     ocp_formulation.orientation_representation = 'matrix_6'          # options: 'matrix_9', 'matrix_6'
     ocp_formulation.orientation_ortho_constraint = 'upper_triangular_6'     # options for matrix_9: 'full_matrix', 'upper_triangular_6' 
                                                                      # additional options for 'matrix_6': 'upper_triangular_3' 
@@ -184,7 +184,7 @@ def set_formulation_15():
     return ocp_formulation
 
 def set_formulation_16():
-    ocp_formulation = FS.set_default_ocp_formulation()                               
+    ocp_formulation = FS.default_ocp_formulation()                               
     ocp_formulation.orientation_representation = 'matrix_6'          # options: 'matrix_9', 'matrix_6'
     ocp_formulation.orientation_ortho_constraint = 'upper_triangular_3'     # options for matrix_9: 'full_matrix', 'upper_triangular_6' 
                                                                      # additional options for 'matrix_6': 'upper_triangular_3' 
