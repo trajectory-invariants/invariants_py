@@ -9,6 +9,7 @@ from invariants_py import calculate_invariants
 path_data = rw.find_data_path("sinus.txt") # TODO convert sinus.txt to sinus.csv for consistency?
 
 # Load the trajectory data from the file
+# todo format of data
 trajectory, time = rw.read_pose_trajectory_from_txt(path_data)
 
 # Calculate the invariants of the translation trajectory
