@@ -1,16 +1,8 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri July  7 11:56:15 2023
-
-@author: Riccardo Burlizzi
-"""
-
 import numpy as np
 import casadi as cas
 import rockit
 import invariants_py.integrator_functions as integrators
 import time
-
 
 class OCP_gen_rot:
 

@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_py.class_frenetserret_calculation import OCP_calc_pos
+from invariants_py.opti_calculate_vector_invariants_position_mf import OCP_calc_pos
 from IPython.display import clear_output
 from invariants_py import read_and_write_data as rw
 

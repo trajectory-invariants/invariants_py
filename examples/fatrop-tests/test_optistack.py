@@ -8,7 +8,7 @@ Created on Fri May 26 13:30:29 2023
 
 import numpy as np
 import invariants_py.reparameterization as reparam
-import invariants_py.class_frenetserret_calculation_minimumjerk as FS3
+import invariants_py.opti_calculate_vector_invariants_position_mj as FS3
 import invariants_py.plotters as plotters
 import os
 import time

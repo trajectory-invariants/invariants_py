@@ -1,5 +1,5 @@
 import invariants_py.reparameterization as reparam
-import invariants_py.class_frenetserret_calculation as FS_calculation
+import invariants_py.opti_calculate_vector_invariants_position_mf as FS_calculation
 
 def calculate_invariants_translation(trajectory, progress_definition="arclength"):
 

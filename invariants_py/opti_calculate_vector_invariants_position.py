@@ -1,13 +1,6 @@
-# -*- coding: utf-8 -*-
-"""
-
-@author: u0091864
-"""
-
 import numpy as np
 import casadi as cas
 import invariants_py.integrator_functions as integrators
-
 
 class OCP_calc_pos:
 

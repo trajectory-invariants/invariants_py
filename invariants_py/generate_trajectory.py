@@ -1,4 +1,4 @@
-from invariants_py.class_frenetserret_generation_position import OCP_gen_pos
+from invariants_py.opti_generate_position_from_vector_invariants import OCP_gen_pos
 import numpy as np
 import invariants_py.spline_handler as sh
 

@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Feb  9 10:03:15 2022
-
-@author: u0091864
-"""
-
 import numpy as np
 import casadi as cas
 import rockit

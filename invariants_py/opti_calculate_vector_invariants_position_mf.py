@@ -1,14 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Dec  7 11:24:19 2021
-
-@author: u0091864
-"""
-
-# OCP_vectorinvars_from_transl
-
-
-
 import numpy as np
 import casadi as cas
 import invariants_py.integrator_functions as integrators

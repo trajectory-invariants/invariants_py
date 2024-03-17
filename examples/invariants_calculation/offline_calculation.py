@@ -3,9 +3,9 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
-import invariants_py.class_frenetserret_calculation as FS1
-import invariants_py.class_frenetserret_calculation_reformulation_position as FS2
-#import invariants_py.class_frenetserret_calculation_minimumjerk as FS3
+import invariants_py.opti_calculate_vector_invariants_position_mf as FS1
+import invariants_py.opti_calculate_vector_invariants_position as FS2
+#import invariants_py.opti_calculate_vector_invariants_position_mj as FS3
 from invariants_py import read_and_write_data as rw
 #%%
 

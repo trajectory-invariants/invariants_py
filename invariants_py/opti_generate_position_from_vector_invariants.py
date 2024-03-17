@@ -1,8 +1,8 @@
-
 import numpy as np
 import casadi as cas
 import invariants_py.integrator_functions as integrators
 from invariants_py import ocp_helper
+
 class OCP_gen_pos:
 
     def __init__(self, N = 40, w_invars = (10**-3)*np.array([1.0, 1.0, 1.0])):  

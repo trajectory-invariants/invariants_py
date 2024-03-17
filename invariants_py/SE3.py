@@ -41,8 +41,6 @@ def inv(T):
     Ti[3,3] = 1
     return Ti
 
-
-
 def frame( rot=None, p=None):
     r"""
     Creates a 4x4 homogeneous transformation matrix (in SE3)
@@ -63,6 +61,7 @@ def frame( rot=None, p=None):
     if not( p is None):
         F[:3,3] = p
     return F
+
 def orient(F):
     r"""
     orient(F) returns the rotation matrix part of a homegenous tf F.
@@ -256,6 +255,7 @@ def logm(T):
     result[:3,:3] = omega_hat
     result[:3,3]  = np.linalg.inv(G) @ p *theta
     return result
+
 def rotate_x(alpha):
     """returns a homegeneous transformation that rotates around x with alpha"""
     return frame(SO3.rot([1,0,0],alpha))

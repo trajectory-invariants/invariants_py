@@ -2,7 +2,7 @@
 from invariants_py import read_and_write_data
 import invariants_py.read_and_write_data as rw
 import invariants_py.reparameterization as reparam
-from invariants_py.class_frenetserret_calculation import OCP_calc_pos
+from invariants_py.opti_calculate_vector_invariants_position_mf import OCP_calc_pos
 import matplotlib.pyplot as plt
 import numpy as np
 import os

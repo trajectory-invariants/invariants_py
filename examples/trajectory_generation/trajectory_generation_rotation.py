@@ -14,8 +14,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_py.class_frenetserret_calculation_reformulation_rotation import OCP_calc_rot
-from invariants_py.class_frenetserret_generation_rotation import OCP_gen_rot
+from invariants_py.opti_calculate_vector_invariants_rotation import OCP_calc_rot
+from invariants_py.opti_generate_rotation_from_vector_invariants import OCP_gen_rot
 from IPython.display import clear_output
 from invariants_py.plotting_functions.plot_3d_frame import plot_3d_frame
 from invariants_py.plotting_functions.plot_orientation import plot_orientation
