@@ -14,8 +14,8 @@ import invariants_py.read_and_write_data as rw
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_py.rockit_class_frenetserret_calculation_reformulation_rotation import FrenetSerret_calc_rot as FS_calc
-from invariants_py.rockit_class_frenetserret_generation_rotation import FrenetSerret_gen_rot as FS_gen
+from invariants_py.rockit_calculate_vector_invariants_rotation import OCP_calc_rot as FS_calc
+from invariants_py.rockit_generate_rotation_from_vector_invariants import OCP_gen_rot as FS_gen
 from IPython.display import clear_output
 from invariants_py.plotting_functions.plot_3d_frame import plot_3d_frame
 from invariants_py.plotting_functions.plot_orientation import plot_orientation

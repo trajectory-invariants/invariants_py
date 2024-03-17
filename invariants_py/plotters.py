@@ -54,6 +54,26 @@ def plot_trajectory_and_bounds(boundary_constraints, trajectory):
     # Show the plot
     plt.show()
 
+def plot_trajectory(trajectory):
+    # Extract x, y, and z coordinates from the trajectory
+    x = trajectory[:, 0]
+    y = trajectory[:, 1]
+    z = trajectory[:, 2]
+
+    # Create a 3D plot
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(x, y, z)
+
+    # Set labels for the axes
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+
+    # Show the plot
+    plt.show(block=False)
+
+
 def plot_trajectory_test(trajectory):
     fig = plt.figure(figsize=(8,8))
     ax = fig.add_subplot(111, projection='3d')
@@ -206,7 +226,7 @@ def plotTrajectory(trajectory, figure = None, label = "trajectory", title = '', 
 
 
 #    plt.title(title)
-    plt.show(block=False)
+    plt.show()
 
     return fig, p_lst
 
@@ -523,8 +543,29 @@ def plot_invariants_new(invariants,arclength):
     plt.xlabel('s [m]')
     plt.legend()
     plt.title('Calculated invariants (full horizon)')
-    #plt.show(block=False)
+    plt.show(block=False)
     #plt.close()
+
+def plot_invariants_new(invariants, arclength):
+    
+    fig = plt.figure()
+    plt.subplot(1,3,1)
+    plt.plot(arclength,invariants[:,0],'b')
+    plt.plot(0,0)
+    plt.title('Velocity [m/m]')
+
+    plt.subplot(1,3,2)
+    plt.plot(arclength,invariants[:,1],'b')
+    plt.plot(0,0)
+    plt.title('Curvature [rad/m]')
+
+    plt.subplot(1,3,3)
+    plt.plot(arclength,invariants[:,2],'b')
+    plt.plot(0,0)
+    plt.title('Torsion [rad/m]')
+
+    plt.show()
+
 
 def plot_3d_frame(p,R,scale_arrow,length_arrow,my_color,ax3d):
     """

@@ -1,6 +1,7 @@
 *.pyc
 *.pkl
 *.bak
+.vscode/
 .spyproject/
 .ipynb_checkpoints
 invariants_python.egg-info

@@ -9,13 +9,17 @@ from invariants_py import calculate_invariants
 path_data = rw.find_data_path("sinus.txt") # TODO convert sinus.txt to sinus.csv for consistency?
 
 # Load the trajectory data from the file
+# todo format of data
 trajectory, time = rw.read_pose_trajectory_from_txt(path_data)
 
 # Calculate the invariants of the translation trajectory
-invariants, progress = calculate_invariants.calculate_invariants_translation(trajectory)
+invariants, progress, calc_trajectory = calculate_invariants.calculate_invariants_translation(trajectory)
 
-# Plot the calculated invariants
+# Plot the calculated invariants and corresponding trajectory
 plotters.plot_invariants_new(invariants, progress)
+plotters.plot_trajectory(calc_trajectory)
 
 # Save invariant model to a file
 rw.save_invariants_to_csv(progress, invariants, "sinus_invariants.csv")
+
+#input("Press Enter to continue...")

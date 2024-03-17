@@ -14,8 +14,8 @@ import invariants_py.read_and_write_data as rw
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_py.class_frenetserret_calculation_reformulation_position import FrenetSerret_calc_pos
-from invariants_py.class_frenetserret_generation_position import FrenetSerret_gen_pos
+from invariants_py.opti_calculate_vector_invariants_position import OCP_calc_pos
+from invariants_py.opti_generate_position_from_vector_invariants import OCP_gen_pos
 from IPython.display import clear_output
 
 data_location = rw.find_data_path('beer_1.txt')
@@ -31,7 +31,7 @@ ax.plot(trajectory[:,0],trajectory[:,1],trajectory[:,2],'.-')
 
 #%%
 # specify optimization problem symbolically
-FS_calculation_problem = FrenetSerret_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.001)
+FS_calculation_problem = OCP_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.001)
 
 # calculate invariants given measurements
 invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
@@ -97,7 +97,7 @@ R_FS_end = movingframes[-1]
 
 
 # specify optimization problem symbolically
-FS_online_generation_problem = FrenetSerret_gen_pos(N=number_samples,w_invars = np.array([5*10**1, 1.0, 1.0]))
+FS_online_generation_problem = OCP_gen_pos(N=number_samples,w_invars = np.array([5*10**1, 1.0, 1.0]))
 
 # Solve
 new_invars, new_trajectory, new_movingframes = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = calculate_trajectory, R_t_init = movingframes, R_t_start = R_FS_start, R_t_end = R_FS_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize)
@@ -134,7 +134,7 @@ plt.show(block=False)
 window_len = 20
 
 # specify optimization problem symbolically
-FS_online_generation_problem = FrenetSerret_gen_pos(N=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
+FS_online_generation_problem = OCP_gen_pos(N=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
 
 current_progress = 0.0
 old_progress = 0.0

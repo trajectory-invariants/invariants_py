@@ -14,8 +14,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_py.class_frenetserret_calculation_reformulation_rotation import FrenetSerret_calc_rot
-from invariants_py.class_frenetserret_generation_rotation import FrenetSerret_gen_rot
+from invariants_py.opti_calculate_vector_invariants_rotation import OCP_calc_rot
+from invariants_py.opti_generate_rotation_from_vector_invariants import OCP_gen_rot
 from IPython.display import clear_output
 from invariants_py.plotting_functions.plot_3d_frame import plot_3d_frame
 from invariants_py.plotting_functions.plot_orientation import plot_orientation
@@ -46,7 +46,7 @@ for i in indx:
 
 #%%
 # specify optimization problem symbolically
-FS_calculation_problem = FrenetSerret_calc_rot(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180) 
+FS_calculation_problem = OCP_calc_rot(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180) 
 
 # calculate invariants given measurements
 invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
@@ -118,7 +118,7 @@ R_r_end = orthonormalize(movingframes[-1])
 
 
 # specify optimization problem symbolically
-FS_online_generation_problem = FrenetSerret_gen_rot(window_len=number_samples,w_invars = 10**2*np.array([10**1, 1.0, 1.0]))
+FS_online_generation_problem = OCP_gen_rot(window_len=number_samples,w_invars = 10**2*np.array([10**1, 1.0, 1.0]))
 
 # Solve
 new_invars, new_trajectory, new_movingframes = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, R_obj_init = calculate_trajectory, R_r_init = movingframes, R_r_start = R_r_start, R_r_end = R_r_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
@@ -167,7 +167,7 @@ plt.show(block=False)
 window_len = 20
 
 # specify optimization problem symbolically
-FS_online_generation_problem = FrenetSerret_gen_rot(window_len=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
+FS_online_generation_problem = OCP_gen_rot(window_len=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
 
 current_progress = 0.0
 old_progress = 0.0

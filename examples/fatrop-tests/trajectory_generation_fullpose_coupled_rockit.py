@@ -13,9 +13,9 @@ import invariants_py.read_and_write_data as rw
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_py.rockit_class_frenetserret_calculation_reformulation_position import FrenetSerret_calc_pos as FS_calc_pos
-from invariants_py.rockit_class_frenetserret_calculation_reformulation_rotation import FrenetSerret_calc_rot as FS_calc_rot
-from invariants_py.rockit_class_frenetserret_generation_pose import FrenetSerret_gen_pose as FS_gen_pose
+from invariants_py.rockit_calculate_vector_invariants_position import OCP_calc_pos as FS_calc_pos
+from invariants_py.rockit_calculate_vector_invariants_rotation import OCP_calc_rot as FS_calc_rot
+from invariants_py.rockit_generate_pose_from_vector_invariants import OCP_gen_pose as FS_gen_pose
 from scipy.spatial.transform import Rotation as R
 from invariants_py.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 import invariants_py.plotters as pl

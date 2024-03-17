@@ -8,7 +8,6 @@ matrices and rotational velocities.
 *Erwin Aertbelien, 2021*
 """
 
-
 #from numba import jit
 import numpy as np
 from numpy.linalg import norm

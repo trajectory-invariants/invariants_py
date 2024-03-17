@@ -13,8 +13,8 @@ import invariants_py.read_and_write_data as rw
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_py.rockit_class_frenetserret_calculation_reformulation_position import FrenetSerret_calc_pos as FS_calc
-from invariants_py.rockit_class_frenetserret_generation_position import FrenetSerret_gen_pos as FS_gen
+from invariants_py.rockit_calculate_vector_invariants_position import OCP_calc_pos as FS_calc
+from invariants_py.rockit_generate_position_from_vector_invariants import OCP_gen_pos as FS_gen
 from IPython.display import clear_output
 import matplotlib
 import invariants_py.plotters as pl

@@ -37,9 +37,13 @@ for directory in directories:
 
 # Print out the scripts that failed to execute
 if failed_scripts:
+    print("")
+    print("========================================")
     print("The following scripts failed to execute:")
     for script in failed_scripts:
         print(script)
-    raise Exception('One or more scripts failed, see the above output')
+    print("========================================")
+    print("")
+    raise Exception('One or more scripts failed, check the above output to see which ones.')
 else:
     print("All scripts executed successfully.")

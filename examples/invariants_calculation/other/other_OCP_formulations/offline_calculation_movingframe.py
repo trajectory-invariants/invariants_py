@@ -2,7 +2,7 @@
 from invariants_py import read_and_write_data
 import invariants_py.read_and_write_data as rw
 import invariants_py.reparameterization as reparam
-from invariants_py.class_frenetserret_calculation import FrenetSerret_calc
+from invariants_py.opti_calculate_vector_invariants_position_mf import OCP_calc_pos
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -27,7 +27,7 @@ Example calculation invariants using the full horizon
 """
 
 # symbolic specification
-FS_calculation_problem = FrenetSerret_calc(window_len=nb_samples)
+FS_calculation_problem = OCP_calc_pos(window_len=nb_samples)
 
 # calculate invariants given measurements
 result = FS_calculation_problem.calculate_invariants_global(trajectory_geom,stepsize=stepsize)
@@ -50,7 +50,7 @@ window_len = 20
 window_increment = 10
 
 # symbolic specification
-FS_online_calculation_problem = FrenetSerret_calc(window_len=window_len)
+FS_online_calculation_problem = OCP_calc_pos(window_len=window_len)
 
 
 n = 0

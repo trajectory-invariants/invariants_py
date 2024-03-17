@@ -1,16 +1,8 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri July  7 11:56:15 2023
-
-@author: Riccardo Burlizzi
-"""
-
 import numpy as np
 import casadi as cas
 import invariants_py.integrator_functions as integrators
 
-
-class FrenetSerret_gen_rot:
+class OCP_gen_rot:
 
     def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, w_invars = (10**-3)*np.array([1.0, 1.0, 1.0]), max_iters = 300):
        

@@ -11,7 +11,7 @@ import rockit
 import invariants_py.integrator_functions as integrators
 import time
 
-class FrenetSerret_calc_rot:
+class OCP_calc_rot:
 
     def tril_vec(self,input):
         return cas.vertcat(input[0,0], input[1,1], input[2,2], input[1,0], input[2,0], input[2,1])
