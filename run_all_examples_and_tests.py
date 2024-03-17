@@ -44,6 +44,6 @@ if failed_scripts:
         print(script)
     print("========================================")
     print("")
-    raise Exception('One or more scripts failed, see the above output')
+    raise Exception('One or more scripts failed, check the above output to see which ones.')
 else:
     print("All scripts executed successfully.")

@@ -165,9 +165,9 @@ class OCP_calc_pos:
         self.i1dot_sol,
         self.i1_sol,
         self.i2_sol,
-        self.i1ddot_sol,
-        self.i2dot_sol,
-        self.i3_sol,)
+        self.i1ddot_sol[:,-1],
+        self.i2dot_sol[:,-1],
+        self.i3_sol[:,-1],)
                     
         invariants = np.array(np.vstack((self.i1_sol,self.i2_sol,self.i3_sol))).T
         calculated_trajectory = np.array(self.p_obj_sol).T

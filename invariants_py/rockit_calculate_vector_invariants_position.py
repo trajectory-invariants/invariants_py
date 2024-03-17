@@ -99,7 +99,8 @@ class OCP_calc_pos:
         # Solve already once with dummy measurements
         self.ocp = ocp
         self.initialize_solver(window_len) 
-        #self.ocp._method.set_option("print_level",0)
+        self.ocp._method.set_option("print_level",0)
+        
         #self.ocp._method.set_option("tol",1e-11)
         self.first_window = True
         
@@ -127,15 +128,15 @@ class OCP_calc_pos:
                 self.ocp.sample(self.p_obj, grid='control')[1],
                 self.ocp.sample(self.invars, grid='control-')[1],
             ],
-            [  # Outputs
+            [ # Outputs
                 self.ocp.sample(self.R_t_x, grid='control')[1],
                 self.ocp.sample(self.R_t_y, grid='control')[1],
                 self.ocp.sample(self.R_t_z, grid='control')[1],
                 self.ocp.sample(self.p_obj, grid='control')[1],
                 self.ocp.sample(self.invars, grid='control')[1],
             ],
-            ["h","p_obj_m","R_t_x","R_t_y","R_t_z","p_obj","invars"],   # Input labels
-            ["R_t_x2","R_t_y2","R_t_z2","p_obj2","invars_out"],   # Output labels
+            ["h","p_obj_m","R_t_x","R_t_y","R_t_z","p_obj","invars"], # Input labels
+            ["R_t_x2","R_t_y2","R_t_z2","p_obj2","invars_out"], # Output labels
         )
 
     def calculate_invariants_online(self,measured_positions,stepsize):
@@ -161,7 +162,7 @@ class OCP_calc_pos:
         self.R_t_y_sol,
         self.R_t_z_sol,
         self.p_obj_sol,
-        self.invars)
+        self.invars[:,-1])
                     
         invariants = np.array(self.invars).T
         calculated_trajectory = np.array(self.p_obj_sol).T

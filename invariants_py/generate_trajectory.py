@@ -33,7 +33,7 @@ def generate_initvals_from_bounds(boundary_constraints,N):
 def generate_trajectory_translation(invariant_model, boundary_constraints, N=40):
     
     # Specify optimization problem symbolically
-    OCP_gen_pos = OCP_gen_pos(N = N)
+    OCP = OCP_gen_pos(N = N)
 
     # Initial values
     initial_values = generate_initvals_from_bounds(boundary_constraints, N)
@@ -44,7 +44,7 @@ def generate_trajectory_translation(invariant_model, boundary_constraints, N=40)
     model_invariants,progress_step = sh.interpolate_invariants(spline_invariant_model, progress_values)
     
     # Calculate remaining trajectory
-    invariants, trajectory, mf = OCP_gen_pos.generate_trajectory_global(model_invariants,initial_values,boundary_constraints,progress_step)
+    invariants, trajectory, mf = OCP.generate_trajectory_global(model_invariants,initial_values,boundary_constraints,progress_step)
 
     return invariants, trajectory, mf, progress_values
 

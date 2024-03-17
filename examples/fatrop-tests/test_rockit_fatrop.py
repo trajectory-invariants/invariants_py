@@ -8,7 +8,7 @@ Created on Fri May 26 13:30:29 2023
 
 import numpy as np
 import invariants_py.reparameterization as reparam
-import invariants_py.rockit_calculate_vector_invariants_position_mj as FS
+import invariants_py.rockit_calculate_vector_invariants_position as OCP
 import invariants_py.plotters as plotters
 import os
 import time
@@ -31,15 +31,19 @@ plotters.plot_2D_contour(trajectory)
 #%% Calculate invariants first time
 
 # specify optimization problem symbolically
-FS_calculation_problem = FS.OCP_calc_pos(nb_samples=nb_samples, w_pos=100, w_regul_jerk = 10**-10, fatrop_solver = use_fatrop_solver)
+FS_calculation_problem = OCP.OCP_calc_pos(window_len=nb_samples, fatrop_solver = use_fatrop_solver)
 
-for i in range(100):
+for i in range(20):
     start_time = time.time()
     invariants, trajectory_recon, mf = FS_calculation_problem.calculate_invariants_online(trajectory,stepsize)
     end_time = time.time()
     print('')
-    print("solution timep [s]: ")
+    print("solution time [s]: ")
     print(end_time - start_time)
 
 # figures
+print(trajectory)
+print(trajectory_recon)
 #plotters.plot_trajectory_invariants(trajectory,trajectory_recon,arclength,invariants)
+
+
