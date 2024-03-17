@@ -114,43 +114,46 @@ class OCP_gen_pos:
         self.sol = None
         self.first_window = True
         
-        self.initialize_solver()
+        if bounds_mf == False:
+            self.initialize_solver()
+            self.ocp_to_function()
 
-        if fatrop_solver:
+        if fatrop_solver and bounds_mf == False:
             self.ocp._method.set_option("print_level",0)
             self.ocp._method.set_option("tol",1e-11)
 
+    def ocp_to_function(self):
         # Transform the whole OCP to a Casadi function
         
         U_sampled = cas.MX()
         w_sampled = cas.MX()
-        for k in range(window_len-1):
-            U_sampled = cas.horzcat(U_sampled, ocp._method.eval_at_control(ocp, U_demo, k))
-            w_sampled = cas.horzcat(w_sampled, ocp._method.eval_at_control(ocp, w_invars, k))
-        U_sampled = cas.horzcat(U_sampled, ocp._method.eval_at_control(ocp, U_demo, -1))
-        w_sampled = cas.horzcat(w_sampled, ocp._method.eval_at_control(ocp, w_invars, -1))
+        for k in range(self.window_len-1):
+            U_sampled = cas.horzcat(U_sampled, self.ocp._method.eval_at_control(self.ocp, self.U_demo, k))
+            w_sampled = cas.horzcat(w_sampled, self.ocp._method.eval_at_control(self.ocp, self.w_invars, k))
+        U_sampled = cas.horzcat(U_sampled, self.ocp._method.eval_at_control(self.ocp, self.U_demo, -1))
+        w_sampled = cas.horzcat(w_sampled, self.ocp._method.eval_at_control(self.ocp, self.w_invars, -1))
 
         #U_sampled = cas.horzcat(U_sampled, ocp._method.eval_at_control(ocp, U, -1))
 
-        self.ocp_to_function = ocp.to_function('fastsolve', 
+        self.ocp_to_function = self.ocp.to_function('fastsolve', 
         [ # Inputs
-          ocp.value(h),
-          ocp.value(p_obj_start),
-          ocp.value(p_obj_end),
-          ocp.value(U_sampled),
-          ocp.value(w_sampled),
-          ocp.sample(R_t_x, grid='control',include_last='True')[1], #self.ocp.x
-          ocp.sample(R_t_y, grid='control',include_last='True')[1],
-          ocp.sample(R_t_z, grid='control',include_last='True')[1],
-          ocp.sample(p_obj, grid='control',include_last='True')[1],
-          ocp.sample(U,     grid='control-')[1], 
+          self.ocp.value(self.h),
+          self.ocp.value(self.p_obj_start),
+          self.ocp.value(self.p_obj_end),
+          self.ocp.value(U_sampled),
+          self.ocp.value(w_sampled),
+          self.ocp.sample(self.R_t_x, grid='control',include_last='True')[1], #self.ocp.x
+          self.ocp.sample(self.R_t_y, grid='control',include_last='True')[1],
+          self.ocp.sample(self.R_t_z, grid='control',include_last='True')[1],
+          self.ocp.sample(self.p_obj, grid='control',include_last='True')[1],
+          self.ocp.sample(self.U,     grid='control-')[1], 
          ],
          [  # Outputs
-          ocp.sample(R_t_x, grid='control',include_last='True')[1],
-          ocp.sample(R_t_y, grid='control',include_last='True')[1],
-          ocp.sample(R_t_z, grid='control',include_last='True')[1],
-          ocp.sample(p_obj, grid='control',include_last='True')[1],
-          ocp.sample(U,     grid='control-')[1],
+          self.ocp.sample(self.R_t_x, grid='control',include_last='True')[1],
+          self.ocp.sample(self.R_t_y, grid='control',include_last='True')[1],
+          self.ocp.sample(self.R_t_z, grid='control',include_last='True')[1],
+          self.ocp.sample(self.p_obj, grid='control',include_last='True')[1],
+          self.ocp.sample(self.U,     grid='control-')[1],
          ],
          ["stepsize","p_obj_start","imodel","wsampled","p_obj_end","R_t_x","R_t_y","R_t_z","p_obj","i1"],   # Input labels
          ["R_t_x2","R_t_y2","R_t_z2","p_obj2","i2"],   # Output labels
