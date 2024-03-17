@@ -43,7 +43,7 @@ start_time = time.time()
 invariants, trajectory_recon, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
 end_time = time.time()
 print('')
-print("Fatrop + overhead: ")
+print("Total time solving + sampling overhead: ")
 print(end_time - start_time)
 
 # figures

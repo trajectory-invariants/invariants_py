@@ -2,49 +2,53 @@ import numpy as np
 import casadi as cas
 import rockit
 import invariants_py.integrator_functions as integrators
+from invariants_py import ocp_helper
+import time
 
 class OCP_calc_pos:
 
     def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 10**-2, fatrop_solver = False):
        
-        #%% Create decision variables and parameters for the optimization problem
-        
+        #%% Decision variables and parameters for the optimization problem 
         ocp = rockit.Ocp(T=1.0)
         
-        # Define system states X (unknown object pose + moving frame pose at every time step) 
-        p_obj = ocp.state(3) # object position
-        R_t_x = ocp.state(3,1) # translational Frenet-Serret frame
-        R_t_y = ocp.state(3,1) # translational Frenet-Serret frame
-        R_t_z = ocp.state(3,1) # translational Frenet-Serret frame
+        # States
+        p_obj = ocp.state(3,1) # object position
+        R_t_x = ocp.state(3,1) # Frenet-Serret frame, first axis
+        R_t_y = ocp.state(3,1) # Frenet-Serret frame, second axis
+        R_t_z = ocp.state(3,1) # Frenet-Serret frame, third axis
         R_t = cas.horzcat(R_t_x,R_t_y,R_t_z)
 
-        # Define system controls (invariants at every time step)
+        # Controls
         invars = ocp.control(3)
 
-        # Define system parameters P (known values in optimization that need to be set right before solving)
-        p_obj_m = ocp.parameter(3,grid='control',include_last=True) # measured object positions
-        R_t_0 = ocp.parameter(3,3) # initial translational Frenet-Serret frame at first sample of window
+        # Parameters
+        p_obj_m = ocp.parameter(3,grid='control+') # measured object positions
+        #R_t_0 = ocp.parameter(3,3) # initial translational Frenet-Serret frame
         h = ocp.parameter(1)
         
-        #%% Specifying the constraints
+        #%% Constraints
         
-        # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)    
-        ocp.subject_to(ocp.at_t0(self.tril_vec(R_t.T @ R_t - np.eye(3))==0.))
+        # Orthonormality of rotation matrix (only needed for one timestep, property is propagated by integrator)    
+        ocp.subject_to(ocp.at_t0(ocp_helper.tril_vec(R_t.T @ R_t - np.eye(3))==0.))
 
-        # Dynamic constraints
+        # Dynamics equations (integrate current state to obtain next state (next rotation and position)
         (R_t_plus1, p_obj_plus1) = integrators.geo_integrator_tra(R_t, p_obj, invars, h)
-        # Integrate current state to obtain next state (next rotation and position)
+
         ocp.set_next(p_obj,p_obj_plus1)
         ocp.set_next(R_t_x,R_t_plus1[:,0])
         ocp.set_next(R_t_y,R_t_plus1[:,1])
         ocp.set_next(R_t_z,R_t_plus1[:,2])
-            
+        
         # Lower bounds on controls
         if bool_unsigned_invariants:
             ocp.subject_to(invars[0,:]>=0) # lower bounds on control
             ocp.subject_to(invars[1,:]>=0) # lower bounds on control
 
-        #%% Specifying the objective
+        ocp.subject_to(ocp.at_t0(p_obj - p_obj_m == 0.))
+        ocp.subject_to(ocp.at_tf(p_obj - p_obj_m == 0.))
+
+        #%% Objective function
 
         # Fitting constraint to remain close to measurements
         #objective_fit = ocp.sum(cas.dot(p_obj - p_obj_m,p_obj - p_obj_m),include_last=True)
@@ -63,18 +67,17 @@ class OCP_calc_pos:
         ocp.subject_to(objective_fit/window_len/rms_error_traj**2 < 1)
 
         # Regularization constraints to deal with singularities and noise
-        objective_reg = 0
-
         objective_reg = ocp.sum(cas.dot(invars[1:3],invars[1:3]))
 
         objective = objective_reg/(window_len-1)
+        ocp.add_objective(objective)
 
         # opti.subject_to(invars[1,-1] == invars[1,-2]) # Last sample has no impact on RMS error ##### HOW TO ACCESS invars[1,-2] IN ROCKIT
 
-        #%% Define solver and save variables
-        ocp.add_objective(objective)
+        #%% Solver options
+
         if fatrop_solver:
-            ocp.method(rockit.external_method('fatrop' , N=window_len-1))
+            ocp.method(rockit.external_method('fatrop', N=window_len-1))
             ocp._method.set_name("codegen/reformulation_position")
         else:
             ocp.method(rockit.MultipleShooting(N=window_len-1))
@@ -89,16 +92,85 @@ class OCP_calc_pos:
         self.p_obj = p_obj
         self.invars = invars
         self.p_obj_m = p_obj_m
-        self.R_t_0 = R_t_0
+        #self.R_t_0 = R_t_0
         self.window_len = window_len
-        self.ocp = ocp
-        self.first_window = True
         self.h = h
-         
+
+        # Solve already once with dummy measurements
+        self.ocp = ocp
+        self.initialize_solver(window_len) 
+        #self.ocp._method.set_option("print_level",0)
+        #self.ocp._method.set_option("tol",1e-11)
+        self.first_window = True
+        
+        # Transform the whole OCP to a Casadi function
+        self.define_ocp_to_function()
+
+    def initialize_solver(self,window_len):
+        self.ocp.set_initial(self.R_t_x, np.array([1,0,0]))                 
+        self.ocp.set_initial(self.R_t_y, np.array([0,1,0]))                
+        self.ocp.set_initial(self.R_t_z, np.array([0,0,1]))
+        self.ocp.set_initial(self.invars, np.array([1,0.01,0.1]))
+        self.ocp.set_value(self.p_obj_m, np.zeros((3,window_len)))
+        self.ocp.set_value(self.h,0.01)
+        self.ocp.solve_limited()
+
+    def define_ocp_to_function(self):
+        # Encapsulate whole rockit specification in a Casadi function
+        self.ocp_to_function = self.ocp.to_function('fastsolve', 
+            [ # Inputs
+                self.ocp.value(self.h),
+                self.ocp.sample(self.p_obj_m, grid='control')[1],
+                self.ocp.sample(self.R_t_x, grid='control')[1], 
+                self.ocp.sample(self.R_t_y, grid='control')[1],
+                self.ocp.sample(self.R_t_z, grid='control')[1],
+                self.ocp.sample(self.p_obj, grid='control')[1],
+                self.ocp.sample(self.invars, grid='control-')[1],
+            ],
+            [  # Outputs
+                self.ocp.sample(self.R_t_x, grid='control')[1],
+                self.ocp.sample(self.R_t_y, grid='control')[1],
+                self.ocp.sample(self.R_t_z, grid='control')[1],
+                self.ocp.sample(self.p_obj, grid='control')[1],
+                self.ocp.sample(self.invars, grid='control')[1],
+            ],
+            ["h","p_obj_m","R_t_x","R_t_y","R_t_z","p_obj","invars"],   # Input labels
+            ["R_t_x2","R_t_y2","R_t_z2","p_obj2","invars_out"],   # Output labels
+        )
+
+    def calculate_invariants_online(self,measured_positions,stepsize):
+        if self.first_window:
+            N = np.size(measured_positions,0)
+            [ex,ey,ez] = ocp_helper.estimate_initial_frames(measured_positions)
+            self.R_t_x_sol =  ex.T 
+            self.R_t_y_sol =  ey.T 
+            self.R_t_z_sol =  ez.T 
+            self.p_obj_sol =  measured_positions.T 
+            self.invars = np.vstack((1e0*np.ones((1,N-1)),1e-1*np.ones((1,N-1)), 1e-12*np.ones((1,N-1))))
+            self.first_window = False    
+        
+        # Call solve function
+        [self.R_t_x_sol,
+        self.R_t_y_sol,
+        self.R_t_z_sol,
+        self.p_obj_sol,
+        self.invars] = self.ocp_to_function(
+        stepsize, 
+        measured_positions.T,
+        self.R_t_x_sol,
+        self.R_t_y_sol,
+        self.R_t_z_sol,
+        self.p_obj_sol,
+        self.invars)
+                    
+        invariants = np.array(self.invars).T
+        calculated_trajectory = np.array(self.p_obj_sol).T
+        calculated_movingframe = np.reshape(np.vstack((self.R_t_x_sol, self.R_t_y_sol, self.R_t_z_sol)).T, (-1,3,3))
+
+        return invariants, calculated_trajectory, calculated_movingframe
+
     def calculate_invariants_global(self,trajectory_meas,stepsize):
         #%%
-
-       
         if trajectory_meas.shape[1] == 3:
             measured_positions = trajectory_meas
         else:
@@ -112,14 +184,12 @@ class OCP_calc_pos:
         ex = np.vstack((ex,[ex[-1,:]]))
         ey = np.tile( np.array((0,0,1)), (N,1) )
         ez = np.array([np.cross(ex[i,:],ey[i,:]) for i in range(N)])
-        
+
         # #JUST TESTING
         #ex = np.tile( np.array((1,0,0)), (N,1) )
         #ey = np.tile( np.array((0,1,0)), (N,1) )
         #ez = np.array([np.cross(ex[i,:],ey[i,:]) for i in range(N)])
         
-        
-
         #Initialize states
         self.ocp.set_initial(self.R_t_x, ex.T)
         self.ocp.set_initial(self.R_t_y, ey.T)
@@ -130,15 +200,10 @@ class OCP_calc_pos:
         self.ocp.set_initial(self.invars,[1,1e-12,1e-12])
 
         # Set values parameters
-        self.ocp.set_value(self.R_t_0, np.eye(3))
+        #self.ocp.set_value(self.R_t_0, np.eye(3))
         self.ocp.set_value(self.p_obj_m, measured_positions.T)      
         self.ocp.set_value(self.h,stepsize)
                
-
-        # Constraints
-        self.ocp.subject_to(self.ocp.at_t0(self.p_obj == self.p_obj_m[:,0]))
-        self.ocp.subject_to(self.ocp.at_tf(self.p_obj == self.p_obj_m[:,-1]))
-
         # Solve the NLP
         sol = self.ocp.solve()
         #print(sol.sample(self.help, grid = 'control')[1])
@@ -160,15 +225,18 @@ if __name__ == "__main__":
     stepsize = 0.05
 
     # Test the functionalities of the class
-    frenet_serret = OCP_calc_pos(nb_samples=np.size(measured_positions,0),fatrop_solver=False)
+    OCP = OCP_calc_pos(window_len=np.size(measured_positions,0),fatrop_solver=True)
 
-    # Call the calculate_invariants_online function
-    calc_invariants, calc_trajectory, calc_movingframes = frenet_serret.calculate_invariants_online(measured_positions, stepsize)
+    # Call the calculate_invariants_global function and measure the elapsed time
+    start_time = time.time()
+    calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants_online(measured_positions, stepsize)
+    elapsed_time = time.time() - start_time
 
-    # Print the results
+    # Print the results and elapsed time
     print("Calculated invariants:")
     print(calc_invariants)
     print("Calculated Moving Frame:")
     print(calc_movingframes)
     print("Calculated Trajectory:")
     print(calc_trajectory)
+    print("Elapsed Time:", elapsed_time, "seconds")

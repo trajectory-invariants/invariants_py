@@ -8,19 +8,15 @@ class OCP_calc_pos:
 
     def __init__(self, nb_samples = 100, w_pos = 1, w_regul_jerk = 10**-6 , w_regul_invars = 10**-10, fatrop_solver = False):
 
-        self.N_controls = nb_samples-1
-
+        #%% Decision variables and parameters for the optimization problem 
         self.ocp = rockit.Ocp(T=1.0)        
 
-        #%% Decision variables and parameters                
-                
         # States
-        self.R_t_x = self.ocp.state(3,1)
-        self.R_t_y = self.ocp.state(3,1)
-        self.R_t_z = self.ocp.state(3,1)
+        self.p_obj = self.ocp.state(3) # object position
+        self.R_t_x = self.ocp.state(3,1) # Frenet-Serret frame, first axis
+        self.R_t_y = self.ocp.state(3,1) # Frenet-Serret frame, second axis
+        self.R_t_z = self.ocp.state(3,1) # Frenet-Serret frame, third axis
         R_t = cas.horzcat(self.R_t_x,self.R_t_y,self.R_t_z)
-        
-        self.p_obj = self.ocp.state(3)
         self.i1 = self.ocp.state(1)
         self.i1dot = self.ocp.state(1)
         self.i2 = self.ocp.state(1)
@@ -37,7 +33,7 @@ class OCP_calc_pos:
 
         #%% Constraints
         
-        # Ortho-normality of rotation matrix (at first timestep)
+        # Orthonormality of rotation matrix (only needed for one timestep, property is propagated by integrator)  
         self.ocp.subject_to(self.ocp.at_t0(ocp_helper.tril_vec(R_t.T @ R_t - np.eye(3))==0.))
 
         # Dynamics equations        
@@ -52,6 +48,7 @@ class OCP_calc_pos:
         self.ocp.set_next(self.i2,self.i2 + self.i2dot * self.h)
                      
         #%% Objective function
+        self.N_controls = nb_samples-1
 
         # Term 1: Measurement fitting constraint
         obj_fit = self.ocp.sum(1/self.N_controls*w_pos*cas.dot(self.p_obj-self.p_obj_m,self.p_obj-self.p_obj_m))
@@ -81,7 +78,7 @@ class OCP_calc_pos:
             self.ocp.solver('ipopt', silent_ipopt_options)
         
         # Solve already once with dummy measurements
-        self.initialize_solver() 
+        self.initialize_solver(nb_samples)
         #self.ocp._method.set_option("print_level",0)
         #self.ocp._method.set_option("tol",1e-11)
         self.first_window = True
@@ -89,7 +86,6 @@ class OCP_calc_pos:
         # Transform the whole OCP to a Casadi function
         self.define_ocp_to_function()
     
-
     def define_ocp_to_function(self):
         # Encapsulate whole rockit specification in a Casadi function
         self.ocp_to_function = self.ocp.to_function('fastsolve', 
@@ -123,12 +119,12 @@ class OCP_calc_pos:
             ["R_t_x2","R_t_y2","R_t_z2","p_obj2","i1dot2","i12","i22","i1ddot2","i2dot2","i32"],   # Output labels
         )
         
-    def initialize_solver(self):
+    def initialize_solver(self,window_len):
         self.ocp.set_initial(self.R_t_x, np.array([1,0,0]))                 
         self.ocp.set_initial(self.R_t_y, np.array([0,1,0]))                
         self.ocp.set_initial(self.R_t_z, np.array([0,0,1]))
         self.ocp.set_initial(self.i2,1e-12)
-        self.ocp.set_value(self.p_obj_m, np.zeros((3,self.N_controls+1)))
+        self.ocp.set_value(self.p_obj_m, np.zeros((3,window_len)))
         self.ocp.set_value(self.h,1)
         self.ocp.solve_limited()
         
@@ -313,10 +309,10 @@ if __name__ == "__main__":
     stepsize = 0.05
 
     # Test the functionalities of the class
-    frenet_serret = OCP_calc_pos(nb_samples=np.size(measured_positions,0),fatrop_solver=False)
+    OCP = OCP_calc_pos(nb_samples=np.size(measured_positions,0),fatrop_solver=False)
  
     # Call the calculate_invariants_online function
-    calc_invariants, calc_trajectory, calc_movingframes = frenet_serret.calculate_invariants_online(measured_positions, stepsize)
+    calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants_online(measured_positions, stepsize)
 
     # Print the results
     print("Calculated invariants:")
