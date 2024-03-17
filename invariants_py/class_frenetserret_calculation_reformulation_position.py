@@ -9,7 +9,7 @@ import casadi as cas
 import invariants_py.integrator_functions as integrators
 
 
-class FrenetSerret_calc_pos:
+class OCP_calc_pos:
 
     def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 10**-2):
        

@@ -10,7 +10,7 @@ import casadi as cas
 import invariants_py.integrator_functions as integrators
 
 
-class FrenetSerret_calc_rot:
+class OCP_calc_rot:
 
     def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180):
        

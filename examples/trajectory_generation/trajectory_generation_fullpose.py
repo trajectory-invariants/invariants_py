@@ -14,10 +14,10 @@ import invariants_py.read_and_write_data as rw
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_py.class_frenetserret_calculation_reformulation_rotation import FrenetSerret_calc_rot
-from invariants_py.class_frenetserret_calculation_reformulation_position import FrenetSerret_calc_pos as FrenetSerret_calc_pos
-from invariants_py.class_frenetserret_generation_rotation import FrenetSerret_gen_rot
-from invariants_py.class_frenetserret_generation_position import FrenetSerret_gen_pos as FrenetSerret_gen_pos
+from invariants_py.class_frenetserret_calculation_reformulation_rotation import OCP_calc_rot
+from invariants_py.class_frenetserret_calculation_reformulation_position import OCP_calc_pos as OCP_calc_pos
+from invariants_py.class_frenetserret_generation_rotation import OCP_gen_rot
+from invariants_py.class_frenetserret_generation_position import OCP_gen_pos as OCP_gen_pos
 from IPython.display import clear_output
 from scipy.spatial.transform import Rotation as R
 from invariants_py.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
@@ -59,8 +59,8 @@ class OCP_results:
 optim_calc_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((len(trajectory),6)))
 
 # specify optimization problem symbolically
-FS_calculation_problem_pos = FrenetSerret_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.01)
-FS_calculation_problem_rot = FrenetSerret_calc_rot(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 10*pi/180) 
+FS_calculation_problem_pos = OCP_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.01)
+FS_calculation_problem_rot = OCP_calc_rot(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 10*pi/180) 
 
 # calculate invariants given measurements
 optim_calc_results.invariants[:,3:], optim_calc_results.Obj_pos, optim_calc_results.FSt_frames = FS_calculation_problem_pos.calculate_invariants_global(trajectory,stepsize)
@@ -123,8 +123,8 @@ FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
 optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
 
 # specify optimization problem symbolically
-FS_online_generation_problem_pos = FrenetSerret_gen_pos(N=number_samples,w_invars = np.array([5*10**1, 1.0, 1.0]))
-FS_online_generation_problem_rot = FrenetSerret_gen_rot(window_len=number_samples,w_invars = 10**2*np.array([10**1, 1.0, 1.0]))
+FS_online_generation_problem_pos = OCP_gen_pos(N=number_samples,w_invars = np.array([5*10**1, 1.0, 1.0]))
+FS_online_generation_problem_rot = OCP_gen_rot(window_len=number_samples,w_invars = 10**2*np.array([10**1, 1.0, 1.0]))
 
 # Solve
 optim_gen_results.invariants[:,3:], optim_gen_results.Obj_pos, optim_gen_results.FSt_frames = FS_online_generation_problem_pos.generate_trajectory(U_demo = model_invariants[:,3:], p_obj_init = optim_calc_results.Obj_pos, R_t_init = optim_calc_results.FSt_frames, R_t_start = FSt_start, R_t_end = FSt_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize)
@@ -160,8 +160,8 @@ window_len = 20
 optim_iter_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((window_len,6)))
 
 # specify optimization problem symbolically
-FS_online_generation_problem_pos = FrenetSerret_gen_pos(N=window_len,w_invars = np.array([5*10**1, 1.0, 1.0]))
-FS_online_generation_problem_rot = FrenetSerret_gen_rot(window_len=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
+FS_online_generation_problem_pos = OCP_gen_pos(N=window_len,w_invars = np.array([5*10**1, 1.0, 1.0]))
+FS_online_generation_problem_rot = OCP_gen_rot(window_len=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
 
 
 current_progress = 0.0

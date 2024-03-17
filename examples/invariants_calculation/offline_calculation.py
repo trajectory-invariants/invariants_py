@@ -29,7 +29,7 @@ Old optimization problem
 
 #%%
 # specify optimization problem symbolically
-FS_calculation_problem = FS1.FrenetSerret_calc(window_len=nb_samples, bool_unsigned_invariants = True, w_pos = 100, w_deriv = (10**-7)*np.array([1.0, 1.0, 1.0]), w_abs = (10**-5)*np.array([1.0, 1.0]))
+FS_calculation_problem = FS1.OCP_calc_pos(window_len=nb_samples, bool_unsigned_invariants = True, w_pos = 100, w_deriv = (10**-7)*np.array([1.0, 1.0, 1.0]), w_abs = (10**-5)*np.array([1.0, 1.0]))
 
 # calculate invariants given measurements
 invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
@@ -66,7 +66,7 @@ plt.show(block=False)
 
 # #%%
 # # specify optimization problem symbolically
-# FS_calculation_problem = FS3.FrenetSerret_calc(window_len=nb_samples, w_pos = 100, w_regul = 10**-9)
+# FS_calculation_problem = FS3.OCP_calc_pos(window_len=nb_samples, w_pos = 100, w_regul = 10**-9)
 
 # # calculate invariants given measurements
 # invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
@@ -101,7 +101,7 @@ Reformulated optimization problem
 
 #%%
 # specify optimization problem symbolically
-FS_calculation_problem = FS2.FrenetSerret_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.001)
+FS_calculation_problem = FS2.OCP_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.001)
 
 # calculate invariants given measurements
 invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)

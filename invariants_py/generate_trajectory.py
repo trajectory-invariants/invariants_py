@@ -1,4 +1,4 @@
-from invariants_py.class_frenetserret_generation_position import FrenetSerret_gen_pos
+from invariants_py.class_frenetserret_generation_position import OCP_gen_pos
 import numpy as np
 import invariants_py.spline_handler as sh
 
@@ -33,7 +33,7 @@ def generate_initvals_from_bounds(boundary_constraints,N):
 def generate_trajectory_translation(invariant_model, boundary_constraints, N=40):
     
     # Specify optimization problem symbolically
-    OCP_gen_pos = FrenetSerret_gen_pos(N = N)
+    OCP_gen_pos = OCP_gen_pos(N = N)
 
     # Initial values
     initial_values = generate_initvals_from_bounds(boundary_constraints, N)

@@ -14,7 +14,7 @@ import casadi as cas
 import invariants_py.integrator_functions as integrators
 import invariants_py.ocp_helper as ocp_helper
 
-class FrenetSerret_calc:
+class OCP_calc_pos:
 
     def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, w_deriv = (10**-6)*np.array([1.0, 1.0, 1.0]), w_abs = (10**-10)*np.array([1.0, 1.0]), planar_task = False):
        

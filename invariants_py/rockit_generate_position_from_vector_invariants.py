@@ -12,7 +12,7 @@ import invariants_py.integrator_functions as integrators
 import time
 import invariants_py.generate_trajectory as generate_trajectory
 
-class FrenetSerret_gen_pos:
+class OCP_gen_pos:
 
     def tril_vec(self,input):
         return cas.vertcat(input[0,0], input[1,1], input[2,2], input[1,0], input[2,0], input[2,1])
@@ -114,7 +114,7 @@ class FrenetSerret_gen_pos:
         self.sol = None
         self.first_window = True
         
-        #self.dummy_solve()
+        self.initialize_solver()
 
         if fatrop_solver:
             self.ocp._method.set_option("print_level",0)
@@ -156,9 +156,7 @@ class FrenetSerret_gen_pos:
          ["R_t_x2","R_t_y2","R_t_z2","p_obj2","i2"],   # Output labels
          )
 
-
-
-    def dummy_solve(self):
+    def initialize_solver(self):
         self.ocp.set_initial(self.R_t_x, np.array([1,0,0]))                 
         self.ocp.set_initial(self.R_t_y, np.array([0,1,0]))                
         self.ocp.set_initial(self.R_t_z, np.array([0,0,1]))

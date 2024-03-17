@@ -7,8 +7,8 @@ def calculate_invariants_translation(trajectory, progress_definition="arclength"
     # Reparameterize the trajectory based on arclength
     trajectory_geom, arclength, arclength_n, nb_samples, stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 
-    # Create an instance of the FrenetSerret_calc class
-    FS_calculation_problem = FS_calculation.FrenetSerret_calc(window_len=nb_samples)
+    # Create an instance of the OCP_calc_pos class
+    FS_calculation_problem = FS_calculation.OCP_calc_pos(window_len=nb_samples)
 
     # Calculate the invariants using the global method
     # TODO make a dictionary of the results from which invariants can be extracted

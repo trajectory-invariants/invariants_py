@@ -9,7 +9,7 @@ Created on Fri Feb 16 16:22:09 2024
 # Imports
 import numpy as np
 import matplotlib.pyplot as plt
-from invariants_py.rockit_class_frenetserret_generation_rotation import FrenetSerret_gen_rot as FS_gen_rot
+from invariants_py.rockit_generate_rotation_from_vector_invariants import OCP_gen_rot as FS_gen_rot
 from scipy.spatial.transform import Rotation as R
 from invariants_py.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 import invariants_py.plotters as pl

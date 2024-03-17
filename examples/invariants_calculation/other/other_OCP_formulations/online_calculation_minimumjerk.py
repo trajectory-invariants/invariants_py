@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_py.class_frenetserret_calculation_minimumjerk import FrenetSerret_calc
+from invariants_py.class_frenetserret_calculation_minimumjerk import OCP_calc_pos
 from IPython.display import clear_output
 import invariants_py.read_and_write_data as rw
 
@@ -21,7 +21,7 @@ plt.plot(trajectory[:,0],trajectory[:,1],'.-')
 
 #%%
 # specify optimization problem symbolically
-FS_calculation_problem = FrenetSerret_calc(window_len=nb_samples, w_pos = 100, w_regul = 10**-9)
+FS_calculation_problem = OCP_calc_pos(window_len=nb_samples, w_pos = 100, w_regul = 10**-9)
 
 # calculate invariants given measurements
 invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
@@ -80,7 +80,7 @@ stepsize = 0.005
 window_increment = 10
 
 # specify optimization problem symbolically
-FS_online_calculation_problem = FrenetSerret_calc(window_len=window_len, w_pos = 100, w_regul = 10**-9)
+FS_online_calculation_problem = OCP_calc_pos(window_len=window_len, w_pos = 100, w_regul = 10**-9)
 
 # Visualization
 current_progress = 0.0 + window_len*stepsize

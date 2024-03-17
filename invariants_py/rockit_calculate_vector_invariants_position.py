@@ -1,22 +1,10 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Aug 7 2023
-
-@author: Riccardo
-"""
-
 import numpy as np
 import casadi as cas
 import rockit
 import invariants_py.integrator_functions as integrators
-import time
 
+class OCP_calc_pos:
 
-class FrenetSerret_calc_pos:
-
-    def tril_vec(self,input):
-        return cas.vertcat(input[0,0], input[1,1], input[2,2], input[1,0], input[2,0], input[2,1])
-    
     def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 10**-2, fatrop_solver = False):
        
         #%% Create decision variables and parameters for the optimization problem
@@ -31,7 +19,7 @@ class FrenetSerret_calc_pos:
         R_t = cas.horzcat(R_t_x,R_t_y,R_t_z)
 
         # Define system controls (invariants at every time step)
-        U = ocp.control(3)
+        invars = ocp.control(3)
 
         # Define system parameters P (known values in optimization that need to be set right before solving)
         p_obj_m = ocp.parameter(3,grid='control',include_last=True) # measured object positions
@@ -44,7 +32,7 @@ class FrenetSerret_calc_pos:
         ocp.subject_to(ocp.at_t0(self.tril_vec(R_t.T @ R_t - np.eye(3))==0.))
 
         # Dynamic constraints
-        (R_t_plus1, p_obj_plus1) = integrators.geo_integrator_tra(R_t, p_obj, U, h)
+        (R_t_plus1, p_obj_plus1) = integrators.geo_integrator_tra(R_t, p_obj, invars, h)
         # Integrate current state to obtain next state (next rotation and position)
         ocp.set_next(p_obj,p_obj_plus1)
         ocp.set_next(R_t_x,R_t_plus1[:,0])
@@ -53,8 +41,8 @@ class FrenetSerret_calc_pos:
             
         # Lower bounds on controls
         if bool_unsigned_invariants:
-            ocp.subject_to(U[0,:]>=0) # lower bounds on control
-            ocp.subject_to(U[1,:]>=0) # lower bounds on control
+            ocp.subject_to(invars[0,:]>=0) # lower bounds on control
+            ocp.subject_to(invars[1,:]>=0) # lower bounds on control
 
         #%% Specifying the objective
 
@@ -77,11 +65,11 @@ class FrenetSerret_calc_pos:
         # Regularization constraints to deal with singularities and noise
         objective_reg = 0
 
-        objective_reg = ocp.sum(cas.dot(U[1:3],U[1:3]))
+        objective_reg = ocp.sum(cas.dot(invars[1:3],invars[1:3]))
 
         objective = objective_reg/(window_len-1)
 
-        # opti.subject_to(U[1,-1] == U[1,-2]) # Last sample has no impact on RMS error ##### HOW TO ACCESS U[1,-2] IN ROCKIT
+        # opti.subject_to(invars[1,-1] == invars[1,-2]) # Last sample has no impact on RMS error ##### HOW TO ACCESS invars[1,-2] IN ROCKIT
 
         #%% Define solver and save variables
         ocp.add_objective(objective)
@@ -99,7 +87,7 @@ class FrenetSerret_calc_pos:
         self.R_t_z = R_t_z
         self.R_t = R_t
         self.p_obj = p_obj
-        self.U = U
+        self.invars = invars
         self.p_obj_m = p_obj_m
         self.R_t_0 = R_t_0
         self.window_len = window_len
@@ -139,7 +127,7 @@ class FrenetSerret_calc_pos:
         self.ocp.set_initial(self.p_obj, measured_positions.T)
 
         # Initialize controls
-        self.ocp.set_initial(self.U,[1,1e-12,1e-12])
+        self.ocp.set_initial(self.invars,[1,1e-12,1e-12])
 
         # Set values parameters
         self.ocp.set_value(self.R_t_0, np.eye(3))
@@ -157,11 +145,30 @@ class FrenetSerret_calc_pos:
         self.sol = sol
         
         # Extract the solved variables
-        _,i_t1 = sol.sample(self.U[0],grid='control')
-        _,i_t2 = sol.sample(self.U[1],grid='control')
-        _,i_t3 = sol.sample(self.U[2],grid='control')
+        _,i_t1 = sol.sample(self.invars[0],grid='control')
+        _,i_t2 = sol.sample(self.invars[1],grid='control')
+        _,i_t3 = sol.sample(self.invars[2],grid='control')
         invariants = np.array((i_t1,i_t2,i_t3)).T
         _,calculated_trajectory = sol.sample(self.p_obj,grid='control')
         _,calculated_movingframe = sol.sample(self.R_t,grid='control')
         
         return invariants, calculated_trajectory, calculated_movingframe
+    
+if __name__ == "__main__":
+    # Example data for measured positions and the stepsize
+    measured_positions = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12], [13, 14, 15], [16, 17, 18]])
+    stepsize = 0.05
+
+    # Test the functionalities of the class
+    frenet_serret = OCP_calc_pos(nb_samples=np.size(measured_positions,0),fatrop_solver=False)
+
+    # Call the calculate_invariants_online function
+    calc_invariants, calc_trajectory, calc_movingframes = frenet_serret.calculate_invariants_online(measured_positions, stepsize)
+
+    # Print the results
+    print("Calculated invariants:")
+    print(calc_invariants)
+    print("Calculated Moving Frame:")
+    print(calc_movingframes)
+    print("Calculated Trajectory:")
+    print(calc_trajectory)

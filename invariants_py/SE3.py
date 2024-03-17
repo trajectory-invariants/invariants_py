@@ -20,7 +20,7 @@ from numpy.linalg import norm
 from numpy import trace
 import math
 from math import fabs,copysign,sqrt,atan2,asin
-import SO3
+from invariants_py import SO3
 
 def random():
     """

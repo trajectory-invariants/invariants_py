@@ -8,7 +8,7 @@ Created on Fri May 26 13:30:29 2023
 
 import numpy as np
 import invariants_py.reparameterization as reparam
-import invariants_py.rockit_frenetserret_calculation_minimumjerk as FS
+import invariants_py.rockit_calculate_vector_invariants_position_mj as FS
 import invariants_py.plotters as plotters
 import os
 import time
@@ -31,7 +31,7 @@ plotters.plot_2D_contour(trajectory)
 #%% Calculate invariants first time
 
 # specify optimization problem symbolically
-FS_calculation_problem = FS.FrenetSerret_calc(nb_samples=nb_samples, w_pos=100, w_regul_jerk = 10**-10, fatrop_solver = use_fatrop_solver)
+FS_calculation_problem = FS.OCP_calc_pos(nb_samples=nb_samples, w_pos=100, w_regul_jerk = 10**-10, fatrop_solver = use_fatrop_solver)
 
 for i in range(100):
     start_time = time.time()

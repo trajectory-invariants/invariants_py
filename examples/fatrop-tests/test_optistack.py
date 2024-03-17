@@ -36,7 +36,7 @@ plotters.plot_2D_contour(trajectory)
 #%% Calculate invariants
 
 # specify optimization problem symbolically
-FS_calculation_problem = FS3.FrenetSerret_calc(window_len=nb_samples, w_pos = weight_measurements, w_regul = weight_regularization)
+FS_calculation_problem = FS3.OCP_calc_pos(window_len=nb_samples, w_pos = weight_measurements, w_regul = weight_regularization)
 
 # calculate invariants given measurements
 start_time = time.time()

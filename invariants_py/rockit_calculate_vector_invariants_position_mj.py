@@ -4,7 +4,7 @@ import casadi as cas
 import invariants_py.integrator_functions as integrators
 import invariants_py.ocp_helper as ocp_helper
 
-class FrenetSerret_calc:
+class OCP_calc_pos:
 
     def __init__(self, nb_samples = 100, w_pos = 1, w_regul_jerk = 10**-6 , w_regul_invars = 10**-10, fatrop_solver = False):
 
@@ -81,7 +81,7 @@ class FrenetSerret_calc:
             self.ocp.solver('ipopt', silent_ipopt_options)
         
         # Solve already once with dummy measurements
-        self.dummy_solve() 
+        self.initialize_solver() 
         #self.ocp._method.set_option("print_level",0)
         #self.ocp._method.set_option("tol",1e-11)
         self.first_window = True
@@ -123,7 +123,7 @@ class FrenetSerret_calc:
             ["R_t_x2","R_t_y2","R_t_z2","p_obj2","i1dot2","i12","i22","i1ddot2","i2dot2","i32"],   # Output labels
         )
         
-    def dummy_solve(self):
+    def initialize_solver(self):
         self.ocp.set_initial(self.R_t_x, np.array([1,0,0]))                 
         self.ocp.set_initial(self.R_t_y, np.array([0,1,0]))                
         self.ocp.set_initial(self.R_t_z, np.array([0,0,1]))
@@ -308,19 +308,20 @@ class FrenetSerret_calc:
     #     return invariants, calculated_trajectory, calculated_movingframe
 
 if __name__ == "__main__":
-    frenet_serret = FrenetSerret_calc(nb_samples=6)
-    
     # Example data for measured positions and the stepsize
     measured_positions = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12], [13, 14, 15], [16, 17, 18]])
-    stepsize = 0.1
+    stepsize = 0.05
 
+    # Test the functionalities of the class
+    frenet_serret = OCP_calc_pos(nb_samples=np.size(measured_positions,0),fatrop_solver=False)
+ 
     # Call the calculate_invariants_online function
-    invariants, calculated_trajectory, calculated_movingframe = frenet_serret.calculate_invariants_online(measured_positions, stepsize)
+    calc_invariants, calc_trajectory, calc_movingframes = frenet_serret.calculate_invariants_online(measured_positions, stepsize)
 
     # Print the results
-    print("Invariants:")
-    print(invariants)
+    print("Calculated invariants:")
+    print(calc_invariants)
     print("Calculated Moving Frame:")
-    print(calculated_movingframe)
+    print(calc_movingframes)
     print("Calculated Trajectory:")
-    print(calculated_trajectory)
+    print(calc_trajectory)

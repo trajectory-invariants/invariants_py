@@ -10,7 +10,7 @@ import casadi as cas
 import invariants_py.integrator_functions as integrators
 
 
-class FrenetSerret_calc:
+class OCP_calc_pos:
 
     def jerk_invariant(self, i1,i1dot,i1ddot,i2,i2dot,i3):
         # This is the jerk of the trajectory expressed in terms of the invariants and their derivatives
