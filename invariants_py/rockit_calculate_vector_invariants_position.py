@@ -45,8 +45,8 @@ class OCP_calc_pos:
             ocp.subject_to(invars[0,:]>=0) # lower bounds on control
             ocp.subject_to(invars[1,:]>=0) # lower bounds on control
 
-        ocp.subject_to(ocp.at_t0(p_obj - p_obj_m == 0.))
-        ocp.subject_to(ocp.at_tf(p_obj - p_obj_m == 0.))
+        #ocp.subject_to(ocp.at_t0(p_obj - p_obj_m == 0.))
+        #ocp.subject_to(ocp.at_tf(p_obj - p_obj_m == 0.))
 
         #%% Objective function
 
@@ -54,7 +54,7 @@ class OCP_calc_pos:
         #objective_fit = ocp.sum(cas.dot(p_obj - p_obj_m,p_obj - p_obj_m),include_last=True)
         ek = cas.dot(p_obj - p_obj_m,p_obj - p_obj_m)
         running_ek = ocp.state()
-        ocp.subject_to(ocp.at_t0(running_ek ==0))
+        ocp.subject_to(ocp.at_t0(running_ek == 0))
         ocp.set_next(running_ek, running_ek + ek)
 
         objective_fit = ocp.state()
@@ -99,7 +99,7 @@ class OCP_calc_pos:
         # Solve already once with dummy measurements
         self.ocp = ocp
         self.initialize_solver(window_len) 
-        self.ocp._method.set_option("print_level",0)
+        #self.ocp._method.set_option("print_level",0)
         
         #self.ocp._method.set_option("tol",1e-11)
         self.first_window = True
