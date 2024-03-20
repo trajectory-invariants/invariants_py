@@ -64,7 +64,7 @@ optim_calc_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [],
 use_fatrop_solver = True # True = fatrop, False = ipopt
 
 # specify optimization problem symbolically
-FS_calculation_problem_pos = FS_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.003, fatrop_solver = use_fatrop_solver)
+FS_calculation_problem_pos = FS_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.004, fatrop_solver = use_fatrop_solver)
 FS_calculation_problem_rot = FS_calc_rot(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180, fatrop_solver = use_fatrop_solver) 
 
 # calculate invariants given measurements
