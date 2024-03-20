@@ -8,10 +8,10 @@ Created on Fri Feb 9 2024
 from pathlib import Path
 from scipy.spatial.transform import Rotation as R
 import invariants_py.tutorial_scripts as tutorial
-from invariants_py import read_and_write_data as rw
+from invariants_py import data_handler as dh
 
 # Set path to data file
-data_location = rw.find_data_path('beer_1.txt')
+data_location = dh.find_data_path('beer_1.txt')
 # Set solver
 use_fatrop_solver = True
 # Set type of trajectory, options: "pose", "position", "rotation"

@@ -1,7 +1,7 @@
 import numpy as np
 import casadi as cas
 import rockit
-import invariants_py.integrator_functions as integrators
+import invariants_py.integrators as integrators
 import time
 
 class OCP_gen_rot:

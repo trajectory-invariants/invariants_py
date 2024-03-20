@@ -6,10 +6,10 @@ import invariants_py.reparameterization as reparam
 import invariants_py.opti_calculate_vector_invariants_position_mf as FS1
 import invariants_py.opti_calculate_vector_invariants_position as FS2
 #import invariants_py.opti_calculate_vector_invariants_position_mj as FS3
-from invariants_py import read_and_write_data as rw
+from invariants_py import data_handler as dh
 #%%
 
-data_location = rw.find_data_path('contour_coordinates.out')
+data_location = dh.find_data_path('contour_coordinates.out')
 
 
 position_data = np.loadtxt(data_location, dtype='float')

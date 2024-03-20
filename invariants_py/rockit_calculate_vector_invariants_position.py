@@ -1,7 +1,7 @@
 import numpy as np
 import casadi as cas
 import rockit
-import invariants_py.integrator_functions as integrators
+import invariants_py.integrators as integrators
 from invariants_py import ocp_helper
 import time
 

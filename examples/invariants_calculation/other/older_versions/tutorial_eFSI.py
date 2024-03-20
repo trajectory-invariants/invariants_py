@@ -1,9 +1,9 @@
-from invariants_py import read_and_write_data as rw
+from invariants_py import data_handler as dh
 import invariants_py.invariant_descriptor_class as invars
 #import numpy as np
 
 # Initialization
-data_location = rw.find_data_path("sinus.txt")
+data_location = dh.find_data_path("sinus.txt")
 parameterization = 'timebased' # {timebased,geometric}
 
 """

@@ -1,6 +1,6 @@
 
-from invariants_py import read_and_write_data
-import invariants_py.read_and_write_data as rw
+from invariants_py import data_handler
+import invariants_py.data_handler as dh
 import invariants_py.reparameterization as reparam
 from invariants_py.opti_calculate_vector_invariants_position_mf import OCP_calc_pos
 import matplotlib.pyplot as plt
@@ -9,7 +9,7 @@ import os
 
 plt.close('all')
           
-data_location = rw.find_data_path('sinus.txt')
+data_location = dh.find_data_path('sinus.txt')
 parameterization = 'arclength' # {time,arclength,screwprogress}
 
 """
@@ -17,7 +17,7 @@ Load and reparameterize data
 """
 
 # load data
-trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
+trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
 
 # reparameterization
 trajectory_geom,arclength,arclength_n,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)

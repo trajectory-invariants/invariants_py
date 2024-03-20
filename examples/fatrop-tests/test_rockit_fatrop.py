@@ -12,14 +12,14 @@ import invariants_py.rockit_calculate_vector_invariants_position as OCP
 import invariants_py.plotters as plotters
 import os
 import time
-from invariants_py import read_and_write_data as rw
+from invariants_py import data_handler as dh
 
 use_fatrop_solver = True  # True = fatrop, False = ipopt
 
 #%% Load data
 
 # load data
-data_location = rw.find_data_path("contour_coordinates.out")
+data_location = dh.find_data_path("contour_coordinates.out")
 position_data = np.loadtxt(data_location, dtype='float')
 
 # reparameterize to arc length

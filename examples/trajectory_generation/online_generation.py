@@ -7,7 +7,7 @@ Created on Wed Feb  9 21:27:38 2022
 
 # Imports
 import numpy as np
-import invariants_py.read_and_write_data as rw
+import invariants_py.data_handler as dh
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
 from invariants_py.opti_calculate_vector_invariants_position_mf import OCP_calc_pos
@@ -17,8 +17,8 @@ import invariants_py.plotters as plotters
 
 """Input data"""
 
-data_location = rw.find_data_path("sinus.txt")
-trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
+data_location = dh.find_data_path("sinus.txt")
+trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
 trajectory = pose[:,0:3,3]

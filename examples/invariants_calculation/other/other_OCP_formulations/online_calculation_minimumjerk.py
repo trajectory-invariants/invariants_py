@@ -6,10 +6,10 @@ import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
 from invariants_py.opti_calculate_vector_invariants_position_mj import OCP_calc_pos
 from IPython.display import clear_output
-import invariants_py.read_and_write_data as rw
+import invariants_py.data_handler as dh
 
 #%%
-data_location = rw.find_data_path('contour_coordinates.out')
+data_location = dh.find_data_path('contour_coordinates.out')
 position_data = np.loadtxt(data_location, dtype='float')
 trajectory,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_positiontrajectory_arclength(position_data)
 stepsize_orig = stepsize

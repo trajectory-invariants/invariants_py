@@ -1,7 +1,7 @@
 import numpy as np
 from math import pi
 import casadi as cas
-import invariants_py.integrator_functions as integrators
+import invariants_py.integrators as integrators
 
 class OCP_calc_rot:
 

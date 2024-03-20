@@ -8,7 +8,7 @@ Created on Fri Feb 9 2024
 # Imports
 import numpy as np
 from math import pi
-import invariants_py.read_and_write_data as rw
+import invariants_py.data_handler as dh
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
@@ -34,7 +34,7 @@ class OCP_results:
         self.invariants = invariants
 #%%
 def calculate_invariants(data_location, plot_demo = True, use_fatrop_solver = False, plot_inv = True, traj_type = "position"):
-    trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
+    trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
     pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
     arclength_n = arclength/arclength[-1]
     trajectory_position = pose[:,:3,3]
@@ -95,7 +95,7 @@ def calculate_invariants(data_location, plot_demo = True, use_fatrop_solver = Fa
 
 #%%
 def generate_trajectory(data_location, optim_calc_results, p_obj_end, rotate, use_fatrop_solver = False, plot_new_trajectory = True, traj_type = "position"):
-    trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
+    trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
     pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
     arclength_n = arclength/arclength[-1]
     n_frames = 10

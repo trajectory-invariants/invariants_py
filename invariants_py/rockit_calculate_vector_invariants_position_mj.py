@@ -1,7 +1,7 @@
 import rockit
 import numpy as np
 import casadi as cas
-import invariants_py.integrator_functions as integrators
+import invariants_py.integrators as integrators
 import invariants_py.ocp_helper as ocp_helper
 
 class OCP_calc_pos:

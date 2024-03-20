@@ -9,7 +9,7 @@ Created on Mon Jul 10 2023
 # Imports
 import numpy as np
 from math import pi
-import invariants_py.read_and_write_data as rw
+import invariants_py.data_handler as dh
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 import invariants_py.reparameterization as reparam
@@ -24,9 +24,9 @@ from stl import mesh
 from scipy.spatial.transform import Rotation as R
 from invariants_py.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 #%%
-data_location = rw.find_data_path('beer_1.txt')
-opener_location = rw.find_data_path('opener.stl')
-trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
+data_location = dh.find_data_path('beer_1.txt')
+opener_location = dh.find_data_path('opener.stl')
+trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
 trajectory_position = pose[:,:3,3]

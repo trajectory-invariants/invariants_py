@@ -1,15 +1,15 @@
 # Generate translation trajectory from model invariants
 
 # Import necessary modules
-from invariants_py import read_and_write_data as rw
+from invariants_py import data_handler as dh
 import invariants_py.plotters as plotters
 from invariants_py import generate_trajectory
 
 # Find the path to the data file
-path_to_data = rw.find_data_path("sinus_invariants.csv")
+path_to_data = dh.find_data_path("sinus_invariants.csv")
 
 # Load the invariants data from the file
-invariant_model = rw.read_invariants_from_csv(path_to_data)
+invariant_model = dh.read_invariants_from_csv(path_to_data)
 
 # Specify the boundary constraints
 boundary_constraints = {"position": {"initial": [0, 0, 0], "final": [2.5, 0.25, 0.5]}}

@@ -9,7 +9,7 @@ Created on Mon Feb  12 2024
 import numpy as np
 from math import pi
 import os
-import invariants_py.read_and_write_data as rw
+import invariants_py.data_handler as dh
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
@@ -24,8 +24,8 @@ from invariants_py.reparameterization import interpR
 from invariants_py.FSr_init import FSr_init
 
 #%%
-data_location = rw.find_data_path('beer_1.txt')
-trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
+data_location = dh.find_data_path('beer_1.txt')
+trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
 trajectory_position = pose[:,:3,3]
@@ -38,8 +38,8 @@ ax.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,
 n_frames = 10
 indx = np.trunc(np.linspace(0,len(trajectory_orientation)-1,n_frames))
 indx = indx.astype(int)
-opener_location = rw.find_data_path('opener.stl')
-bottle_location = rw.find_data_path('bottle.stl')
+opener_location = dh.find_data_path('opener.stl')
+bottle_location = dh.find_data_path('bottle.stl')
 for i in indx:
     pl.plot_3d_frame(trajectory_position[i,:],trajectory_orientation[i,:,:],1,0.01,['red','green','blue'],ax)
     pl.plot_stl(opener_location,trajectory_position[i,:],trajectory_orientation[i,:,:],colour="c",alpha=0.2,ax=ax)    
