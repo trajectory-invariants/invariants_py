@@ -1,25 +1,28 @@
 import numpy as np
 import casadi as cas
 import invariants_py.integrator_functions as integrators
+import time
+from invariants_py import ocp_helper
+import numpy as np
 
 class OCP_calc_pos:
 
     def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 10**-2):
        
-        #%% Create decision variables and parameters for the optimization problem
-        
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
-
-        # Define system states X (unknown object pose + moving frame pose at every time step) 
+        
+        #%% Decision variables and parameters
+        
+        # Define system states X (unknown object pose + moving frame pose at every time step)
         p_obj = []
         R_t = []
         X = []
         for k in range(window_len):
             p_obj.append(opti.variable(3,1)) # object position
-            R_t.append(opti.variable(3,3)) # translational Frenet-Serret frame
+            R_t.append(opti.variable(3,3)) # Frenet-Serret frame
             X.append(cas.vertcat(cas.vec(R_t[k]), cas.vec(p_obj[k])))
 
-        # Define system controls (invariants at every time step)
+        # Define system controls U (invariants at every time step)
         U = opti.variable(3,window_len-1)
 
         # Define system parameters P (known values in optimization that need to be set right before solving)
@@ -27,25 +30,20 @@ class OCP_calc_pos:
         R_t_0 = opti.parameter(3,3) # initial translational Frenet-Serret frame at first sample of window
         for k in range(window_len):
             p_obj_m.append(opti.parameter(3,1)) # object position
-
-        h = opti.parameter(1,1)
+        h = opti.parameter(1,1) # step size for integration of dynamic equations
         
-        #%% Specifying the constraints
+        #%% Constraints
         
         # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
-        #opti.subject_to( R_t[-1].T @ R_t[-1] == np.eye(3))
-        
-        constr = R_t[0].T @ R_t[0]
-        opti.subject_to(cas.vertcat(constr[1,0], constr[2,0], constr[2,1], constr[0,0], constr[1,1], constr[2,2])==cas.vertcat(cas.DM.zeros(3,1), cas.DM.ones(3,1)))
+        opti.subject_to(ocp_helper.tril_vec(R_t[0].T @ R_t[0] - np.eye(3)) == 0)
 
-
-        # Dynamic constraints
+        # Dynamics constraints (Multiple shooting)
         integrator = integrators.define_geom_integrator_tra_FSI_casadi(h)
         for k in range(window_len-1):
             # Integrate current state to obtain next state (next rotation and position)
             Xk_end = integrator(X[k],U[:,k],h)
             
-            # Gap closing constraint
+            # Continuity constraint
             opti.subject_to(Xk_end==X[k+1])
             
         # Lower bounds on controls
@@ -53,37 +51,28 @@ class OCP_calc_pos:
             opti.subject_to(U[0,:]>=0) # lower bounds on control
             opti.subject_to(U[1,:]>=0) # lower bounds on control
 
-        #%% Specifying the objective
-
-        # Fitting constraint to remain close to measurements
-        objective_fit = 0
+        # Measurement fitting constraint
+        trajectory_error = 0
         for k in range(window_len):
             err_pos = p_obj[k] - p_obj_m[k] # position error
-            objective_fit = objective_fit + cas.dot(err_pos,err_pos)
-            
-        opti.subject_to(objective_fit/window_len/rms_error_traj**2 < 1)
+            trajectory_error = trajectory_error + cas.dot(err_pos,err_pos)    
+        opti.subject_to(trajectory_error/window_len/rms_error_traj**2 < 1)
 
-        # Regularization constraints to deal with singularities and noise
+        # Boundary constraints
+        #pti.subject_to(self.p_obj[0] == self.p_obj_m[0]) # Fix first measurement
+        #opti.subject_to(self.p_obj[N-1] == self.p_obj_m[N-1]) # Fix last measurement
+        #opti.subject_to(U[1,-1] == U[1,-2]) # Last sample has no impact on RMS error
+
+        #%% Objective function
+
+        # Minimize moving frame invariants to deal with singularities and noise
         objective_reg = 0
         for k in range(window_len-1):
-            #if k!=0:
-            #    err_deriv = U[:,k] - U[:,k-1] # first-order finite backwards derivative (noise smoothing effect)
-            #else:
-            #    err_deriv = 0
-            err_abs = U[[1,2],k] # absolute value invariants (force arbitrary invariants to zero)
+            err_abs = U[[1,2],k] # value of moving frame invariants
+            objective_reg = objective_reg + cas.dot(err_abs,err_abs) # cost term
+        objective = objective_reg/(window_len-1) # normalize with window length
 
-            objective_reg = objective_reg + cas.dot(err_abs,err_abs)
-
-            ##Check that obj function is correctly typed in !!!
-            #objective_reg = objective_reg \
-            #                + cas.dot(w_deriv**(0.5)*err_deriv,w_deriv**(0.5)*err_deriv) \
-            #                + cas.dot(w_abs**(0.5)*err_abs, w_abs**(0.5)*err_abs)
-
-        objective = objective_reg/(window_len-1)
-
-        opti.subject_to(U[1,-1] == U[1,-2]) # Last sample has no impact on RMS error
-
-        #%% Define solver and save variables
+        #%% Solver
         opti.minimize(objective)
         opti.solver('ipopt',{"print_time":True,"expand":True},{'gamma_theta':1e-12,'max_iter':200,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
         
@@ -99,7 +88,7 @@ class OCP_calc_pos:
         self.h = h
          
     def calculate_invariants_global(self,trajectory_meas,stepsize):
-        #%%
+        #%% 
 
         if trajectory_meas.shape[1] == 3:
             measured_positions = trajectory_meas
@@ -114,7 +103,6 @@ class OCP_calc_pos:
         ex = np.vstack((ex,[ex[-1,:]]))
         ey = np.tile( np.array((0,0,1)), (N,1) )
         ez = np.array([np.cross(ex[i,:],ey[i,:]) for i in range(N)])
-        
         #Pdiff_cross = np.cross(Pdiff[0:-1],Pdiff[1:])
         #ey = Pdiff_cross / np.linalg.norm(Pdiff_cross,axis=1).reshape(N-2,1)
         
@@ -124,18 +112,13 @@ class OCP_calc_pos:
         
         # Initialize controls
         for k in range(N-1):    
-            self.opti.set_initial(self.U[:,k], np.array([1,1e-12,1e-12]))
+            self.opti.set_initial(self.U[:,k], np.array([1,1e-1,1e-12]))
             
         # Set values parameters
-        self.opti.set_value(self.R_t_0, np.eye(3,3))
+        #self.opti.set_value(self.R_t_0, np.eye(3,3))
         for k in range(N):
             self.opti.set_value(self.p_obj_m[k], measured_positions[k])       
-        
         self.opti.set_value(self.h,stepsize)
-
-        # Constraints
-        self.opti.subject_to(self.p_obj[0] == self.p_obj_m[0])
-        self.opti.subject_to(self.p_obj[N-1] == self.p_obj_m[N-1])
 
         # ######################
         # ##  DEBUGGING: check integrator in initial values, time step 0 to 1
@@ -151,12 +134,12 @@ class OCP_calc_pos:
         self.sol = sol
         
         # Extract the solved variables
-        invariants = sol.value(self.U).T
-        invariants =  np.vstack((invariants,[invariants[-1,:]]))
+        calculate_invariants = sol.value(self.U).T
+        calculate_invariants =  np.vstack((calculate_invariants,[calculate_invariants[-1,:]]))
         calculated_trajectory = np.array([sol.value(i) for i in self.p_obj])
         calculated_movingframe = np.array([sol.value(i) for i in self.R_t])
         
-        return invariants, calculated_trajectory, calculated_movingframe
+        return calculate_invariants, calculated_trajectory, calculated_movingframe
 
     def calculate_invariants_online(self,trajectory_meas,stepsize,sample_jump):
         #%%
@@ -225,3 +208,42 @@ class OCP_calc_pos:
             calculated_movingframe = np.array([sol.value(i) for i in self.R_t])
             
             return invariants, calculated_trajectory, calculated_movingframe
+        
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+
+    # Example data for measured positions and the stepsize
+    measured_positions = np.zeros((100, 3))
+    t = np.linspace(0, 1, 100)
+    radius = 1
+    height = 2
+    measured_positions[:, 0] = radius * np.cos(t)
+    measured_positions[:, 1] = radius * np.sin(t)
+    measured_positions[:, 2] = height * t
+    stepsize = t[1]-t[0]
+
+    # Plot the measured positions in a 3D graph
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(measured_positions[:, 0], measured_positions[:, 1], measured_positions[:, 2])
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    plt.show()
+    
+    # Test the functionalities of the class
+    OCP = OCP_calc_pos(window_len=np.size(measured_positions,0), rms_error_traj=10**-3)
+
+    # Call the calculate_invariants_global function and measure the elapsed time
+    start_time = time.time()
+    calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants_global(measured_positions, stepsize)
+    elapsed_time = time.time() - start_time
+
+    # # Print the results and elapsed time
+    # print("Calculated invariants:")
+    print(calc_invariants)
+    # print("Calculated Moving Frame:")
+    # print(calc_movingframes)
+    # print("Calculated Trajectory:")
+    # print(calc_trajectory)
+    # print("Elapsed Time:", elapsed_time, "seconds")
