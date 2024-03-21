@@ -17,12 +17,10 @@ import scipy.interpolate as ip
 from invariants_py.opti_calculate_vector_invariants_rotation import OCP_calc_rot
 from invariants_py.opti_generate_rotation_from_vector_invariants import OCP_gen_rot
 from IPython.display import clear_output
-from invariants_py.plotting_functions.plot_3d_frame import plot_3d_frame
-from invariants_py.plotting_functions.plot_orientation import plot_orientation
-from invariants_py.plotting_functions.plot_stl import plot_stl
+from invariants_py.plotters import plot_3d_frame, plot_orientation, plot_stl
 from stl import mesh
 from scipy.spatial.transform import Rotation as R
-from invariants_py.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
+from invariants_py.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 #%%
 data_location = dh.find_data_path('beer_1.txt')
 opener_location = dh.find_data_path('opener.stl')

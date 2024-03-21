@@ -15,7 +15,7 @@ import matplotlib
 import sys
 from mpl_toolkits import mplot3d
 from stl import mesh
-from invariants_py.robotics_functions.rot2quat import rot2quat
+from invariants_py.rot2quat import rot2quat
 from scipy import interpolate as ip
 #import PyQt5
 #sys.modules.get("PyQt5")
@@ -441,7 +441,7 @@ def plot_invariants(invariants1, invariants2, progress1, progress2 = [], inv_typ
 
 def plot_stl(stl_file_location,pos,R,colour,alpha,ax):
     """
-    insert a 3D mesh into an existing 3D plot by reading an stl file
+    Insert a 3D mesh into an existing 3D plot by reading an stl file
 
     Parameters
     ----------
@@ -605,3 +605,10 @@ def plot_3d_frame(p,R,scale_arrow,length_arrow,my_color,ax3d):
     ax3d.set_xlabel('x [m]')
     ax3d.set_ylabel('y [m]')
     ax3d.set_zlabel('z [m]')
+
+
+import numpy as np
+import math as math
+from mpl_toolkits import mplot3d
+from stl import mesh
+

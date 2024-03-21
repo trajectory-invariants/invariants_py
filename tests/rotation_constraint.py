@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from invariants_py.rockit_generate_rotation_from_vector_invariants import OCP_gen_rot as FS_gen_rot
 from scipy.spatial.transform import Rotation as R
-from invariants_py.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
+from invariants_py.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 import invariants_py.plotters as pl
 from invariants_py.reparameterization import interpR
 import pickle

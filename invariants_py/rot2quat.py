@@ -1,30 +1,26 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Aug 02 2023
-
-@author: Riccardo
-
-Transform a 3x3 rotational matrix into the corresponding unit quaternion
-
-    Parameters 
-    ----------
-    R_all : a (3,3) numpy array describing a rotational matrix (or a series of rotational matrices)
-
-    Returns
-    ----------
-    The corresposing unit quaternion of the form [qx,qy,qz,qw]
-
-Note: one rotation matrix may correspond to two quaternions: +q and -q.
-This ambiguity is normally solved by assuming the scalar part positive.
-However, for quaternions in a time series we desire continuity so we will 
-look at the previous time sample to determine if the sign must be positive 
-or negative for continuity
-"""
 
 import numpy as np
 import math as math
-from invariants_py.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
+from invariants_py.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
+
 def rot2quat(R_all):
+    """
+    Transform a 3x3 rotational matrix into the corresponding unit quaternion
+
+        Parameters 
+        ----------
+        R_all : a (3,3) numpy array describing a rotational matrix (or a series of rotational matrices)
+
+        Returns
+        ----------
+        The corresposing unit quaternion of the form [qx,qy,qz,qw]
+
+    Note: one rotation matrix may correspond to two quaternions: +q and -q.
+    This ambiguity is normally solved by assuming the scalar part positive.
+    However, for quaternions in a time series we desire continuity so we will 
+    look at the previous time sample to determine if the sign must be positive 
+    or negative for continuity
+    """
     N = np.size(R_all,0)
     q_all = np.zeros((N,4))
 

@@ -17,11 +17,9 @@ import scipy.interpolate as ip
 from invariants_py.rockit_calculate_vector_invariants_rotation import OCP_calc_rot as FS_calc
 from invariants_py.rockit_generate_rotation_from_vector_invariants import OCP_gen_rot as FS_gen
 from IPython.display import clear_output
-from invariants_py.plotting_functions.plot_3d_frame import plot_3d_frame
-from invariants_py.plotting_functions.plot_orientation import plot_orientation
-from invariants_py.plotting_functions.plot_stl import plot_stl
+from invariants_py.plotters import plot_3d_frame, plot_orientation, plot_stl
 from scipy.spatial.transform import Rotation as R
-from invariants_py.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
+from invariants_py.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 import invariants_py.plotters as pl
 from invariants_py.reparameterization import interpR
 from invariants_py.FSr_init import FSr_init

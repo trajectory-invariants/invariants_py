@@ -17,9 +17,9 @@ from invariants_py.rockit_calculate_vector_invariants_position import OCP_calc_p
 from invariants_py.rockit_calculate_vector_invariants_rotation import OCP_calc_rot as FS_calc_rot
 from invariants_py.rockit_generate_pose_from_vector_invariants import OCP_gen_pose as FS_gen_pose
 from scipy.spatial.transform import Rotation as R
-from invariants_py.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
+from invariants_py.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 import invariants_py.plotters as pl
-import invariants_py.robotics_functions.collision_detection as cd
+import collision_detection as cd
 from invariants_py.reparameterization import interpR
 from invariants_py.FSr_init import FSr_init
 
