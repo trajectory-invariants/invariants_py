@@ -26,16 +26,13 @@ def interpolate_invariants(spline_model_invariants, s_new):
 
     return interpolated_values, new_stepsize
 
-def create_spline_model(s, data_array):
+def create_spline_model(s, data_array, degree = 3):
     """
     Create a spline model of the data_array as a function of the progress parameter s.
     """
 
     # knots definition, repeat first/last required to ensure spline goes through these points
     knots = np.concatenate(([s[0]],[s[0]],s,[s[-1]],[s[-1]]))
-
-    # third-order spline
-    degree = 3
 
     # create spline model
     spline_model = ip.BSpline(knots,data_array,degree)
