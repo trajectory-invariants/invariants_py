@@ -1,6 +1,6 @@
 import numpy as np
 import casadi as cas
-import invariants_py.integrators as integrators
+import invariants_py.dynamics as dynamics
 
 class OCP_calc_pos:
 
@@ -34,7 +34,7 @@ class OCP_calc_pos:
         #%% Define geometric integrator
         ## Define a geometric integrator for eFSI, (meaning rigid-body motion is perfectly integrated assuming constant invariants)
         invariants = cas.vertcat(i1,i2,i3)
-        (R_t_plus1, p_obj_plus1) = integrators.geo_integrator_tra(R_t, p_obj, invariants, h)
+        (R_t_plus1, p_obj_plus1) = dynamics.dynamics_VI_pos(R_t, p_obj, invariants, h)
 
         i1dotplus1 = i1dot + i1ddot * h
         i1plus1 = i1 + i1dot * h + i1ddot * h**2/2
@@ -213,7 +213,7 @@ class OCP_calc_pos:
         # ##  DEBUGGING: check integrator in initial values, time step 0 to 1
         # x0 = cas.vertcat(cas.vec(np.eye(3,3)), cas.vec(measured_positions[0]))
         # u0 = 1e-8*np.ones((3,1))
-        # integrator = integrators.define_geom_integrator_tra_FSI_casadi(self.stepsize)
+        # integrator = dynamics.define_geom_integrator_tra_FSI_casadi(self.stepsize)
         # x1 = integrator(x0,u0)
         # print(x1)
         # ######################

@@ -35,7 +35,7 @@ FS_calculation_problem = OCP.OCP_calc_pos(window_len=nb_samples, fatrop_solver =
 
 for i in range(20):
     start_time = time.time()
-    invariants, trajectory_recon, mf = FS_calculation_problem.calculate_invariants_online(trajectory,stepsize)
+    invariants, trajectory_recon, mf = FS_calculation_problem.calculate_invariants(trajectory,stepsize)
     end_time = time.time()
     print('')
     print("solution time [s]: ")

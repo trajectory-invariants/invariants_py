@@ -1,7 +1,7 @@
 import numpy as np
 from math import pi
 import casadi as cas
-import invariants_py.integrators as integrators
+import invariants_py.dynamics as dynamics
 
 class OCP_calc_rot:
 
@@ -44,7 +44,7 @@ class OCP_calc_rot:
 
 
         # Dynamic constraints
-        integrator = integrators.define_geom_integrator_rot_FSI_casadi(h)
+        integrator = dynamics.define_geom_integrator_rot_FSI_casadi(h)
         for k in range(window_len-1):
             # Integrate current state to obtain next state (next rotation and position)
             Xk_end = integrator(X[k],U[:,k],h)
@@ -143,7 +143,7 @@ class OCP_calc_rot:
         # ##  DEBUGGING: check integrator in initial values, time step 0 to 1
         # x0 = cas.vertcat(cas.vec(np.eye(3,3)), cas.vec(measured_positions[0]))
         # u0 = 1e-8*np.ones((3,1))
-        # integrator = integrators.define_geom_integrator_tra_FSI_casadi(self.stepsize)
+        # integrator = dynamics.define_geom_integrator_tra_FSI_casadi(self.stepsize)
         # x1 = integrator(x0,u0)
         # print(x1)
         # ######################

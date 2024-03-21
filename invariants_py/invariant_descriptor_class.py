@@ -21,7 +21,7 @@ import pickle
 import math
 
 import casadi as cas
-import invariants_py.integrators as helper
+import invariants_py.dynamics as helper
 
 from collections import OrderedDict
 

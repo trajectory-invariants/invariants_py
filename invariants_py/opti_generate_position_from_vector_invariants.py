@@ -1,6 +1,6 @@
 import numpy as np
 import casadi as cas
-import invariants_py.integrators as integrators
+import invariants_py.dynamics as dynamics
 from invariants_py import ocp_helper
 
 class OCP_gen_pos:
@@ -39,7 +39,7 @@ class OCP_gen_pos:
         opti.subject_to(p_obj[-1] == p_obj_end)
             
         # Dynamic constraints
-        integrator = integrators.define_geom_integrator_tra_FSI_casadi(h)
+        integrator = dynamics.define_geom_integrator_tra_FSI_casadi(h)
         for k in range(N-1):
             # Integrate current state to obtain next state (next rotation and position)
             Xk_end = integrator(X[k],U[:,k],h)
@@ -104,7 +104,7 @@ class OCP_gen_pos:
         # ##  DEBUGGING: check integrator in initial values, time step 0 to 1
         # x0 = cas.vertcat(cas.vec(np.eye(3,3)), cas.vec(measured_positions[0]))
         # u0 = 1e-8*np.ones((3,1))
-        # integrator = integrators.define_geom_integrator_tra_FSI_casadi(self.stepsize)
+        # integrator = dynamics.define_geom_integrator_tra_FSI_casadi(self.stepsize)
         # x1 = integrator(x0,u0)
         # print(x1)
         # ######################

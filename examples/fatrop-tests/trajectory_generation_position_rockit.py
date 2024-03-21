@@ -41,7 +41,7 @@ use_fatrop_solver = True # True = fatrop, False = ipopt
 FS_calculation_problem = FS_calc(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.004, fatrop_solver = use_fatrop_solver)
 
 # calculate invariants given measurements
-invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
+invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants(trajectory,stepsize)
 
 init_vals_calculate_trajectory = calculate_trajectory
 init_vals_movingframes = movingframes

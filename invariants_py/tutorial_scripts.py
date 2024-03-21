@@ -62,11 +62,11 @@ def calculate_invariants(data_location, plot_demo = True, use_fatrop_solver = Fa
     if not traj_type == "position":
         optim_calc_results.invariants[:,:3], optim_calc_results.Obj_frames, optim_calc_results.FSr_frames = FS_calculation_problem_rot.calculate_invariants_global(trajectory,stepsize)
         if traj_type == "pose":
-            optim_calc_results.invariants[:,3:], optim_calc_results.Obj_pos, optim_calc_results.FSt_frames = FS_calculation_problem_pos.calculate_invariants_global(trajectory,stepsize)
+            optim_calc_results.invariants[:,3:], optim_calc_results.Obj_pos, optim_calc_results.FSt_frames = FS_calculation_problem_pos.calculate_invariants(trajectory,stepsize)
         else:
             optim_calc_results.Obj_pos = trajectory_position
     else:
-        optim_calc_results.invariants, optim_calc_results.Obj_pos, optim_calc_results.FSt_frames = FS_calculation_problem_pos.calculate_invariants_global(trajectory,stepsize)
+        optim_calc_results.invariants, optim_calc_results.Obj_pos, optim_calc_results.FSt_frames = FS_calculation_problem_pos.calculate_invariants(trajectory,stepsize)
         optim_calc_results.Obj_frames = trajectory_orientation
 
     if plot_inv:

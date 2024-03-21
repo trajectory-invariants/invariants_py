@@ -8,7 +8,7 @@ import numpy as np
 from math import pi
 import casadi as cas
 import rockit
-import invariants_py.integrators as integrators
+import invariants_py.dynamics as dynamics
 import time
 
 class OCP_calc_rot:
@@ -52,7 +52,7 @@ class OCP_calc_rot:
 
 
         # Dynamic constraints
-        (R_r_plus1, R_obj_plus1) = integrators.geo_integrator_rot(R_r, R_obj, U, h)
+        (R_r_plus1, R_obj_plus1) = dynamics.geo_integrator_rot(R_r, R_obj, U, h)
         # Integrate current state to obtain next state (next rotation and position)
         ocp.set_next(R_obj,R_obj_plus1)
         ocp.set_next(R_r,R_r_plus1)
