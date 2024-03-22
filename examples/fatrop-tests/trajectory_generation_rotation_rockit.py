@@ -19,7 +19,7 @@ from scipy.spatial.transform import Rotation as R
 from invariants_py.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 import invariants_py.plotters as pl
 from invariants_py.reparameterization import interpR
-from invariants_py.FSr_init import FSr_init
+from invariants_py.initialization import FSr_init
 #%%
 data_location = dh.find_data_path('beer_1.txt')
 trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
@@ -67,7 +67,7 @@ plot_orientation(trajectory_orientation,init_vals_calculate_trajectory)
 
 pl.plot_invariants(invariants,[],arclength_n,[],inv_type='FS_rot')
 
-plt.show(block=False)
+plt.show()
 
 #%%
 # Spline of model
@@ -144,7 +144,7 @@ pl.plot_stl(opener_location,[0,0,0],calculate_trajectory[-1],colour="r",alpha=0.
 pl.plot_stl(opener_location,[0,0,0],R_obj_end,colour="b",alpha=0.5,ax=ax99)
 pl.plot_stl(opener_location,[0,0,0],new_trajectory[-1],colour="g",alpha=0.5,ax=ax99)
 
-plt.show(block=False)
+plt.show()
 
 #%% Visualization
 
@@ -204,7 +204,7 @@ while current_progress <= 1.0:
     
     pl.plot_invariants(invariants,new_invars,arclength_n,progress_values,inv_type='FS_rot')
 
-    plt.show(block=False)
+    plt.show()
     
     old_progress = current_progress
     current_progress = old_progress + 1/window_len

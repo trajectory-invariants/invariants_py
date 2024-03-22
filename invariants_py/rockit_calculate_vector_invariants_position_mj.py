@@ -3,6 +3,7 @@ import numpy as np
 import casadi as cas
 import invariants_py.dynamics_invariants as dynamics
 import invariants_py.ocp_helper as ocp_helper
+from invariants_py import initialization
 
 class OCP_calc_pos:
 
@@ -37,7 +38,7 @@ class OCP_calc_pos:
         self.ocp.subject_to(self.ocp.at_t0(ocp_helper.tril_vec(R_t.T @ R_t - np.eye(3))==0.))
 
         # Dynamics equations        
-        (R_t_plus1, p_obj_plus1) = dynamics.dynamics_invariants_VI_pos(R_t, self.p_obj, invariants, self.h)
+        (R_t_plus1, p_obj_plus1) = dynamics.vector_invariants_position(R_t, self.p_obj, invariants, self.h)
         
         self.ocp.set_next(self.R_t_x,R_t_plus1[:,0])
         self.ocp.set_next(self.R_t_y,R_t_plus1[:,1])
@@ -132,7 +133,7 @@ class OCP_calc_pos:
         #%%
         if self.first_window:
             N = self.N_controls
-            [ex,ey,ez] = ocp_helper.estimate_initial_frames(measured_positions)
+            [ex,ey,ez] = initialization.estimate_initial_frames(measured_positions)
             self.R_t_x_sol =  ex.T 
             self.R_t_y_sol =  ey.T 
             self.R_t_z_sol =  ez.T 

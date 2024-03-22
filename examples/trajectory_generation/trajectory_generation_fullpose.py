@@ -74,7 +74,7 @@ pl.plot_orientation(optim_calc_results.Obj_frames,trajectory_orientation)
 
 pl.plot_invariants(optim_calc_results.invariants,[],arclength_n)
 
-plt.show(block=False)
+plt.show()
 
 #%%
 # Spline of model
@@ -142,7 +142,7 @@ pl.plot_orientation(optim_calc_results.Obj_frames,optim_gen_results.Obj_frames,c
 
 pl.plot_invariants(optim_calc_results.invariants, optim_gen_results.invariants, arclength_n, progress_values)
 
-plt.show(block=False)
+plt.show()
 
 #%% Visualization
 
@@ -164,6 +164,9 @@ optim_iter_results.Obj_pos = optim_calc_results.Obj_pos.copy()
 optim_iter_results.Obj_frames = optim_calc_results.Obj_frames.copy()
 optim_iter_results.FSt_frames = optim_calc_results.FSt_frames.copy()
 optim_iter_results.FSr_frames = optim_calc_results.FSr_frames.copy()
+fig = plt.figure(figsize=(14,8))
+ax = fig.add_subplot(111, projection='3d')
+
 while current_progress <= 1.0:
     
     print(f"current progress = {current_progress}")
@@ -194,8 +197,7 @@ while current_progress <= 1.0:
     # Visualization
     clear_output(wait=True)
     
-    fig = plt.figure(figsize=(14,8))
-    ax = fig.add_subplot(111, projection='3d')
+    ax.clear()
     ax.plot(optim_calc_results.Obj_pos[:,0],optim_calc_results.Obj_pos[:,1],optim_calc_results.Obj_pos[:,2],'b')
     ax.plot(optim_iter_results.Obj_pos[:,0],optim_iter_results.Obj_pos[:,1],optim_iter_results.Obj_pos[:,2],'r')
     for i in indx:
@@ -206,9 +208,10 @@ while current_progress <= 1.0:
         pl.plot_3d_frame(optim_iter_results.Obj_pos[i,:],optim_iter_results.Obj_frames[i,:,:],1,0.01,['red','green','blue'],ax)
         pl.plot_stl(opener_location,optim_iter_results.Obj_pos[i,:],optim_iter_results.Obj_frames[i,:,:],colour="r",alpha=0.2,ax=ax)
 
+    # TODO do not make a new plot each time the while loop is run
     pl.plot_invariants(optim_calc_results.invariants,optim_iter_results.invariants,arclength_n,progress_values)
     
-    plt.show(block=False)
+    plt.show()
     
     old_progress = current_progress
     current_progress = old_progress + 1/window_len

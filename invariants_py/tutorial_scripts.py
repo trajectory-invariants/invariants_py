@@ -15,7 +15,7 @@ from scipy.spatial.transform import Rotation as R
 from invariants_py.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 import invariants_py.plotters as pl
 from invariants_py.reparameterization import interpR
-from invariants_py.FSr_init import FSr_init
+from invariants_py.initialization import FSr_init
 
 # define class for OCP results
 class OCP_results:
@@ -83,7 +83,7 @@ def calculate_invariants(data_location, plot_demo = True, use_fatrop_solver = Fa
         else:
             pl.plot_invariants(optim_calc_results.invariants,[],arclength_n, inv_type = "FS_rot")
 
-    plt.show(block=False)
+    plt.show()
 
     return optim_calc_results
 
@@ -181,4 +181,4 @@ def generate_trajectory(data_location, optim_calc_results, p_obj_end, rotate, us
         else:
             pl.plot_invariants(optim_calc_results.invariants, optim_gen_results.invariants, arclength_n, progress_values, 'FS_rot')
 
-    plt.show(block=False)
+    plt.show()

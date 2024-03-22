@@ -65,7 +65,7 @@ ax2.set_title('Curvature [rad/m]')
 ax3.plot(arclength_n,invariants[:,2])
 ax3.set_title('Torsion [rad/m]')
 
-plt.show(block=False)
+plt.show()
 
 #%%
 # Spline of model
@@ -151,7 +151,7 @@ plt.plot(arclength_n,invariants[:,2],'b')
 plt.plot(0,0)
 plt.title('Torsion [rad/m]')
 
-plt.show(block=False)
+plt.show()
 
 #%% Visualization
 
@@ -167,6 +167,12 @@ R_obj_end = calculate_trajectory[-1] # initialise R_obj_end with end point of re
 iterative_trajectory = calculate_trajectory.copy()
 iterative_movingframes = movingframes.copy()
 trajectory_position_iter = trajectory_position.copy()
+
+fig = plt.figure(figsize=(14,8))
+ax = fig.add_subplot(111, projection='3d')    
+
+fig, axes = plt.subplots(1, 3, sharey=True, figsize=(10,3))
+    
 while current_progress <= 1.0:
     
     print(f"current progress = {current_progress}")
@@ -191,8 +197,6 @@ while current_progress <= 1.0:
     # Visualization
     clear_output(wait=True)
     
-    fig = plt.figure(figsize=(14,8))
-    ax = fig.add_subplot(111, projection='3d')
     ax.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,2],'b')
     for i in indx:
         plot_stl(opener_location,trajectory_position[i,:],calculate_trajectory[i,:,:],colour="c",alpha=0.2,ax=ax)
@@ -205,27 +209,23 @@ while current_progress <= 1.0:
         plot_3d_frame(trajectory_position_iter[i,:],iterative_trajectory[i,:,:],1,0.05,['red','green','blue'],ax)
         plot_stl(opener_location,trajectory_position_iter[i,:],iterative_trajectory[i,:,:],colour="r",alpha=0.2,ax=ax)
     
-    fig = plt.figure()
 
-    plt.subplot(1,3,1)
-    plt.plot(progress_values,new_invars[:,0],'r')
-    plt.plot(arclength_n,invariants[:,0],'b')
-    plt.plot(0,0)
-    plt.title('velocity [m/m]')
+    axes[0].plot(progress_values,new_invars[:,0],'r')
+    axes[0].plot(arclength_n,invariants[:,0],'b')
+    axes[0].plot(0,0)
+    axes[0].set_title('velocity [m/m]')
     
-    plt.subplot(1,3,2)
-    plt.plot(progress_values,(new_invars[:,1]),'r')
-    plt.plot(arclength_n,invariants[:,1],'b')
-    plt.plot(0,0)
-    plt.title('curvature [rad/m]')
+    axes[1].plot(progress_values,(new_invars[:,1]),'r')
+    axes[1].plot(arclength_n,invariants[:,1],'b')
+    axes[1].plot(0,0)
+    axes[1].set_title('curvature [rad/m]')
     
-    plt.subplot(1,3,3)
-    plt.plot(progress_values,(new_invars[:,2]),'r')
-    plt.plot(arclength_n,invariants[:,2],'b')
-    plt.plot(0,0)
-    plt.title('torsion [rad/m]')
+    axes[2].plot(progress_values,(new_invars[:,2]),'r')
+    axes[2].plot(arclength_n,invariants[:,2],'b')
+    axes[2].plot(0,0)
+    axes[2].set_title('torsion [rad/m]')
 
-    plt.show(block=False)
+    plt.show()
     
     old_progress = current_progress
     current_progress = old_progress + 1/window_len

@@ -18,7 +18,7 @@ from invariants_py.orthonormalize_rotation import orthonormalize_rotation as ort
 import invariants_py.plotters as pl
 import collision_detection_bottle as cd
 from invariants_py.reparameterization import interpR
-from invariants_py.FSr_init import FSr_init
+from invariants_py.initialization import FSr_init
 
 #%%
 data_location = dh.find_data_path('beer_1.txt')
@@ -81,7 +81,7 @@ pl.plot_orientation(optim_calc_results.Obj_frames,trajectory_orientation)
 
 pl.plot_invariants(optim_calc_results.invariants,[],arclength_n)
 
-plt.show(block=False)
+plt.show()
 
 #%%
 # Spline of model
@@ -199,4 +199,4 @@ if collision_flag:
 else:
     print("NO COLLISION DETECTED")
 
-plt.show(block=False)
+plt.show()

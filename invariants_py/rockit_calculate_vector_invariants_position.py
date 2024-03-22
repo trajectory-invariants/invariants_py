@@ -1,7 +1,7 @@
 import numpy as np
 import casadi as cas
 import rockit
-from invariants_py import ocp_helper, dynamics
+from invariants_py import ocp_helper, dynamics_invariants, initialization
 
 class OCP_calc_pos:
     def __init__(self, window_len = 100, rms_error_traj = 10**-2, fatrop_solver = False, bool_unsigned_invariants = False):
@@ -27,7 +27,7 @@ class OCP_calc_pos:
         h = ocp.parameter(1) # stepsize
         
         # System dynamics (integrate current states + controls to obtain next states)
-        (R_t_plus1, p_obj_plus1) = dynamics.dynamics_invariants_VI_pos(R_t, p_obj, invars, h)
+        (R_t_plus1, p_obj_plus1) = dynamics_invariants.vector_invariants_position(R_t, p_obj, invars, h)
         ocp.set_next(p_obj,p_obj_plus1)
         ocp.set_next(R_t_x,R_t_plus1[:,0])
         ocp.set_next(R_t_y,R_t_plus1[:,1])
@@ -107,7 +107,7 @@ class OCP_calc_pos:
         # Check if this is the first function call
         if self.first_time:
             # Initialize states and controls using measurements
-            self.solution,measured_positions = ocp_helper.initialize_VI_pos(measured_positions)
+            self.solution,measured_positions = initialization.initialize_VI_pos(measured_positions)
             self.first_time = False
 
         # Solve the optimization problem for the given measurements starting from previous solution

@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Jul 19 2023
+
+@author: u0148800
+"""
+
+
 
 # Imports
 import numpy as np
@@ -118,7 +126,7 @@ plt.plot(arclength_n,invariants[:,2],'b')
 plt.plot(0,0)
 plt.title('Torsion [rad/m]')
 
-plt.show(block=False)
+plt.show()
 
 
 #%% Visualization
@@ -133,6 +141,15 @@ old_progress = 0.0
 
 calculate_trajectory = init_vals_calculate_trajectory
 movingframes = init_vals_movingframes
+
+fig = plt.figure(figsize=(14,8))
+ax = fig.add_subplot(111, projection='3d')
+ax.plot(trajectory[:,0],trajectory[:,1],trajectory[:,2],'b')
+
+fig2 = plt.figure()
+ax1 = fig2.add_subplot(1,3,1)
+ax2 = fig2.add_subplot(1,3,2)
+ax3 = fig2.add_subplot(1,3,3)
 
 while current_progress <= 1.0:
     
@@ -155,32 +172,29 @@ while current_progress <= 1.0:
     # Visualization
     clear_output(wait=True)
     
-    fig = plt.figure(figsize=(14,8))
-    ax = fig.add_subplot(111, projection='3d')
+    ax.clear()
     ax.plot(trajectory[:,0],trajectory[:,1],trajectory[:,2],'b')
     ax.plot(calculate_trajectory[:,0],calculate_trajectory[:,1],calculate_trajectory[:,2],'r')
     
-    fig = plt.figure()
-
-    plt.subplot(1,3,1)
-    plt.plot(progress_values,new_invars[:,0],'r')
-    plt.plot(arclength_n,invariants[:,0],'b')
-    plt.plot(0,0)
-    plt.title('velocity [m/m]')
+    ax1.clear()
+    ax1.plot(progress_values,new_invars[:,0],'r')
+    ax1.plot(arclength_n,invariants[:,0],'b')
+    ax1.plot(0,0)
+    ax1.set_title('velocity [m/m]')
     
-    plt.subplot(1,3,2)
-    plt.plot(progress_values,(new_invars[:,1]),'r')
-    plt.plot(arclength_n,invariants[:,1],'b')
-    plt.plot(0,0)
-    plt.title('curvature [rad/m]')
+    ax2.clear()
+    ax2.plot(progress_values,(new_invars[:,1]),'r')
+    ax2.plot(arclength_n,invariants[:,1],'b')
+    ax2.plot(0,0)
+    ax2.set_title('curvature [rad/m]')
     
-    plt.subplot(1,3,3)
-    plt.plot(progress_values,(new_invars[:,2]),'r')
-    plt.plot(arclength_n,invariants[:,2],'b')
-    plt.plot(0,0)
-    plt.title('torsion [rad/m]')
+    ax3.clear()
+    ax3.plot(progress_values,(new_invars[:,2]),'r')
+    ax3.plot(arclength_n,invariants[:,2],'b')
+    ax3.plot(0,0)
+    ax3.set_title('torsion [rad/m]')
 
-    plt.show(block=False)
+    plt.show()
     
     old_progress = current_progress
     current_progress = old_progress + 1/window_len

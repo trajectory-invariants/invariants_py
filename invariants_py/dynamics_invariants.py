@@ -52,8 +52,10 @@ def geo_integrator(R_t, R_r, R_obj, p_obj, u, h):
 
 
 
-def dynamics_VI_pos(R_t, p_obj, u, h):
-    """Integrate invariants over interval h starting from a current state (object pose + moving frames)"""
+def vector_invariants_position(R_t, p_obj, u, h):
+    """
+    Discrete dynamics of the vector invariants for position. Integrate invariants over interval h starting from a current state (object pose + moving frames)
+    """
     # Define a geometric integrator for eFSI,
     # (meaning rigid-body motion is perfectly integrated assuming constant invariants)
     
@@ -213,7 +215,7 @@ def define_geom_integrator_tra_FSI_casadi(h):
     u = cas.MX.sym('i',3,1)
 
     ## Define a geometric integrator for eFSI, (meaning rigid-body motion is perfectly integrated assuming constant invariants)
-    (R_t_plus1, p_obj_plus1) = dynamics_VI_pos(R_t, p_obj, u, h)
+    (R_t_plus1, p_obj_plus1) = vector_invariants_position(R_t, p_obj, u, h)
     out_plus1 = cas.vertcat(cas.vec(R_t_plus1),  p_obj_plus1)
     integrator = cas.Function("phi", [x,u,h] , [out_plus1])
     
