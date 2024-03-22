@@ -37,7 +37,7 @@ class OCP_calc_pos:
         self.ocp.subject_to(self.ocp.at_t0(ocp_helper.tril_vec(R_t.T @ R_t - np.eye(3))==0.))
 
         # Dynamics equations        
-        (R_t_plus1, p_obj_plus1) = dynamicsdynamics_invariants_VI_pos(R_t, self.p_obj, invariants, self.h)
+        (R_t_plus1, p_obj_plus1) = dynamics.dynamics_invariants_VI_pos(R_t, self.p_obj, invariants, self.h)
         
         self.ocp.set_next(self.R_t_x,R_t_plus1[:,0])
         self.ocp.set_next(self.R_t_y,R_t_plus1[:,1])

@@ -54,7 +54,7 @@ class OCP_gen_pos:
         ocp.subject_to(ocp.at_tf(p_obj == p_obj_end))
 
         # Dynamic constraints
-        (R_t_plus1, p_obj_plus1) = dynamicsdynamics_invariants_VI_pos(R_t, p_obj, U, h)
+        (R_t_plus1, p_obj_plus1) = dynamics.dynamics_invariants_VI_pos(R_t, p_obj, U, h)
 
         # Integrate current state to obtain next state (next rotation and position)
         ocp.set_next(p_obj,p_obj_plus1)

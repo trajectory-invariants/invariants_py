@@ -27,7 +27,7 @@ class OCP_calc_pos:
         h = ocp.parameter(1) # stepsize
         
         # System dynamics (integrate current states + controls to obtain next states)
-        (R_t_plus1, p_obj_plus1) = dynamicsdynamics_invariants_VI_pos(R_t, p_obj, invars, h)
+        (R_t_plus1, p_obj_plus1) = dynamics.dynamics_invariants_VI_pos(R_t, p_obj, invars, h)
         ocp.set_next(p_obj,p_obj_plus1)
         ocp.set_next(R_t_x,R_t_plus1[:,0])
         ocp.set_next(R_t_y,R_t_plus1[:,1])
