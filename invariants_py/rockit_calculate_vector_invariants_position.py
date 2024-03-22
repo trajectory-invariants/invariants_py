@@ -134,6 +134,7 @@ if __name__ == "__main__":
     calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_positions, timestep)
 
     # Reuse the OCP using new data (for example in moving horizon estimation)
+    # TODO if measured_positions is used then it does not converge in one iteration because lam/mu is not taken from previous solution
     measured_positions_2 = np.array([[1.2, 2.3, 3.4], [4.5, 5.6, 6.7], [7.8, 8.9, 9.0], [10.1, 11.2, 12.3]])
     calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_positions_2, timestep)
 
