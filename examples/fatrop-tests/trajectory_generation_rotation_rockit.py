@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
 """
-Created on Mon Jul 10 2023
-
-@author: Riccardo
+Application involving approach trajectory of a bottle opener towards a bottle
 """
 
 # Imports

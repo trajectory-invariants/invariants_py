@@ -1,8 +1,12 @@
 """
-@author: Zeno Gillis, Victor Van Wymeersch, Maxim Vochten
+
+Note: This class has been deprecated.
 
 Implementation of extended Frenet-Serret invariants:
 optimization problems for calculating invariants and generating new trajectories
+
+@author: Zeno Gillis, Victor Van Wymeersch, Maxim Vochten
+
 """
 
 import sys
@@ -21,7 +25,7 @@ import pickle
 import math
 
 import casadi as cas
-import invariants_py.dynamics as helper
+import invariants_py.dynamics_invariants as helper
 
 from collections import OrderedDict
 

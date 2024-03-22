@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
 """
-Created on Mon Dec  6 15:23:48 2021
-
-@author: u0091864
+Dealing with input/output of data
 """
 
 import invariants_py.data as data_folder

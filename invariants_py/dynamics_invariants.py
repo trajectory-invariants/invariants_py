@@ -1,12 +1,5 @@
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
 """
-Created on Thu Sep  5 13:08:30 2019
-
-@author: Zeno Gillis, Victor van Wymeersch, Maxim Vochten
-
-Helper functions for invariant calculations:
-    - dynamics
+Implements the differential equations and discrete dynamics of the vector and screw invariants
 """
 
 import casadi as cas

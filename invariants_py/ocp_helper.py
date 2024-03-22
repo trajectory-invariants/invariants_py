@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Aug 16 08:30:15 2023
-
-@author: maxim
-"""
 
 import numpy as np
 import casadi as cas

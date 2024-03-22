@@ -1,12 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Sep  5 09:52:48 2019
-
-@author: Zeno Gillis, Victor Van Wymeersch, Maxim Vochten
-
-Functions for plotting invariant signatures and trajectories
-
-"""
 
 # TODO separate dynamic plots with Qt5 from regular plots in separate file
 

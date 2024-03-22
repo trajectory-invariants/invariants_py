@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Dec  6 16:34:38 2021
-
-@author: u0091864
-"""
 
 import numpy as np
 import invariants_py.SO3 as SO3

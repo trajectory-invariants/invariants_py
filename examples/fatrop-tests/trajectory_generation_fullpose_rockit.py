@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
 """
-Created on Thu Aug 3 2023
-
-@author: Riccardo
+Application involving approach trajectory of a bottle opener towards a bottle
 """
 
 # Imports
@@ -22,7 +19,7 @@ from scipy.spatial.transform import Rotation as R
 from invariants_py.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 import invariants_py.plotters as pl
 import random
-import collision_detection as cd
+import collision_detection_bottle as cd
 from invariants_py.reparameterization import interpR
 from invariants_py.FSr_init import FSr_init
 
@@ -200,7 +197,7 @@ tilting_angle_rotx_deg=0
 tilting_angle_roty_deg=0
 tilting_angle_rotz_deg=0
 mode = 'rpy'
-collision_flag, first_collision_sample, last_collision_sample = cd.collision_detection(optim_gen_results.Obj_pos,optim_gen_results.Obj_frames,obj_pos,opener_geom,tilting_angle_rotx_deg,tilting_angle_roty_deg,tilting_angle_rotz_deg,mode,ax)
+collision_flag, first_collision_sample, last_collision_sample = cd.collision_detection_bottle(optim_gen_results.Obj_pos,optim_gen_results.Obj_frames,obj_pos,opener_geom,tilting_angle_rotx_deg,tilting_angle_roty_deg,tilting_angle_rotz_deg,mode,ax)
 
 if collision_flag:
     print("COLLISION DETECTED")

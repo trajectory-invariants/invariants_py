@@ -1,8 +1,7 @@
 import numpy as np
 import casadi as cas
 import rockit
-import invariants_py.dynamics as dynamics
-
+import invariants_py.dynamics_invariants as dynamics
 
 class OCP_gen_pose:
 
@@ -79,7 +78,7 @@ class OCP_gen_pose:
         ocp.subject_to(ocp.at_tf(self.tril_vec_no_diag(R_obj.T @ R_obj_end - np.eye(3))==0.))
 
         # Dynamic constraints
-        (R_t_plus1, p_obj_plus1) = dynamics.dynamics_VI_pos(R_t, p_obj, U[3:], h)
+        (R_t_plus1, p_obj_plus1) = dynamicsdynamics_invariants_VI_pos(R_t, p_obj, U[3:], h)
         (R_r_plus1, R_obj_plus1) = dynamics.geo_integrator_rot(R_r, R_obj, U[:3], h)
         # Integrate current state to obtain next state (next rotation and position)
         ocp.set_next(p_obj,p_obj_plus1)

@@ -1,11 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jul 19 2023
-
-@author: u0148800
-"""
-
-
 
 # Imports
 import numpy as np

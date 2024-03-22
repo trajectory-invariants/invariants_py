@@ -1,3 +1,7 @@
+"""
+Run all the Python scripts in the /examples and /tests folder to verify everything works.
+"""
+
 import os
 import subprocess
 

@@ -1,14 +1,9 @@
-# -*- coding: utf-8 -*-
-"""
-
-@author: Riccardo
-"""
 
 import numpy as np
 from math import pi
 import casadi as cas
 import rockit
-import invariants_py.dynamics as dynamics
+import invariants_py.dynamics_invariants as dynamics
 import time
 
 class OCP_calc_rot:

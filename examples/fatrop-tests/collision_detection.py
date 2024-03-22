@@ -5,7 +5,7 @@ from scipy.spatial.transform import Rotation as R
 from invariants_py.external.GJK import geometry as GJK_geometry
 from invariants_py.external.GJK import compute_distance as GJK_compute_distance
 
-def collision_detection(p_obj_demo, R_demo, position_bottle, opener_geom, tilting_rotx, tilting_roty, tilting_rotz, mode,ax):
+def collision_detection_bottle(p_obj_demo, R_demo, position_bottle, opener_geom, tilting_rotx, tilting_roty, tilting_rotz, mode,ax):
     # How many iterations to allow for collision detection.
     iterationsAllowed = 6
 

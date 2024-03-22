@@ -1,6 +1,6 @@
 import numpy as np
 import casadi as cas
-import invariants_py.dynamics as dynamics
+import invariants_py.dynamics_invariants as dynamics
 
 class OCP_gen_rot:
 

@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
 """
-Created on Fri Feb 9 2024
-
-@author: Riccardo
+Demo showing adaptation of the approach trajectory of a bottle opener towards a bottle
 """
 
 from pathlib import Path
@@ -21,8 +18,6 @@ Part 1: calculation invariants
 """
 # Calculate invariants
 invariants_calculation = tutorial.calculate_invariants(data_location, use_fatrop_solver = use_fatrop_solver, traj_type = traj_type)
-
-
 
 """
 Part 2: generation new trajectories

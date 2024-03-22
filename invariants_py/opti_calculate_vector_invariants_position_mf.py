@@ -1,6 +1,6 @@
 import numpy as np
 import casadi as cas
-import invariants_py.dynamics as dynamics
+import invariants_py.dynamics_invariants as dynamics
 import invariants_py.ocp_helper as ocp_helper
 
 class OCP_calc_pos:

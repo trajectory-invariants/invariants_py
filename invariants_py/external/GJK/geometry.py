@@ -6,7 +6,7 @@
 
     Other geometries can be added as well and be used with the GJK algorithm
 
-    Script taken from: https://github.com/mohith-sakthivel/Fast_GJK-collision_detection
+    Script taken from: https://github.com/mohith-sakthivel/Fast_GJK-collision_detection_bottle
 """
 import numpy as np
 # from rotation_ops import RotatePos

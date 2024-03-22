@@ -27,7 +27,7 @@ class OCP_calc_pos:
         h = ocp.parameter(1) # stepsize
         
         # System dynamics (integrate current states + controls to obtain next states)
-        (R_t_plus1, p_obj_plus1) = dynamics.dynamics_VI_pos(R_t, p_obj, invars, h)
+        (R_t_plus1, p_obj_plus1) = dynamicsdynamics_invariants_VI_pos(R_t, p_obj, invars, h)
         ocp.set_next(p_obj,p_obj_plus1)
         ocp.set_next(R_t_x,R_t_plus1[:,0])
         ocp.set_next(R_t_y,R_t_plus1[:,1])
@@ -115,14 +115,13 @@ class OCP_calc_pos:
 
         # Return the results    
         invars, p_obj_sol, R_t_x_sol, R_t_y_sol, R_t_z_sol,  = self.solution # unpack the results            
-        invariants = np.array(invars).T # make a N x 3 array
-        invariants = np.vstack((invariants, invariants[-1,:])) # repeat the last invariants to have the same length as the trajectory
+        invariants = np.array(invars).T # make a N-1 x 3 array
+        invariants = np.vstack((invariants, invariants[-1,:])) # make a N x 3 array by repeating last row
         calculated_trajectory = np.array(p_obj_sol).T # make a N x 3 array
         calculated_movingframe = np.reshape(np.vstack((R_t_x_sol, R_t_y_sol, R_t_z_sol)).T, (-1,3,3)) # make a N x 3 x 3 array
         return invariants, calculated_trajectory, calculated_movingframe
 
 if __name__ == "__main__":
-    
     # Test data
     measured_positions = np.array([[1, 2, 3], [4.1, 5.5, 6], [7, 8.5, 9], [10, 11.9, 12]])
     timestep = 0.05

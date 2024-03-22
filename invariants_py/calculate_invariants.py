@@ -1,3 +1,7 @@
+"""
+A function that handles the calculation of the invariants with different parameterizations
+"""
+
 import invariants_py.reparameterization as reparam
 import invariants_py.opti_calculate_vector_invariants_position_mf as FS_calculation
 
