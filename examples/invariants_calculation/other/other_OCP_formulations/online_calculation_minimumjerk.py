@@ -84,6 +84,10 @@ FS_online_calculation_problem = OCP_calc_pos(window_len=window_len, w_pos = 100,
 
 # Visualization
 current_progress = 0.0 + window_len*stepsize
+
+# Create figure
+plt.figure(figsize=(14,6))
+
 while current_progress <= arclength[-1]:
 
     #print(f"current progress = {current_progress}")
@@ -98,7 +102,6 @@ while current_progress <= arclength[-1]:
     
     clear_output(wait=True)
     
-    plt.figure(figsize=(14,6))
     plt.subplot(2,2,1)
     plt.plot(trajectory[:,0],trajectory[:,1],'.-')
     plt.plot(measurements[:,0],measurements[:,1],'k.')
@@ -126,3 +129,4 @@ while current_progress <= arclength[-1]:
     
     
     current_progress = round(current_progress + window_increment*stepsize,3) # start index next window
+
