@@ -6,7 +6,7 @@ import invariants_py.plotters as plotters
 from invariants_py import generate_trajectory
 
 # Find the path to the data file
-path_to_data = dh.find_data_path("sinus_invariants.csv")
+path_to_data = dh.find_data_path("sine_wave_invariants.csv")
 
 # Load the invariants data from the file
 invariant_model = dh.read_invariants_from_csv(path_to_data)

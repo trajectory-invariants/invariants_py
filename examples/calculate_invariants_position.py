@@ -6,7 +6,7 @@ import invariants_py.plotters as plotters
 from invariants_py import calculate_invariants
 
 # Find the path to the data file
-path_data = dh.find_data_path("sinus.txt") # TODO convert sinus.txt to sinus.csv for consistency?
+path_data = dh.find_data_path("sine_wave.txt") # TODO convert sine_wave.txt to sine_wave.csv for consistency?
 
 # Load the trajectory data from the file
 # todo format of data
@@ -20,6 +20,6 @@ plotters.plot_invariants_new(invariants, progress)
 plotters.plot_trajectory(calc_trajectory)
 
 # Save invariant model to a file
-dh.save_invariants_to_csv(progress, invariants, "sinus_invariants.csv")
+dh.save_invariants_to_csv(progress, invariants, "sine_wave_invariants.csv")
 
 #input("Press Enter to continue...")

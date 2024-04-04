@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 # Initialization
-demo_traj_file = "sinus.txt"    # recorded_motion.csv
+demo_traj_file = "sine_wave.txt"    # recorded_motion.csv
 #dirname = os.path.dirname()
 data_location = '../data/demonstrations/' + demo_traj_file
 parameterization = 'geometric'      # {timebased, geometric}

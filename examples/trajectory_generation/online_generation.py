@@ -11,7 +11,7 @@ import invariants_py.plotters as plotters
 
 """Input data"""
 
-data_location = dh.find_data_path("sinus.txt")
+data_location = dh.find_data_path("sine_wave.txt")
 trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]

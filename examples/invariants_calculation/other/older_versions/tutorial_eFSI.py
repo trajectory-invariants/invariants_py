@@ -3,7 +3,7 @@ import invariants_py.invariant_descriptor_class as invars
 #import numpy as np
 
 # Initialization
-data_location = dh.find_data_path("sinus.txt")
+data_location = dh.find_data_path("sine_wave.txt")
 parameterization = 'timebased' # {timebased,geometric}
 
 """

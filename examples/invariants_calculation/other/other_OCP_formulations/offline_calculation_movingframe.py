@@ -9,7 +9,7 @@ import os
 
 plt.close('all')
           
-data_location = dh.find_data_path('sinus.txt')
+data_location = dh.find_data_path('sine_wave.txt')
 parameterization = 'arclength' # {time,arclength,screwprogress}
 
 """
