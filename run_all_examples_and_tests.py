@@ -11,6 +11,10 @@ directories = ["examples", "tests"]
 # Initialize an empty list to hold examples and tests that fail to execute
 failed_scripts = []
 
+# Set the matplotlib backend to Agg in the environment variable to prevent showing plots
+my_env = os.environ.copy()
+my_env["MPLBACKEND"] = "Agg"
+
 # Function to run scripts in a directory
 def run_scripts(directory):
     failed_scripts_local = []
@@ -28,7 +32,7 @@ def run_scripts(directory):
 
             # Try to execute the script
             try:
-                subprocess.check_output(["python", script_path])
+                subprocess.check_output(["python", script_path], env=my_env)
             except subprocess.CalledProcessError:
                 # If an error occurs, add the script to the list of failed scripts
                 failed_scripts_local.append(script_path)
@@ -40,9 +44,9 @@ for directory in directories:
     failed_scripts.extend(run_scripts(directory))
 
 # Print out the scripts that failed to execute
+print("")
+print("========================================")
 if failed_scripts:
-    print("")
-    print("========================================")
     print("The following scripts failed to execute:")
     for script in failed_scripts:
         print(script)
@@ -51,3 +55,6 @@ if failed_scripts:
     raise Exception('One or more scripts failed, check the above output to see which ones.')
 else:
     print("All scripts executed successfully.")
+    print("========================================")
+    print("")
+    
