@@ -45,8 +45,8 @@ class OCP_calc_pos:
             ocp.subject_to(invars[0,:]>=0) # lower bounds on control
             ocp.subject_to(invars[1,:]>=0) # lower bounds on control
 
-        #ocp.subject_to(ocp.at_t0(p_obj - p_obj_m == 0.))
-        #ocp.subject_to(ocp.at_tf(p_obj - p_obj_m == 0.))
+        ocp.subject_to(ocp.at_t0(p_obj - p_obj_m == 0.))
+        ocp.subject_to(ocp.at_tf(p_obj - p_obj_m == 0.))
 
         #%% Objective function
 
@@ -112,7 +112,7 @@ class OCP_calc_pos:
         self.ocp.set_initial(self.R_t_y, np.array([0,1,0]))                
         self.ocp.set_initial(self.R_t_z, np.array([0,0,1]))
         self.ocp.set_initial(self.invars, np.array([1,0.01,0.1]))
-        self.ocp.set_value(self.p_obj_m, np.zeros((3,window_len)))
+        self.ocp.set_value(self.p_obj_m, np.vstack((np.linspace(0,1,window_len), np.ones((2,window_len)))))
         self.ocp.set_value(self.h,0.01)
         self.ocp.solve_limited()
 

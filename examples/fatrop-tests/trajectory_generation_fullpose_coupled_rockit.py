@@ -13,9 +13,11 @@ import invariants_py.data_handler as dh
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_py.rockit_calculate_vector_invariants_position import OCP_calc_pos as FS_calc_pos
-from invariants_py.rockit_calculate_vector_invariants_rotation import OCP_calc_rot as FS_calc_rot
-from invariants_py.rockit_generate_pose_from_vector_invariants import OCP_gen_pose as FS_gen_pose
+
+from invariants_py.rockit_calculate_vector_invariants_position import OCP_calc_pos
+from invariants_py.rockit_calculate_vector_invariants_rotation import OCP_calc_rot
+from invariants_py.rockit_generate_pose_from_vector_invariants import OCP_gen_pose
+from invariants_py.rockit_generate_pose_from_vector_invariants_jointlim import OCP_gen_pose_jointlim
 from scipy.spatial.transform import Rotation as R
 from invariants_py.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 import invariants_py.plotters as pl
@@ -28,7 +30,9 @@ data_location = dh.find_data_path('beer_1.txt')
 trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
-trajectory_position = pose[:,:3,3]
+home_pos = [0,0,0] # Use this if not considering the robot
+home_pos = [0.3056, 0.0635, 0.441] # Define home position of the robot
+trajectory_position = pose[:,:3,3] + home_pos
 trajectory_orientation = pose[:,:3,:3]
 
 fig = plt.figure(figsize=(8,8))
@@ -61,13 +65,13 @@ optim_calc_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [],
 use_fatrop_solver = True # True = fatrop, False = ipopt
 
 # specify optimization problem symbolically
-FS_calculation_problem_pos = FS_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.003, fatrop_solver = use_fatrop_solver)
-FS_calculation_problem_rot = FS_calc_rot(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180, fatrop_solver = use_fatrop_solver) 
+FS_calculation_problem_pos = OCP_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.003, fatrop_solver = use_fatrop_solver)
+FS_calculation_problem_rot = OCP_calc_rot(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180, fatrop_solver = use_fatrop_solver) 
 
 # calculate invariants given measurements
 optim_calc_results.invariants[:,3:], optim_calc_results.Obj_pos, optim_calc_results.FSt_frames = FS_calculation_problem_pos.calculate_invariants_global(trajectory,stepsize)
 optim_calc_results.invariants[:,:3], optim_calc_results.Obj_frames, optim_calc_results.FSr_frames = FS_calculation_problem_rot.calculate_invariants_global(trajectory,stepsize)
-
+optim_calc_results.Obj_pos += home_pos
 fig = plt.figure(figsize=(8,8))
 ax = fig.add_subplot(111, projection='3d')
 ax = plt.axes(projection='3d')
@@ -77,8 +81,8 @@ indx = np.trunc(np.linspace(0,len(optim_calc_results.Obj_pos)-1,n_frames))
 indx = indx.astype(int)
 for i in indx:
     pl.plot_3d_frame(optim_calc_results.Obj_pos[i,:],optim_calc_results.Obj_frames[i,:,:],1,0.01,['red','green','blue'],ax)
-    pl.plot_stl(opener_location,trajectory_position[i,:],trajectory_orientation[i,:,:],colour="r",alpha=0.2,ax=ax)
-    pl.plot_stl(opener_location,optim_calc_results.Obj_pos[i,:],optim_calc_results.Obj_frames[i,:,:],colour="c",alpha=0.2,ax=ax)
+    pl.plot_stl(opener_location,trajectory_position[i,:],trajectory_orientation[i,:,:],colour="c",alpha=0.2,ax=ax)
+    pl.plot_stl(opener_location,optim_calc_results.Obj_pos[i,:],optim_calc_results.Obj_frames[i,:,:],colour="r",alpha=0.2,ax=ax)
 
 pl.plot_orientation(optim_calc_results.Obj_frames,trajectory_orientation)
 
@@ -125,8 +129,12 @@ FSt_end = orthonormalize(rotate.as_matrix() @ optim_calc_results.FSt_frames[-1])
 # define new class for OCP results
 optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
 
+# Robot urdf location
+path_to_urdf = dh.find_data_path('ur10.urdf')
+
 # specify optimization problem symbolically
-FS_online_generation_problem = FS_gen_pose(window_len=number_samples, fatrop_solver = use_fatrop_solver)
+# FS_online_generation_problem = OCP_gen_pose(window_len=number_samples, fatrop_solver = use_fatrop_solver)
+FS_online_generation_problem = OCP_gen_pose_jointlim(path_to_urdf = path_to_urdf, tip = 'TCP_frame', window_len=number_samples, fatrop_solver = use_fatrop_solver)
 
 # Linear initialization
 R_obj_init = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end]))
@@ -141,11 +149,19 @@ w_high_start = 60
 w_high_end = number_samples
 w_invars_high = 10*w_invars
 
+# Join initialization and limits
+q_init = [-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4] * np.ones((number_samples,6))
+q_joint_lim = [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi]
 # Solve
-optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, tot_time = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = optim_calc_results.Obj_pos, R_obj_init = R_obj_init, R_t_init = optim_calc_results.FSt_frames, R_r_init = R_r_init_array, R_t_start = FSt_start, R_r_start = R_r_init, R_t_end = FSt_end, R_r_end = R_r_init, p_obj_start = p_obj_start, R_obj_start = R_obj_start, p_obj_end = p_obj_end, R_obj_end = R_obj_end, step_size = new_stepsize, w_high_start = w_high_start, w_high_end = w_high_end, w_high_invars = w_invars_high, w_invars = w_invars, w_high_active = w_high_active)
+# optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, tot_time = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = optim_calc_results.Obj_pos, R_obj_init = R_obj_init, R_t_init = optim_calc_results.FSt_frames, R_r_init = R_r_init_array, R_t_start = FSt_start, R_r_start = R_r_init, R_t_end = FSt_end, R_r_end = R_r_init, p_obj_start = p_obj_start, R_obj_start = R_obj_start, p_obj_end = p_obj_end, R_obj_end = R_obj_end, step_size = new_stepsize, w_high_start = w_high_start, w_high_end = w_high_end, w_high_invars = w_invars_high, w_invars = w_invars, w_high_active = w_high_active)
+optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, tot_time, joint_values = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = optim_calc_results.Obj_pos, R_obj_init = R_obj_init, R_t_init = optim_calc_results.FSt_frames, R_r_init = R_r_init_array, q_init = q_init, q_lim = q_joint_lim, R_t_start = FSt_start, R_r_start = R_r_init, R_t_end = FSt_end, R_r_end = R_r_init, p_obj_start = p_obj_start, R_obj_start = R_obj_start, p_obj_end = p_obj_end, R_obj_end = R_obj_end, step_size = new_stepsize, w_high_start = w_high_start, w_high_end = w_high_end, w_high_invars = w_invars_high, w_invars = w_invars, w_high_active = w_high_active)
+
 print('')
 print("TOTAL time to generate new trajectory: ")
 print(str(tot_time) + "[s]")
+
+print('Joint values:')
+print(joint_values)
 
 # optim_gen_results.Obj_frames = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end])) # JUST TO CHECK INITIALIZATION
 
@@ -202,4 +218,4 @@ if collision_flag:
 else:
     print("NO COLLISION DETECTED")
 
-plt.show(block=False)
+plt.show()
