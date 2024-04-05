@@ -10,7 +10,7 @@ import casadi as cas
 import rockit
 import invariants_py.integrators as integrators
 from invariants_py.robotics_functions.forward_kinematics import forward_kinematics
-
+from invariants_py.check_solver import check_solver
 
 class OCP_gen_pose_jointlim:
 
@@ -29,7 +29,7 @@ class OCP_gen_pose_jointlim:
         return cas.vertcat(input[0,0], input[1,1], input[2,2])
     
     def __init__(self, path_to_urdf, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, max_iters = 300, fatrop_solver = False, nb_joints = 6, root = 'base_link', tip = 'tool0'):
-       
+        fatrop_solver = check_solver(fatrop_solver)       
         #%% Create decision variables and parameters for the optimization problem
         
         ocp = rockit.Ocp(T=1.0)

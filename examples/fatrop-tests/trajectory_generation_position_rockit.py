@@ -18,7 +18,6 @@ from invariants_py.rockit_generate_position_from_vector_invariants import OCP_ge
 from IPython.display import clear_output
 import matplotlib
 import invariants_py.plotters as pl
-from invariants_py.check_solver import check_solver
 
 #matplotlib.use('TkAgg') #default backend
 
@@ -37,7 +36,6 @@ ax.plot(trajectory[:,0],trajectory[:,1],trajectory[:,2],'.-')
 
 #%%
 use_fatrop_solver = True # True = fatrop, False = ipopt
-use_fatrop_solver = check_solver(use_fatrop_solver)
 
 # specify optimization problem symbolically
 FS_calculation_problem = FS_calc(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.004, fatrop_solver = use_fatrop_solver)

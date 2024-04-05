@@ -10,6 +10,7 @@ import casadi as cas
 import rockit
 import invariants_py.integrators as integrators
 import time
+from invariants_py.check_solver import check_solver
 
 class OCP_calc_rot:
 
@@ -17,7 +18,7 @@ class OCP_calc_rot:
         return cas.vertcat(input[0,0], input[1,1], input[2,2], input[1,0], input[2,0], input[2,1])
 
     def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180, fatrop_solver = False):
-       
+        fatrop_solver = check_solver(fatrop_solver)       
         #%% Create decision variables and parameters for the optimization problem
         
         ocp = rockit.Ocp(T=1.0)

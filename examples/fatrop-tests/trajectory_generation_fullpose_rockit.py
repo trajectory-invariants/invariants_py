@@ -25,7 +25,6 @@ import random
 import invariants_py.robotics_functions.collision_detection as cd
 from invariants_py.reparameterization import interpR
 from invariants_py.FSr_init import FSr_init
-from invariants_py.check_solver import check_solver
 
 #%%
 data_location = dh.find_data_path('beer_1.txt')
@@ -63,7 +62,6 @@ optim_calc_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [],
 
 # choose solver
 use_fatrop_solver = True # True = fatrop, False = ipopt
-use_fatrop_solver = check_solver(use_fatrop_solver)
 
 # specify optimization problem symbolically
 FS_calculation_problem_pos = FS_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.004, fatrop_solver = use_fatrop_solver)

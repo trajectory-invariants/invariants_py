@@ -4,11 +4,12 @@ import rockit
 import invariants_py.integrators as integrators
 from invariants_py import ocp_helper
 import time
+from invariants_py.check_solver import check_solver
 
 class OCP_calc_pos:
 
     def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 10**-2, fatrop_solver = False):
-       
+        fatrop_solver = check_solver(fatrop_solver)               
         #%% Decision variables and parameters for the optimization problem 
         ocp = rockit.Ocp(T=1.0)
         

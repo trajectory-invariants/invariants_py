@@ -24,7 +24,6 @@ import invariants_py.plotters as pl
 import invariants_py.robotics_functions.collision_detection as cd
 from invariants_py.reparameterization import interpR
 from invariants_py.FSr_init import FSr_init
-from invariants_py.check_solver import check_solver
 
 #%%
 data_location = dh.find_data_path('beer_1.txt')
@@ -64,7 +63,6 @@ optim_calc_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [],
 
 # choose solver
 use_fatrop_solver = True # True = fatrop, False = ipopt
-use_fatrop_solver = check_solver(use_fatrop_solver)
 
 # specify optimization problem symbolically
 FS_calculation_problem_pos = OCP_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.004, fatrop_solver = use_fatrop_solver)
@@ -163,8 +161,8 @@ if use_fatrop_solver:
     print("TOTAL time to generate new trajectory: ")
     print(str(tot_time) + "[s]")
 
-print('Joint values:')
-print(joint_values)
+# print('Joint values:')
+# print(joint_values)
 
 # optim_gen_results.Obj_frames = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end])) # JUST TO CHECK INITIALIZATION
 

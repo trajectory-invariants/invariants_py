@@ -9,13 +9,11 @@ from pathlib import Path
 from scipy.spatial.transform import Rotation as R
 import invariants_py.tutorial_scripts as tutorial
 from invariants_py import data_handler as dh
-from invariants_py.check_solver import check_solver
 
 # Set path to data file
 data_location = dh.find_data_path('beer_1.txt')
 # Set solver
 use_fatrop_solver = True
-use_fatrop_solver = check_solver(use_fatrop_solver)
 # Set type of trajectory, options: "pose", "position", "rotation"
 traj_type = "pose"
 """

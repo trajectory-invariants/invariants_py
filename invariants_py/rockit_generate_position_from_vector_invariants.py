@@ -4,6 +4,7 @@ import rockit
 import invariants_py.integrators as integrators
 import time
 import invariants_py.generate_trajectory as generate_trajectory
+from invariants_py.check_solver import check_solver
 
 class OCP_gen_pos:
 
@@ -13,6 +14,7 @@ class OCP_gen_pos:
         return cas.vertcat(input[1,0], input[2,0], input[2,1])
     
     def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, max_iters = 300, fatrop_solver = False, bounds_mf = True):
+        fatrop_solver = check_solver(fatrop_solver)               
        
         #%% Create decision variables and parameters for the optimization problem
         
