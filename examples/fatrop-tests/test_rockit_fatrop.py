@@ -13,8 +13,10 @@ import invariants_py.plotters as plotters
 import os
 import time
 from invariants_py import data_handler as dh
+from invariants_py.check_solver import check_solver
 
 use_fatrop_solver = True  # True = fatrop, False = ipopt
+use_fatrop_solver = check_solver(use_fatrop_solver)
 
 #%% Load data
 

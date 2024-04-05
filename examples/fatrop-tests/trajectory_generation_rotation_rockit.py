@@ -25,12 +25,7 @@ from invariants_py.robotics_functions.orthonormalize_rotation import orthonormal
 import invariants_py.plotters as pl
 from invariants_py.reparameterization import interpR
 from invariants_py.FSr_init import FSr_init
-
-try:
-    import fatropy
-    use_fatrop_solver = True
-except:
-    use_fatrop_solver = False
+from invariants_py.check_solver import check_solver
 
 #%%
 data_location = dh.find_data_path('beer_1.txt')
@@ -53,7 +48,8 @@ for i in indx:
     plot_stl(opener_location,trajectory_position[i,:],trajectory_orientation[i,:,:],colour="c",alpha=0.2,ax=ax)
 
 #%%
-# use_fatrop_solver = True # True = fatrop, False = ipopt
+use_fatrop_solver = True # True = fatrop, False = ipopt
+use_fatrop_solver = check_solver(use_fatrop_solver)
 
 # specify optimization problem symbolically
 FS_calculation_problem = FS_calc(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180, fatrop_solver = use_fatrop_solver) 

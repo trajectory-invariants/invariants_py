@@ -188,4 +188,4 @@ def generate_trajectory(data_location, optim_calc_results, p_obj_end, rotate, us
         else:
             pl.plot_invariants(optim_calc_results.invariants, optim_gen_results.invariants, arclength_n, progress_values, 'FS_rot')
 
-    plt.show()
+    plt.show(block=False)
