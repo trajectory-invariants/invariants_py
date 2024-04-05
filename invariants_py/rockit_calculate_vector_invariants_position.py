@@ -45,8 +45,8 @@ class OCP_calc_pos:
             ocp.subject_to(invars[0,:]>=0) # lower bounds on control
             ocp.subject_to(invars[1,:]>=0) # lower bounds on control
 
-        ocp.subject_to(ocp.at_t0(p_obj - p_obj_m == 0.))
-        ocp.subject_to(ocp.at_tf(p_obj - p_obj_m == 0.))
+        # ocp.subject_to(ocp.at_t0(p_obj - p_obj_m == 0.))
+        # ocp.subject_to(ocp.at_tf(p_obj - p_obj_m == 0.))
 
         #%% Objective function
 
