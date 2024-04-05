@@ -19,6 +19,11 @@ from IPython.display import clear_output
 import matplotlib
 import invariants_py.plotters as pl
 
+try:
+    import fatropy
+    use_fatrop_solver = True
+except:
+    use_fatrop_solver = False
 #matplotlib.use('TkAgg') #default backend
 
 #%%
@@ -35,7 +40,7 @@ ax = plt.axes(projection='3d')
 ax.plot(trajectory[:,0],trajectory[:,1],trajectory[:,2],'.-')
 
 #%%
-use_fatrop_solver = True # True = fatrop, False = ipopt
+# use_fatrop_solver = True # True = fatrop, False = ipopt
 
 # specify optimization problem symbolically
 FS_calculation_problem = FS_calc(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.004, fatrop_solver = use_fatrop_solver)
