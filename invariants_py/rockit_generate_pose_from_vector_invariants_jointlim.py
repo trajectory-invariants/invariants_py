@@ -176,6 +176,7 @@ class OCP_gen_pose_jointlim:
         self.h = h
         self.window_len = window_len
         self.ocp = ocp
+        self.fatrop = fatrop_solver
         
         
     def generate_trajectory(self,U_demo,p_obj_init,R_obj_init,R_t_init,R_r_init,q_init,q_lim,R_t_start,R_r_start,R_t_end,R_r_end,p_obj_start,R_obj_start,p_obj_end,R_obj_end, step_size, U_init = None, w_invars = (10**-3)*np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), w_high_start = 1, w_high_end = 0, w_high_invars = (10**-3)*np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), w_high_active = 0):
@@ -229,7 +230,10 @@ class OCP_gen_pose_jointlim:
 
         # Solve the NLP
         sol = self.ocp.solve()
-        tot_time = 1#self.ocp._method.myOCP.get_stats().time_total # UNCOMMENT to calculate solution time with fatrop
+        if self.fatrop:
+            tot_time = self.ocp._method.myOCP.get_stats().time_total
+        else:
+            tot_time = []
         
         self.sol = sol
                 

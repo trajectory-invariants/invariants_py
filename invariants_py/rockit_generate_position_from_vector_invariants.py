@@ -106,6 +106,7 @@ class OCP_gen_pos:
         self.ocp = ocp
         self.sol = None
         self.first_window = True
+        self.fatrop = fatrop_solver
         
         if bounds_mf == False:
             self.initialize_solver()
@@ -203,7 +204,10 @@ class OCP_gen_pos:
         # Solve the NLP
         start_time = time.time()
         sol = self.ocp.solve()
-        tot_time = 1#self.ocp._method.myOCP.get_stats().time_total # UNCOMMENT to calculate solution time with fatrop
+        if self.fatrop:
+            tot_time = self.ocp._method.myOCP.get_stats().time_total
+        else:
+            tot_time = []
         end_time = time.time()
         
         self.sol = sol

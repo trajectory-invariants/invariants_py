@@ -156,9 +156,10 @@ q_joint_lim = [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi]
 # optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, tot_time = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = optim_calc_results.Obj_pos, R_obj_init = R_obj_init, R_t_init = optim_calc_results.FSt_frames, R_r_init = R_r_init_array, R_t_start = FSt_start, R_r_start = R_r_init, R_t_end = FSt_end, R_r_end = R_r_init, p_obj_start = p_obj_start, R_obj_start = R_obj_start, p_obj_end = p_obj_end, R_obj_end = R_obj_end, step_size = new_stepsize, w_high_start = w_high_start, w_high_end = w_high_end, w_high_invars = w_invars_high, w_invars = w_invars, w_high_active = w_high_active)
 optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, tot_time, joint_values = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = optim_calc_results.Obj_pos, R_obj_init = R_obj_init, R_t_init = optim_calc_results.FSt_frames, R_r_init = R_r_init_array, q_init = q_init, q_lim = q_joint_lim, R_t_start = FSt_start, R_r_start = R_r_init, R_t_end = FSt_end, R_r_end = R_r_init, p_obj_start = p_obj_start, R_obj_start = R_obj_start, p_obj_end = p_obj_end, R_obj_end = R_obj_end, step_size = new_stepsize, w_high_start = w_high_start, w_high_end = w_high_end, w_high_invars = w_invars_high, w_invars = w_invars, w_high_active = w_high_active)
 
-print('')
-print("TOTAL time to generate new trajectory: ")
-print(str(tot_time) + "[s]")
+if use_fatrop_solver:
+    print('')
+    print("TOTAL time to generate new trajectory: ")
+    print(str(tot_time) + "[s]")
 
 print('Joint values:')
 print(joint_values)

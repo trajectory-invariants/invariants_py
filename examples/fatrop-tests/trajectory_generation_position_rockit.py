@@ -96,9 +96,10 @@ w_invars_pos = np.array([5*10**1, 1.0, 1.0])
 
 # Solve
 new_invars, new_trajectory, new_movingframes, tot_time_pos = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = calculate_trajectory, R_t_init = movingframes, R_t_start = R_FS_start, R_t_end = R_FS_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize, w_invars = w_invars_pos)
-print('')
-print("TOTAL time to generate new trajectory: ")
-print(str(tot_time_pos) + '[s]')
+if use_fatrop_solver:
+    print('')
+    print("TOTAL time to generate new trajectory: ")
+    print(str(tot_time_pos) + '[s]')
 
 
 fig = plt.figure(figsize=(14,8))
@@ -150,9 +151,10 @@ while current_progress <= 1.0:
 
     # Calculate remaining trajectory
     new_invars, calculate_trajectory, movingframes, tot_time_pos = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = calculate_trajectory, R_t_init = movingframes, R_t_start = R_FS_start, R_t_end = R_FS_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize, w_invars = w_invars_pos)
-    print('')
-    print("TOTAL time to generate new trajectory: ")
-    print(str(tot_time_pos) + '[s]')
+    if use_fatrop_solver:
+        print('')
+        print("TOTAL time to generate new trajectory: ")
+        print(str(tot_time_pos) + '[s]')
 
     # # Dynamic plot trajectory
     fig_traj.clf()

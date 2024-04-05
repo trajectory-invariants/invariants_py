@@ -150,9 +150,10 @@ w_invars_rot = 10**2*np.array([10**1, 1.0, 1.0])
 # Solve
 optim_gen_results.invariants[:,3:], optim_gen_results.Obj_pos, optim_gen_results.FSt_frames, tot_time_pos = FS_online_generation_problem_pos.generate_trajectory(U_demo = model_invariants[:,3:], p_obj_init = optim_calc_results.Obj_pos, R_t_init = optim_calc_results.FSt_frames, R_t_start = FSt_start, R_t_end = FSt_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize, w_high_start = w_pos_high_start, w_high_end = w_pos_high_end, w_high_invars = w_invars_pos_high, w_invars = w_invars_pos, w_high_active = w_pos_high_active)
 optim_gen_results.invariants[:,:3], optim_gen_results.Obj_frames, optim_gen_results.FSr_frames, tot_time_rot = FS_online_generation_problem_rot.generate_trajectory(U_demo = model_invariants[:,:3]*0., U_init = U_init, R_obj_init = R_obj_init, R_r_init = R_r_init_array, R_r_start = R_r_init, R_r_end = R_r_init, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
-print('')
-print("TOTAL time to generate new trajectory: ")
-print(str(tot_time_pos + tot_time_rot) + "[s]")
+if use_fatrop_solver:
+    print('')
+    print("TOTAL time to generate new trajectory: ")
+    print(str(tot_time_pos + tot_time_rot) + "[s]")
 
 # optim_gen_results.Obj_frames = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end])) # JUST TO CHECK INITIALIZATION
 
@@ -253,9 +254,10 @@ while current_progress <= 1.0:
     # Calculate remaining trajectory
     optim_iter_results.invariants[:,3:], optim_iter_results.Obj_pos, optim_iter_results.FSt_frames, tot_time_pos = FS_online_generation_problem_pos.generate_trajectory(U_demo = model_invariants[:,3:], p_obj_init = optim_calc_results.Obj_pos, R_t_init = optim_calc_results.FSt_frames, R_t_start = FSt_start, R_t_end = FSt_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize, w_invars = w_invars_pos)
     optim_iter_results.invariants[:,:3], optim_iter_results.Obj_frames, optim_iter_results.FSr_frames, tot_time_rot = FS_online_generation_problem_rot.generate_trajectory(U_demo = model_invariants[:,:3], R_obj_init = optim_calc_results.Obj_frames, R_r_init = optim_calc_results.FSr_frames, R_r_start = FSr_start, R_r_end = FSr_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize, w_invars = w_invars_rot)
-    print('')
-    print("TOTAL time to generate new trajectory: ")
-    print(str(tot_time_pos + tot_time_rot) + "[s]")
+    if use_fatrop_solver:
+        print('')
+        print("TOTAL time to generate new trajectory: ")
+        print(str(tot_time_pos + tot_time_rot) + "[s]")
 
     for i in range(len(optim_iter_results.Obj_frames)):
         optim_iter_results.Obj_frames[i] = orthonormalize(optim_iter_results.Obj_frames[i])
@@ -343,20 +345,21 @@ for k in range(len(targets)):
     #     pl.plot_3d_frame(optim_calc_results.Obj_pos[i,:],optim_calc_results.Obj_frames[i,:,:],1,0.01,['red','green','blue'],ax)
     #     pl.plot_3d_frame(optim_gen_results.Obj_pos[i,:],optim_gen_results.Obj_frames[i,:,:],1,0.01,['red','green','blue'],ax)
         # pl.plot_stl(opener_location,optim_gen_results.Obj_pos[i,:],optim_gen_results.Obj_frames[i,:,:],colour="r",alpha=0.2,ax=ax)
-    new_time = tot_time_pos + tot_time_rot
-    if new_time > max_time:
-        max_time = new_time
-    tot_time = tot_time + new_time
+    if use_fatrop_solver:
+        new_time = tot_time_pos + tot_time_rot
+        if new_time > max_time:
+            max_time = new_time
+        tot_time = tot_time + new_time
     
     counter += 1
     # plt.show(block=False)
-
-print('')
-print("AVERAGE time to generate new trajectory: ")
-print(str(tot_time/counter) + "[s]")
-print('')
-print("MAXIMUM time to generate new trajectory: ")
-print(str(max_time) + "[s]")
+if use_fatrop_solver:
+    print('')
+    print("AVERAGE time to generate new trajectory: ")
+    print(str(tot_time/counter) + "[s]")
+    print('')
+    print("MAXIMUM time to generate new trajectory: ")
+    print(str(max_time) + "[s]")
 
 # fig = plt.figure(figsize=(10,6))
 # ax1 = fig.add_subplot(111, projection='3d')
