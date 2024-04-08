@@ -8,8 +8,8 @@ Created on Fri Mar  22 2024
 import numpy as np
 import casadi as cas
 import rockit
-import invariants_py.integrators as integrators
-from invariants_py.robotics_functions.forward_kinematics import forward_kinematics
+import invariants_py.dynamics_invariants as dynamics
+from invariants_py.forward_kinematics import forward_kinematics
 from invariants_py.check_solver import check_solver
 
 class OCP_gen_pose_jointlim:
@@ -94,8 +94,8 @@ class OCP_gen_pose_jointlim:
             ocp.subject_to(q[i] - q_lim[i] <= 0)
 
         # Dynamic constraints
-        (R_t_plus1, p_obj_plus1) = integrators.geo_integrator_tra(R_t, p_obj, U[3:], h)
-        (R_r_plus1, R_obj_plus1) = integrators.geo_integrator_rot(R_r, R_obj, U[:3], h)
+        (R_t_plus1, p_obj_plus1) = dynamics.vector_invariants_position(R_t, p_obj, U[3:], h)
+        (R_r_plus1, R_obj_plus1) = dynamics.dyn_vector_invariants_rotation(R_r, R_obj, U[:3], h)
         # Integrate current state to obtain next state (next rotation and position)
         ocp.set_next(p_obj,p_obj_plus1)
         ocp.set_next(R_obj_x,R_obj_plus1[:,0])

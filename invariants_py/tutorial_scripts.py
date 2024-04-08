@@ -48,18 +48,17 @@ def calculate_invariants(data_location, plot_demo = True, use_fatrop_solver = Fa
     #%%
     optim_calc_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((len(trajectory),6)))
 
-    # specify optimization problem symbolically
-    FS_calculation_problem_pos = FS_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.004, fatrop_solver = use_fatrop_solver)
-    FS_calculation_problem_rot = FS_calc_rot(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180, fatrop_solver = use_fatrop_solver) 
-
-    # calculate invariants given measurements
+    # specify optimization problem symbolically + calculate invariants given measurements
     if not traj_type == "position":
-        optim_calc_results.invariants[:,:3], optim_calc_results.Obj_frames, optim_calc_results.FSr_frames = FS_calculation_problem_rot.calculate_invariants(trajectory,stepsize)
         if traj_type == "pose":
-            optim_calc_results.invariants[:,3:], optim_calc_results.Obj_pos, optim_calc_results.FSt_frames = FS_calculation_problem_pos.calculate_invariants(trajectory,stepsize)
+             FS_calculation_problem_pos = FS_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.003, fatrop_solver = use_fatrop_solver)
+             optim_calc_results.invariants[:,3:], optim_calc_results.Obj_pos, optim_calc_results.FSt_frames = FS_calculation_problem_pos.calculate_invariants(trajectory,stepsize)
         else:
             optim_calc_results.Obj_pos = trajectory_position
+        FS_calculation_problem_rot = FS_calc_rot(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180, fatrop_solver = use_fatrop_solver) 
+        optim_calc_results.invariants[:,:3], optim_calc_results.Obj_frames, optim_calc_results.FSr_frames = FS_calculation_problem_rot.calculate_invariants(trajectory,stepsize)
     else:
+        FS_calculation_problem_pos = FS_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.003, fatrop_solver = use_fatrop_solver)
         optim_calc_results.invariants, optim_calc_results.Obj_pos, optim_calc_results.FSt_frames = FS_calculation_problem_pos.calculate_invariants(trajectory,stepsize)
         optim_calc_results.Obj_frames = trajectory_orientation
 
@@ -153,10 +152,9 @@ def generate_trajectory(data_location, optim_calc_results, p_obj_end, rotate, us
         optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.FSt_frames, tot_time_pos = FS_online_generation_problem_pos.generate_trajectory(U_demo = model_invariants, p_obj_init = optim_calc_results.Obj_pos, R_t_init = optim_calc_results.FSt_frames, R_t_start = FSt_start, R_t_end = FSt_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize, w_invars = w_invars_pos)
         optim_gen_results.Obj_frames = pose[:,:3,:3]
         tot_time_rot = 0
-    if use_fatrop_solver:
-        print('')
-        print("TOTAL time to generate new trajectory: ")
-        print(str(tot_time_pos + tot_time_rot) + "[s]")
+    print('')
+    print("TOTAL time to generate new trajectory: ")
+    print(str(tot_time_pos + tot_time_rot) + "[s]")
 
     for i in range(len(optim_gen_results.Obj_frames)):
         optim_gen_results.Obj_frames[i] = orthonormalize(optim_gen_results.Obj_frames[i])

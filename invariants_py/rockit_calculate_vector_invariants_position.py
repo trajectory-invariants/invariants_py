@@ -61,6 +61,9 @@ class OCP_calc_pos:
         total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
         ocp.subject_to(total_ek_scaled < 1)
 
+        ocp.subject_to(ocp.at_t0(p_obj == p_obj_m)) # initial condition
+        ocp.subject_to(ocp.at_tf(p_obj == p_obj_m)) # initial condition
+
         #% Objective function
 
         # Minimize moving frame invariants to deal with singularities and noise
@@ -71,7 +74,11 @@ class OCP_calc_pos:
         #%% Solver definition
         if fatrop_solver:
             ocp.method(rockit.external_method('fatrop', N=N-1))
-            ocp._method.set_name("/codegen")            
+            ocp._method.set_name("/codegen/position") # pick a unique name when using multiple OCP specifications in the same script 
+            # import random
+            # import string
+            # rand = "".join(random.choices(string.ascii_lowercase))
+            # ocp._method.set_name("/codegen/calculate_position_"+rand)          
         else:
             ocp.method(rockit.MultipleShooting(N=N-1))
             ocp.solver('ipopt', {'expand':True, 'ipopt.print_info_string':'yes'})

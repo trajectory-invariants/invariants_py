@@ -84,7 +84,7 @@ class OCP_calc_rot:
         
         if fatrop_solver:
             ocp.method(rockit.external_method('fatrop', N=N-1))
-            ocp._method.set_name("/codegen")
+            ocp._method.set_name("/codegen/rotation") # pick a unique name when using multiple OCP specifications in the same script
             # self.ocp._transcribe()
             # self.ocp._method.set_option("iterative_refinement", False)
             # self.ocp._method.set_option("tol", 1e-8)
@@ -152,6 +152,7 @@ class OCP_calc_rot:
         invariants = np.vstack((invariants, invariants[-1,:])) # make a N x 3 array by repeating last row
         calculated_trajectory = np.reshape(np.vstack((R_obj_x_sol, R_obj_y_sol, R_obj_z_sol)).T, (-1,3,3)) # make a N x 3 x 3 array
         calculated_movingframe = np.reshape(np.vstack((R_t_x_sol, R_t_y_sol, R_t_z_sol)).T, (-1,3,3)) # make a N x 3 x 3 array
+        
         return invariants, calculated_trajectory, calculated_movingframe
 
 if __name__ == "__main__":
