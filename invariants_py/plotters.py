@@ -389,13 +389,13 @@ def plot_invariants(invariants1, invariants2, progress1, progress2 = [], inv_typ
     if inv_type == 'FS_rot' or inv_type == 'eFS':
         if inv_type == 'eFS':
             ax4 = fig.add_subplot(234)
-            ax4.set_title('i_t1')
+            ax4.set_title('$i_{t1}$')
             ax4.plot(progress1,invariants1[:,3],'b')
             ax5 = fig.add_subplot(235)
-            ax5.set_title('i_t2')
+            ax5.set_title('$i_{t2}$')
             ax5.plot(progress1,invariants1[:,4],'b')
             ax6 = fig.add_subplot(236)
-            ax6.set_title('i_t3')
+            ax6.set_title('$i_{t3}$')
             ax6.plot(progress1,invariants1[:,5],'b')
             size = size + 100
             if len(invariants2):
@@ -403,13 +403,13 @@ def plot_invariants(invariants1, invariants2, progress1, progress2 = [], inv_typ
                 ax5.plot(progress2,invariants2[:,4],'r')
                 ax6.plot(progress2,invariants2[:,5],'r')
         ax1 = fig.add_subplot(size+31)
-        ax1.set_title('i_r1')
+        ax1.set_title('$i_{r1}$')
         ax1.plot(progress1,invariants1[:,0],'b')
         ax2 = fig.add_subplot(size+32)
-        ax2.set_title('i_r2')
+        ax2.set_title('$i_{r2}$')
         ax2.plot(progress1,invariants1[:,1],'b')
         ax3 = fig.add_subplot(size+33)
-        ax3.set_title('i_r3')
+        ax3.set_title('$i_{r3}$')
         ax3.plot(progress1,invariants1[:,2],'b')
         if len(invariants2):
             ax1.plot(progress2,invariants2[:,0],'r')
@@ -417,13 +417,13 @@ def plot_invariants(invariants1, invariants2, progress1, progress2 = [], inv_typ
             ax3.plot(progress2,invariants2[:,2],'r')
     elif inv_type == 'FS_pos':
         ax4 = fig.add_subplot(131)
-        ax4.set_title('i_t1')
+        ax4.set_title('$i_{t1}$')
         ax4.plot(progress1,invariants1[:,0],'b')
         ax5 = fig.add_subplot(132)
-        ax5.set_title('i_t2')
+        ax5.set_title('$i_{t2}$')
         ax5.plot(progress1,invariants1[:,1],'b')
         ax6 = fig.add_subplot(133)
-        ax6.set_title('i_t3')
+        ax6.set_title('$i_{t3}$')
         ax6.plot(progress1,invariants1[:,2],'b')
         if len(invariants2):
             ax4.plot(progress2,invariants2[:,0],'r')

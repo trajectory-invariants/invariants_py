@@ -4,10 +4,12 @@ import casadi as cas
 import invariants_py.dynamics_invariants as dynamics
 import invariants_py.ocp_helper as ocp_helper
 from invariants_py import initialization
+from invariants_py.check_solver import check_solver
 
 class OCP_calc_pos:
 
     def __init__(self, nb_samples = 100, w_pos = 1, w_regul_jerk = 10**-6 , w_regul_invars = 10**-10, fatrop_solver = False):
+        fatrop_solver = check_solver(fatrop_solver)               
 
         #%% Decision variables and parameters for the optimization problem 
         self.ocp = rockit.Ocp(T=1.0)        

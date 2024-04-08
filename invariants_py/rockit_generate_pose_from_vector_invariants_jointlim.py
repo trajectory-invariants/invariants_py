@@ -1,10 +1,18 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Mar  22 2024
+
+@author: Riccardo
+"""
+
 import numpy as np
 import casadi as cas
 import rockit
-import invariants_py.dynamics_invariants as dynamics
+import invariants_py.integrators as integrators
+from invariants_py.robotics_functions.forward_kinematics import forward_kinematics
 from invariants_py.check_solver import check_solver
 
-class OCP_gen_pose:
+class OCP_gen_pose_jointlim:
 
     def tril_vec(self,input):
         return cas.vertcat(input[0,0], input[1,1], input[2,2], input[1,0], input[2,0], input[2,1])
@@ -20,9 +28,8 @@ class OCP_gen_pose:
     def diag(self,input):
         return cas.vertcat(input[0,0], input[1,1], input[2,2])
     
-    def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, max_iters = 300, fatrop_solver = False):
-        fatrop_solver = check_solver(fatrop_solver)               
-       
+    def __init__(self, path_to_urdf, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, max_iters = 300, fatrop_solver = False, nb_joints = 6, root = 'base_link', tip = 'tool0'):
+        fatrop_solver = check_solver(fatrop_solver)       
         #%% Create decision variables and parameters for the optimization problem
         
         ocp = rockit.Ocp(T=1.0)
@@ -41,9 +48,11 @@ class OCP_gen_pose:
         R_r_y = ocp.state(3,1) # rotational Frenet-Serret frame
         R_r_z = ocp.state(3,1) # rotational Frenet-Serret frame
         R_r = cas.horzcat(R_r_x,R_r_y,R_r_z)
+        q = ocp.state(nb_joints)
 
         # Define system controls (invariants at every time step)
         U = ocp.control(6)
+        qdot = ocp.control(nb_joints)
 
         # Define system parameters P (known values in optimization that need to be set right before solving)
         h = ocp.parameter(1)
@@ -57,11 +66,12 @@ class OCP_gen_pose:
         p_obj_end = ocp.parameter(3)
         R_obj_start = ocp.parameter(3,3)
         R_obj_end = ocp.parameter(3,3)
+        q_lim = ocp.parameter(nb_joints)
         
         U_demo = ocp.parameter(6,grid='control',include_last=True) # model invariants
         
         w_invars = ocp.parameter(6,grid='control',include_last=True) # weights for invariants
-
+                
         #%% Specifying the constraints
         
         # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
@@ -78,10 +88,14 @@ class OCP_gen_pose:
         ocp.subject_to(ocp.at_tf(p_obj == p_obj_end))
         ocp.subject_to(ocp.at_t0(self.tril_vec_no_diag(R_obj.T @ R_obj_start - np.eye(3)) == 0.))
         ocp.subject_to(ocp.at_tf(self.tril_vec_no_diag(R_obj.T @ R_obj_end - np.eye(3))==0.))
+        for i in range(nb_joints):
+            # ocp.subject_to(-q_lim[i] <= (q[i] <= q_lim[i])) # This constraint definition does not work with fatrop, yet
+            ocp.subject_to(-q_lim[i] - q[i] <= 0 )
+            ocp.subject_to(q[i] - q_lim[i] <= 0)
 
         # Dynamic constraints
-        (R_t_plus1, p_obj_plus1) = dynamics.vector_invariants_position(R_t, p_obj, U[3:], h)
-        (R_r_plus1, R_obj_plus1) = dynamics.dyn_vector_invariants_rotation(R_r, R_obj, U[:3], h)
+        (R_t_plus1, p_obj_plus1) = integrators.geo_integrator_tra(R_t, p_obj, U[3:], h)
+        (R_r_plus1, R_obj_plus1) = integrators.geo_integrator_rot(R_r, R_obj, U[:3], h)
         # Integrate current state to obtain next state (next rotation and position)
         ocp.set_next(p_obj,p_obj_plus1)
         ocp.set_next(R_obj_x,R_obj_plus1[:,0])
@@ -93,6 +107,10 @@ class OCP_gen_pose:
         ocp.set_next(R_r_x,R_r_plus1[:,0])
         ocp.set_next(R_r_y,R_r_plus1[:,1])
         ocp.set_next(R_r_z,R_r_plus1[:,2])
+        ocp.set_next(q,qdot)
+
+        # Forward kinematics
+        p_obj_fwkin, R_obj_fwkin = forward_kinematics(q,path_to_urdf,root,tip)
             
         # Lower bounds on controls
         # if bool_unsigned_invariants:
@@ -101,7 +119,14 @@ class OCP_gen_pose:
             
         #%% Specifying the objective
         # Fitting constraint to remain close to measurements
-        objective = ocp.sum(1/window_len*cas.dot(w_invars*(U - U_demo),w_invars*(U - U_demo)),include_last=True)
+        objective_inv = ocp.sum(1/window_len*cas.dot(w_invars*(U - U_demo),w_invars*(U - U_demo)),include_last=True)
+
+        # Objective for joint limits
+        e_pos = cas.dot(p_obj_fwkin - p_obj,p_obj_fwkin - p_obj)
+        e_rot = cas.dot(R_obj.T @ R_obj_fwkin - np.eye(3),R_obj.T @ R_obj_fwkin - np.eye(3))
+        objective_jointlim = ocp.sum(e_pos + e_rot + 0.001*cas.dot(qdot,qdot),include_last = True)
+
+        objective = ocp.sum(objective_inv + objective_jointlim, include_last = True)
 
         #%% Define solver and save variables
         ocp.add_objective(objective)
@@ -133,7 +158,10 @@ class OCP_gen_pose:
         self.R_obj_y = R_obj_y
         self.R_obj_z = R_obj_z
         self.R_obj = R_obj
+        self.q = q
+        self.nb_joints = nb_joints
         self.U = U
+        self.qdot = qdot
         self.U_demo = U_demo
         self.w_invars = w_invars
         self.R_t_start = R_t_start
@@ -144,13 +172,14 @@ class OCP_gen_pose:
         self.p_obj_end = p_obj_end
         self.R_obj_start = R_obj_start
         self.R_obj_end = R_obj_end
+        self.q_lim = q_lim
         self.h = h
         self.window_len = window_len
         self.ocp = ocp
         self.fatrop = fatrop_solver
         
         
-    def generate_trajectory(self,U_demo,p_obj_init,R_obj_init,R_t_init,R_r_init,R_t_start,R_r_start,R_t_end,R_r_end,p_obj_start,R_obj_start,p_obj_end,R_obj_end, step_size, U_init = None, w_invars = (10**-3)*np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), w_high_start = 1, w_high_end = 0, w_high_invars = (10**-3)*np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), w_high_active = 0):
+    def generate_trajectory(self,U_demo,p_obj_init,R_obj_init,R_t_init,R_r_init,q_init,q_lim,R_t_start,R_r_start,R_t_end,R_r_end,p_obj_start,R_obj_start,p_obj_end,R_obj_end, step_size, U_init = None, w_invars = (10**-3)*np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), w_high_start = 1, w_high_end = 0, w_high_invars = (10**-3)*np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), w_high_active = 0):
         #%%
         if U_init is None:
             U_init = U_demo
@@ -166,9 +195,11 @@ class OCP_gen_pose:
         self.ocp.set_initial(self.R_r_x, R_r_init[:self.window_len,:,0].T) 
         self.ocp.set_initial(self.R_r_y, R_r_init[:self.window_len,:,1].T) 
         self.ocp.set_initial(self.R_r_z, R_r_init[:self.window_len,:,2].T) 
+        self.ocp.set_initial(self.q,q_init.T)
             
         # Initialize controls
         self.ocp.set_initial(self.U,U_init[:-1,:].T)
+        self.ocp.set_initial(self.qdot, 0.001*np.ones((self.nb_joints,self.window_len-1)))
 
         # Set values boundary constraints
         self.ocp.set_value(self.R_t_start,R_t_start)
@@ -179,6 +210,8 @@ class OCP_gen_pose:
         self.ocp.set_value(self.p_obj_end,p_obj_end)
         self.ocp.set_value(self.R_obj_start,R_obj_start)
         self.ocp.set_value(self.R_obj_end,R_obj_end)
+        self.ocp.set_value(self.q_lim,q_lim)
+
 
         # Set values parameters
         self.ocp.set_value(self.h,step_size)
@@ -216,4 +249,5 @@ class OCP_gen_pose:
         _,new_trajectory_rot = sol.sample(self.R_obj,grid='control')
         _,movingframe_pos = sol.sample(self.R_t,grid='control')
         _,movingframe_rot = sol.sample(self.R_r,grid='control')
-        return invariants, new_trajectory_pos, new_trajectory_rot, movingframe_pos, movingframe_rot, tot_time
+        _,joint_val = sol.sample(self.q,grid='control')
+        return invariants, new_trajectory_pos, new_trajectory_rot, movingframe_pos, movingframe_rot, tot_time, joint_val

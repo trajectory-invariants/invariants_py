@@ -4,6 +4,7 @@ import rockit
 import invariants_py.dynamics_invariants as dynamics
 import time
 import invariants_py.generate_trajectory as generate_trajectory
+from invariants_py.check_solver import check_solver
 
 class OCP_gen_pos:
 
@@ -13,6 +14,7 @@ class OCP_gen_pos:
         return cas.vertcat(input[1,0], input[2,0], input[2,1])
     
     def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, max_iters = 300, fatrop_solver = False, bounds_mf = True):
+        fatrop_solver = check_solver(fatrop_solver)               
        
         #%% Create decision variables and parameters for the optimization problem
         
@@ -106,6 +108,7 @@ class OCP_gen_pos:
         self.ocp = ocp
         self.sol = None
         self.first_window = True
+        self.fatrop = fatrop_solver
         
         if bounds_mf == False:
             self.initialize_solver()
@@ -203,7 +206,10 @@ class OCP_gen_pos:
         # Solve the NLP
         start_time = time.time()
         sol = self.ocp.solve()
-        tot_time = 1#self.ocp._method.myOCP.get_stats().time_total # UNCOMMENT to calculate solution time with fatrop
+        if self.fatrop:
+            tot_time = self.ocp._method.myOCP.get_stats().time_total
+        else:
+            tot_time = []
         end_time = time.time()
         
         self.sol = sol

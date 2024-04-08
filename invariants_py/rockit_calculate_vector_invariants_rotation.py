@@ -6,6 +6,7 @@ import rockit
 import invariants_py.dynamics_invariants as dynamics
 from invariants_py import ocp_helper, initialization, SO3
 import time
+from invariants_py.check_solver import check_solver
 
 class OCP_calc_rot:
 
@@ -14,6 +15,7 @@ class OCP_calc_rot:
         ocp = rockit.Ocp(T=1.0) # create optimization problem
         N = window_len # number of samples in the window
        
+        fatrop_solver = check_solver(fatrop_solver)       
         #%% Create decision variables and parameters for the optimization problem
         
         # Define system states X (unknown object orientation + moving frame orientation at every time step) 
