@@ -73,18 +73,19 @@ class OCP_calc_pos:
             ocp.solver('ipopt', {'expand':True, 'ipopt.print_info_string':'yes'})
             # ocp.solver('ipopt',{"print_time":True,"expand":True},{'gamma_theta':1e-12,'max_iter':200,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
         
-        # Initialize solver (TODO: can this step be avoided somehow?)
-        ocp.set_initial(R_t_x, np.array([1,0,0]))                 
-        ocp.set_initial(R_t_y, np.array([0,1,0]))                
+        # Solve already once with dummy values for code generation (TODO: can this step be avoided somehow?)
+        ocp.set_initial(R_t_x, np.array([1,0,0]))
+        ocp.set_initial(R_t_y, np.array([0,1,0]))
         ocp.set_initial(R_t_z, np.array([0,0,1]))
         ocp.set_initial(invars, np.array([1,0.01,0.01]))
         ocp.set_value(p_obj_m, np.vstack((np.linspace(0, 1, N), np.ones((2, N)))))
         ocp.set_value(h, 0.01)
-        ocp.solve_limited()
+        ocp.solve_limited() # code generation
 
         # Set solver options (TODO: why can this not be done before solving?)
-        ocp._method.set_option("tol",1e-6)
-        #ocp._method.set_option("print_level",0)
+        if fatrop_solver:
+            ocp._method.set_option("tol",1e-6)
+            #ocp._method.set_option("print_level",0)
         self.first_time = True
         
         # Encapsulate whole rockit specification in a casadi function
@@ -128,7 +129,7 @@ if __name__ == "__main__":
     
     # Specify OCP symbolically
     N = np.size(measured_positions,0)
-    OCP = OCP_calc_pos(window_len=N,fatrop_solver=True)
+    OCP = OCP_calc_pos(window_len=N,fatrop_solver=False)
 
     # Solve the OCP using the specified data
     calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_positions, timestep)

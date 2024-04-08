@@ -76,7 +76,7 @@ class OCP_gen_rot:
         #ocp.subject_to(ocp.at_tf(self.diffR(R_obj,R_obj_end)) == 0)
             
         # Dynamic constraints
-        (R_r_plus1, R_obj_plus1) = dynamics.geo_integrator_rot(R_r, R_obj, U, h)
+        (R_r_plus1, R_obj_plus1) = dynamics.dyn_vector_invariants_rotation(R_r, R_obj, U, h)
         # Integrate current state to obtain next state (next rotation and position)
         ocp.set_next(R_obj_x,R_obj_plus1[:,0])
         ocp.set_next(R_obj_y,R_obj_plus1[:,1])
