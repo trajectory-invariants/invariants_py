@@ -14,7 +14,7 @@ class OCP_calc_rot:
        
         ocp = rockit.Ocp(T=1.0) # create optimization problem
         N = window_len # number of samples in the window
-       
+
         fatrop_solver = check_solver(fatrop_solver)       
         #%% Create decision variables and parameters for the optimization problem
         
@@ -126,7 +126,8 @@ class OCP_calc_rot:
             ocp.sample(R_r_y, grid='control')[1], # sampled FS frame (second axis)
             ocp.sample(R_r_z, grid='control')[1]] # sampled FS frame (third axis)
         
-        self.ocp_function = ocp.to_function('ocp_function', 
+        self.ocp = ocp # save the optimization problem locally, avoids problems when multiple rockit ocp's are created
+        self.ocp_function = self.ocp.to_function('ocp_function', 
             [R_obj_m_x_sampled,R_obj_m_y_sampled,R_obj_m_z_sampled,h_value,*solution], # inputs
             [*solution], # outputs
             ["R_obj_m_x","R_obj_m_y","R_obj_m_z","h","invars1","R_obj_x","R_obj_y","R_obj_z","R_r_x1","R_r_y1","R_r_z1"], # input labels for debugging

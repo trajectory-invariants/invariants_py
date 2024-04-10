@@ -108,7 +108,8 @@ class OCP_calc_pos:
             ocp.sample(R_t_y, grid='control')[1], # sampled FS frame (second axis)
             ocp.sample(R_t_z, grid='control')[1]] # sampled FS frame (third axis)
         
-        self.ocp_function = ocp.to_function('ocp_function', 
+        self.ocp = ocp # save the optimization problem locally, avoids problems when multiple rockit ocp's are created
+        self.ocp_function = self.ocp.to_function('ocp_function', 
             [p_obj_m_sampled,h_value,*solution], # inputs
             [*solution], # outputs
             ["p_obj_m","h","invars1","p_obj1","R_t_x1","R_t_y1","R_t_z1"], # input labels for debugging
