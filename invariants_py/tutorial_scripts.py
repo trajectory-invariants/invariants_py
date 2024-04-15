@@ -85,7 +85,8 @@ def calculate_invariants(data_location, plot_demo = True, use_fatrop_solver = Fa
         else:
             pl.plot_invariants(optim_calc_results.invariants,[],arclength_n, inv_type = "FS_rot")
 
-    plt.show()
+    if plt.get_backend() != 'agg':
+        plt.show()
 
     return optim_calc_results
 
@@ -183,4 +184,5 @@ def generate_trajectory(data_location, optim_calc_results, p_obj_end, rotate, us
         else:
             pl.plot_invariants(optim_calc_results.invariants, optim_gen_results.invariants, arclength_n, progress_values, 'FS_rot')
 
-    plt.show()
+    if plt.get_backend() != 'agg':
+        plt.show()

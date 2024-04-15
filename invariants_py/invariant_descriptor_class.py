@@ -1786,7 +1786,8 @@ if __name__ == "__main__":
 #        fig, p_list = descriptor.plotMotionTrajectory(next_windowPoses, figure = fig)
         print(("window nr "+ str(n)))
         plt.pause(0.0001)
-        plt.show()
+        if plt.get_backend() != 'agg':
+            plt.show()
 
         time.sleep(0.02)
         if n < len(descriptor.getPositions())-10:

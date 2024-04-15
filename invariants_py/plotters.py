@@ -2,8 +2,6 @@
 # TODO separate dynamic plots with Qt5 from regular plots in separate file
 
 import numpy as np
-import matplotlib
-import sys
 from mpl_toolkits import mplot3d
 from stl import mesh
 from invariants_py.rot2quat import rot2quat
@@ -43,7 +41,8 @@ def plot_trajectory_and_bounds(boundary_constraints, trajectory):
     ax.set_zlabel('Z')
 
     # Show the plot
-    plt.show()
+    if plt.get_backend() != 'agg':
+        plt.show()
 
 def plot_trajectory(trajectory):
     # Extract x, y, and z coordinates from the trajectory
@@ -62,8 +61,8 @@ def plot_trajectory(trajectory):
     ax.set_zlabel('Z')
 
     # Show the plot
-    plt.show()
-
+    if plt.get_backend() != 'agg':
+        plt.show()
 
 def plot_trajectory_test(trajectory):
     fig = plt.figure(figsize=(8,8))
@@ -127,7 +126,8 @@ def plotPose(pose, figure = '', label = '', c='b', m='.', orientation = False):
 
 #    plt.autoscale(True, 'both', True)
 #    plt.ion()
-    plt.show()
+    if plt.get_backend() != 'agg':
+        plt.show()
 
     return fig, p
 
@@ -217,7 +217,8 @@ def plotTrajectory(trajectory, figure = None, label = "trajectory", title = '', 
 
 
 #    plt.title(title)
-    plt.show()
+    if plt.get_backend() != 'agg':
+        plt.show()
 
     return fig, p_lst
 
@@ -270,7 +271,8 @@ def plot_trajectory_invariants(trajectory,trajectory_recon,arclength_n,invariant
     plt.plot(0,1)
     plt.title('Torsion [rad/-]')
     
-    plt.show()
+    if plt.get_backend() != 'agg':
+        plt.show()
 
 def removeMultipleAxis(pList):
     for i in range(len(pList)):
@@ -476,7 +478,8 @@ def compare_invariants(invariants, new_invariants, arclength_n, progress_values)
     plt.plot(0,0)
     plt.title('Torsion [rad/m]')
 
-    plt.show()
+    if plt.get_backend() != 'agg':
+        plt.show()
 
 def plot_orientation(trajectory1,trajectory2,current_index = 0):
     """
@@ -534,7 +537,8 @@ def plot_invariants_new(invariants,arclength):
     plt.xlabel('s [m]')
     plt.legend()
     plt.title('Calculated invariants (full horizon)')
-    plt.show()
+    if plt.get_backend() != 'agg':
+        plt.show()
     #plt.close()
 
 def plot_invariants_new(invariants, arclength):
@@ -555,7 +559,8 @@ def plot_invariants_new(invariants, arclength):
     plt.plot(0,0)
     plt.title('Torsion [rad/m]')
 
-    plt.show()
+    if plt.get_backend() != 'agg':
+        plt.show()
 
 
 def plot_3d_frame(p,R,scale_arrow,length_arrow,my_color,ax3d):

@@ -83,7 +83,8 @@ pl.plot_orientation(optim_calc_results.Obj_frames,trajectory_orientation)
 
 pl.plot_invariants(optim_calc_results.invariants,[],arclength_n)
 
-plt.show()
+if plt.get_backend() != 'agg':
+    plt.show()
 
 #%%
 # Spline of model
@@ -214,7 +215,8 @@ if collision_flag:
 else:
     print("NO COLLISION DETECTED")
 
-plt.show(block=False)
+if plt.get_backend() != 'agg':
+    plt.show()
 
 
 # # Generation of multiple trajectories to test FATROP calculation speed
@@ -301,4 +303,5 @@ plt.show(block=False)
 # ax2 = fig.add_subplot()
 # ax2.plot(targets[:,-1],'r.')
 
-# plt.show()
+# if plt.get_backend() != 'agg':
+#    plt.show()

@@ -13,7 +13,7 @@ failed_scripts = []
 
 # Set the matplotlib backend to Agg in the environment variable to prevent showing plots
 my_env = os.environ.copy()
-my_env["MPLBACKEND"] = "Agg"
+my_env["MPLBACKEND"] = "agg"
 
 # Function to run scripts in a directory
 def run_scripts(directory):

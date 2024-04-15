@@ -229,7 +229,8 @@ if __name__ == "__main__":
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
-    plt.show()
+    if plt.get_backend() != 'agg':
+        plt.show()
     
     # Test the functionalities of the class
     OCP = OCP_calc_pos(window_len=np.size(measured_positions,0), rms_error_traj=10**-3)

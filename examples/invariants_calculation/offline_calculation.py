@@ -56,7 +56,8 @@ plt.plot(arclength_n,invariants[:,2])
 plt.plot(0,1)
 plt.title('Torsion [rad/-]')
 
-plt.show()
+if plt.get_backend() != 'agg':
+    plt.show()
 
 
 
@@ -92,7 +93,8 @@ plt.show()
 # plt.plot(0,1)
 # plt.title('Torsion [rad/-]')
 
-# plt.show()
+# if plt.get_backend() != 'agg':
+    plt.show()
 
 
 """ 
@@ -128,4 +130,5 @@ plt.plot(arclength_n,invariants[:,2])
 plt.plot(0,1)
 plt.title('Torsion [rad/-]')
 
-plt.show()
+if plt.get_backend() != 'agg':
+    plt.show()
