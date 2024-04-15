@@ -170,10 +170,10 @@ iterative_trajectory = calculate_trajectory.copy()
 iterative_movingframes = movingframes.copy()
 trajectory_position_iter = trajectory_position.copy()
 
-fig = plt.figure(figsize=(14,8))
-ax = fig.add_subplot(111, projection='3d')    
+fig_traj = plt.figure(figsize=(14,8))
+ax = fig_traj.add_subplot(111, projection='3d')    
 
-fig, axes = plt.subplots(1, 3, sharey=True, figsize=(10,3))
+fig_invars, axes = plt.subplots(1, 3, sharey=True, figsize=(10,3))
     
 while current_progress <= 1.0:
     
@@ -210,7 +210,8 @@ while current_progress <= 1.0:
     for i in indx_iter:
         plot_3d_frame(trajectory_position_iter[i,:],iterative_trajectory[i,:,:],1,0.05,['red','green','blue'],ax)
         plot_stl(opener_location,trajectory_position_iter[i,:],iterative_trajectory[i,:,:],colour="r",alpha=0.2,ax=ax)
-    
+    if plt.get_backend() != 'agg':
+        plt.show()
 
     axes[0].plot(progress_values,new_invars[:,0],'r')
     axes[0].plot(arclength_n,invariants[:,0],'b')
@@ -227,8 +228,6 @@ while current_progress <= 1.0:
     axes[2].plot(0,0)
     axes[2].set_title('torsion [rad/m]')
 
-    if plt.get_backend() != 'agg':
-        plt.show()
-    
+
     old_progress = current_progress
     current_progress = old_progress + 1/window_len

@@ -372,65 +372,52 @@ def plot_interpolated_invariants(initial_invariants, interpolated_invariants, pr
         
 
 
-def plot_invariants(invariants1, invariants2, progress1, progress2 = [], inv_type = 'eFS'):
+def plot_invariants(invariants1, invariants2, progress1, progress2=[], inv_type='eFS', fig=None):
     """
-    plots invariant signature
+    Plots invariants before and after interpolation.
 
     Parameters
     ----------
-    invariants1 : numpy array (N,6) or (N,3) with invariants of the first trajectory
-    invariants2 : numpy array (N,6) or (N,3) with invariants of the second trajectory (if not required, just leave blank [])
-    progress1 : numpy array (N,1) containing progress along first trajectory
-    progress2 : numpy array (N,1) containing progress along second trajectory (if not required, leave blank)
-    inv_type : string defining the type of invariants to plot, possible entries 'eFS','FS_pos','FS_rot'
+    invariants1 : numpy array
+        Invariants before interpolation.
+    invariants2 : numpy array
+        Invariants after interpolation.
+    progress1 : numpy array
+        Trajectory progress before interpolation.
+    progress2 : numpy array, optional
+        Trajectory progress after interpolation. Default is an empty array.
+    inv_type : str, optional
+        Type of invariants to plot. Possible values are 'eFS', 'FS_pos', 'FS_rot'. Default is 'eFS'.
+    fig : matplotlib Figure, optional
+        Handle to an existing figure. If provided, the plot will be updated on the existing figure. Default is None.
 
+    Returns
+    -------
+    None
     """
-    # TODO include other types of invariants and corresponidngly update units of titles, make it work for 2D
-    fig = plt.figure(figsize=(10,6))
-    size = 100
+    if fig is None:
+        fig = plt.figure(figsize=(10, 6))
     if inv_type == 'FS_rot' or inv_type == 'eFS':
         if inv_type == 'eFS':
-            ax4 = fig.add_subplot(234)
-            ax4.set_title('$i_{t1}$')
-            ax4.plot(progress1,invariants1[:,3],'b')
-            ax5 = fig.add_subplot(235)
-            ax5.set_title('$i_{t2}$')
-            ax5.plot(progress1,invariants1[:,4],'b')
-            ax6 = fig.add_subplot(236)
-            ax6.set_title('$i_{t3}$')
-            ax6.plot(progress1,invariants1[:,5],'b')
-            size = size + 100
+            for i in range(3):
+                ax = fig.add_subplot(2, 3, i+4, title=f'$i_{{t{i+1}}}$')
+                ax.plot(progress1, invariants1[:, i+3], 'b')
+                if len(invariants2):
+                    ax.plot(progress2, invariants2[:, i+3], 'r')
+        for i in range(3):
+            ax = fig.add_subplot(131 + i, title=f'$i_{{r{i+1}}}$')
+            ax.plot(progress1, invariants1[:, i], 'b')
             if len(invariants2):
-                ax4.plot(progress2,invariants2[:,3],'r')
-                ax5.plot(progress2,invariants2[:,4],'r')
-                ax6.plot(progress2,invariants2[:,5],'r')
-        ax1 = fig.add_subplot(size+31)
-        ax1.set_title('$i_{r1}$')
-        ax1.plot(progress1,invariants1[:,0],'b')
-        ax2 = fig.add_subplot(size+32)
-        ax2.set_title('$i_{r2}$')
-        ax2.plot(progress1,invariants1[:,1],'b')
-        ax3 = fig.add_subplot(size+33)
-        ax3.set_title('$i_{r3}$')
-        ax3.plot(progress1,invariants1[:,2],'b')
-        if len(invariants2):
-            ax1.plot(progress2,invariants2[:,0],'r')
-            ax2.plot(progress2,invariants2[:,1],'r')
-            ax3.plot(progress2,invariants2[:,2],'r')
+                ax.plot(progress2, invariants2[:, i], 'r')
     elif inv_type == 'FS_pos':
-        ax4 = fig.add_subplot(131)
-        ax4.set_title('$i_{t1}$')
-        ax4.plot(progress1,invariants1[:,0],'b')
-        ax5 = fig.add_subplot(132)
-        ax5.set_title('$i_{t2}$')
-        ax5.plot(progress1,invariants1[:,1],'b')
-        ax6 = fig.add_subplot(133)
-        ax6.set_title('$i_{t3}$')
-        ax6.plot(progress1,invariants1[:,2],'b')
-        if len(invariants2):
-            ax4.plot(progress2,invariants2[:,0],'r')
-            ax5.plot(progress2,invariants2[:,1],'r')
-            ax6.plot(progress2,invariants2[:,2],'r')
+        for i in range(3):
+            ax = fig.add_subplot(1, 3, i+1, title=f'$i_{{t{i+1}}}$')
+            ax.plot(progress1, invariants1[:, i], 'b')
+            if len(invariants2):
+                ax.plot(progress2, invariants2[:, i], 'r')
+
+    fig.canvas.draw()
+    fig.canvas.flush_events()
 
 def plot_stl(stl_file_location,pos,R,colour,alpha,ax):
     """

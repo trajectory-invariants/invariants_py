@@ -168,6 +168,7 @@ optim_iter_results.FSt_frames = optim_calc_results.FSt_frames.copy()
 optim_iter_results.FSr_frames = optim_calc_results.FSr_frames.copy()
 fig = plt.figure(figsize=(14,8))
 ax = fig.add_subplot(111, projection='3d')
+fig_invars = plt.figure(figsize=(10, 6))
 
 while current_progress <= 1.0:
     
@@ -210,11 +211,10 @@ while current_progress <= 1.0:
         pl.plot_3d_frame(optim_iter_results.Obj_pos[i,:],optim_iter_results.Obj_frames[i,:,:],1,0.01,['red','green','blue'],ax)
         pl.plot_stl(opener_location,optim_iter_results.Obj_pos[i,:],optim_iter_results.Obj_frames[i,:,:],colour="r",alpha=0.2,ax=ax)
 
-    # TODO do not make a new plot each time the while loop is run
-    pl.plot_invariants(optim_calc_results.invariants,optim_iter_results.invariants,arclength_n,progress_values)
+    pl.plot_invariants(optim_calc_results.invariants,optim_iter_results.invariants,arclength_n,progress_values,fig=fig_invars)
     
     if plt.get_backend() != 'agg':
-        plt.show()
+        plt.show(block=False)
     
     old_progress = current_progress
     current_progress = old_progress + 1/window_len

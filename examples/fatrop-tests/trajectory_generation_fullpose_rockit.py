@@ -228,6 +228,9 @@ optim_iter_results.Obj_pos = optim_calc_results.Obj_pos.copy()
 optim_iter_results.Obj_frames = optim_calc_results.Obj_frames.copy()
 optim_iter_results.FSt_frames = optim_calc_results.FSt_frames.copy()
 optim_iter_results.FSr_frames = optim_calc_results.FSr_frames.copy()
+fig = plt.figure(figsize=(14,8))
+ax = fig.add_subplot(111, projection='3d')
+fig_invars = plt.figure(figsize=(10, 6))
 while current_progress <= 1.0:
     
     print(f"current progress = {current_progress}")
@@ -262,8 +265,6 @@ while current_progress <= 1.0:
     # Visualization
     clear_output(wait=True)
     
-    fig = plt.figure(figsize=(14,8))
-    ax = fig.add_subplot(111, projection='3d')
     ax.plot(optim_calc_results.Obj_pos[:,0],optim_calc_results.Obj_pos[:,1],optim_calc_results.Obj_pos[:,2],'b')
     ax.plot(optim_iter_results.Obj_pos[:,0],optim_iter_results.Obj_pos[:,1],optim_iter_results.Obj_pos[:,2],'r')
     for i in indx:
@@ -274,7 +275,7 @@ while current_progress <= 1.0:
         pl.plot_3d_frame(optim_iter_results.Obj_pos[i,:],optim_iter_results.Obj_frames[i,:,:],1,0.01,['red','green','blue'],ax)
         pl.plot_stl(opener_location,optim_iter_results.Obj_pos[i,:],optim_iter_results.Obj_frames[i,:,:],colour="r",alpha=0.2,ax=ax)
 
-    pl.plot_invariants(optim_calc_results.invariants,optim_iter_results.invariants,arclength_n,progress_values)
+    pl.plot_invariants(optim_calc_results.invariants,optim_iter_results.invariants,arclength_n,progress_values,fig=fig_invars)
     
     if plt.get_backend() != 'agg':
         plt.show()

@@ -164,6 +164,10 @@ R_obj_end = calculate_trajectory[-1] # initialise R_obj_end with end point of re
 iterative_trajectory = calculate_trajectory.copy()
 iterative_movingframes = movingframes.copy()
 trajectory_position_iter = trajectory_position.copy()
+fig_invars = plt.figure(figsize=(10, 6))
+fig = plt.figure(figsize=(14,8))
+ax = fig.add_subplot(111, projection='3d')
+
 while current_progress <= 1.0:
     
     print(f"current progress = {current_progress}")
@@ -193,8 +197,7 @@ while current_progress <= 1.0:
     # Visualization
     clear_output(wait=True)
     
-    fig = plt.figure(figsize=(14,8))
-    ax = fig.add_subplot(111, projection='3d')
+
     ax.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,2],'b')
     for i in indx:
         plot_stl(opener_location,trajectory_position[i,:],calculate_trajectory[i,:,:],colour="c",alpha=0.2,ax=ax)
@@ -207,7 +210,7 @@ while current_progress <= 1.0:
         plot_3d_frame(trajectory_position_iter[i,:],iterative_trajectory[i,:,:],1,0.05,['red','green','blue'],ax)
         plot_stl(opener_location,trajectory_position_iter[i,:],iterative_trajectory[i,:,:],colour="r",alpha=0.2,ax=ax)
     
-    pl.plot_invariants(invariants,new_invars,arclength_n,progress_values,inv_type='FS_rot')
+    pl.plot_invariants(invariants,new_invars,arclength_n,progress_values,inv_type='FS_rot',fig=fig_invars)
 
     if plt.get_backend() != 'agg':
         plt.show()
