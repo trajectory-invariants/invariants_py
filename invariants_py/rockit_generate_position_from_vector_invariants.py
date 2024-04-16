@@ -204,7 +204,7 @@ class OCP_gen_pos:
         if self.fatrop:
             tot_time = self.ocp._method.myOCP.get_stats().time_total
         else:
-            tot_time = []
+            tot_time = 0
         end_time = time.time()
         
         self.sol = sol

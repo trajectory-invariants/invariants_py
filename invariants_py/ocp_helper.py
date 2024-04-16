@@ -1,6 +1,7 @@
 
 import numpy as np
 import casadi as cas
+import warnings
 
 def jerk_invariant(i1,i1dot,i1ddot,i2,i2dot,i3):
     # This is the jerk of the trajectory expressed in terms of the invariants and their derivatives
@@ -35,6 +36,6 @@ def check_solver(fatrop_solver):
     except:
         if fatrop_solver:
             print("")
-            print("Fatrop solver is not installed! Using ipopt instead")
+            warnings.warn("Fatrop solver is not installed! Using ipopt solver instead...")
             fatrop_solver = False
     return fatrop_solver

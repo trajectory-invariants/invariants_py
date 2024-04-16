@@ -1,4 +1,9 @@
 ![install_and_test](https://github.com/trajectory-invariants/invariants_py/actions/workflows/install_and_test.yml/badge.svg)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/trajectory-invariants/invariants_py)
+![GitHub issues](https://img.shields.io/github/issues/trajectory-invariants/invariants_py)
+
+
 
 Python library for the invariant shape descriptors.
 
@@ -12,7 +17,7 @@ Python library for the invariant shape descriptors.
 
 Prerequisites: Python >3.6 and pip
 
-    sudo apt install python3-pip
+
 
 ### Installation of invariants-py
 
@@ -23,8 +28,10 @@ Clone (or download) this repository:
 Install package in your Python environment:
 
     cd invariants_py
+
+    pip install --upgrade pip    
     
-    python -m pip install -e .
+    pip install -e .
 
 ### (Optional) Installation of Fatrop
 
