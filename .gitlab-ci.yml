@@ -7,20 +7,23 @@ image: python:3.9
 cache:
   paths:
     - .cache/pip
-    - venv/
 
 before_script:
   - python -V  # Print out python version for debugging
   - pip install virtualenv
   - virtualenv venv
-  - source venv/bin/activate
 
 install_invariants_py:
   script:
+    - source venv/bin/activate
     - pip install .
+  artifacts:
+    paths:
+      - venv/
 
 install_fatrop:
   script:
+    - source venv/bin/activate
     - git clone https://github.com/meco-group/fatrop.git --recursive
     - cd fatrop
     - apt-get update && apt-get install -y cmake
@@ -29,15 +32,27 @@ install_fatrop:
     - pip install --upgrade pip setuptools
     - pip install .
     - cd ../..
+  artifacts:
+    paths:
+      - venv/
 
 install_rockit:
   script:
+    - source venv/bin/activate
     - git clone https://gitlab.kuleuven.be/meco-software/rockit.git
     - git clone https://gitlab.kuleuven.be/u0110259/rockit_fatrop_plugin.git ./rockit/rockit/external/fatrop
     - cd rockit
     - pip install .
     - cd ..
+  artifacts:
+    paths:
+      - venv/
 
 run_examples:
   script:
+    - source venv/bin/activate
     - python run_all_scripts.py
+  dependencies:
+    - install_invariants_py
+    - install_fatrop
+    - install_rockit
