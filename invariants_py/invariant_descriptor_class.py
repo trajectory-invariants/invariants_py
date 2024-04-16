@@ -1720,7 +1720,8 @@ class MotionTrajectory:
 
 
 
-if __name__ == "__main__":
+if __name__ == "__main(deprecated)__":
+    
     testfile = "/home/roboticskuleuven/catkin_ws/src/invariants_py/data/motion_profiles/single_pose.csv"
     testfile = "/home/roboticskuleuven/catkin_ws/src/invariants_py/data_old/sine_wave.txt"
 #    testfile = "/home/roboticskuleuven/catkin_ws/src/invariants_py/data_old/MPC_handover_data.txt"

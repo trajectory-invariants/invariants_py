@@ -10,7 +10,7 @@ Test to decouple the trajectory calculation from the ROS communication
 
 import numpy as np
 import time
-from . import invariant_descriptor_class as invars
+from invariants_py import invariant_descriptor_class as invars
 
 class CalculateTrajectory:
     

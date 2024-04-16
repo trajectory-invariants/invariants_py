@@ -13,7 +13,7 @@ import casadi as cas
 import rockit
 import os
 from math import pi
-import invariants_py.read_and_write_data as rw
+import invariants_py.data_handler as dh
 import invariants_py.reparameterization as reparam
 import urdf2casadi.urdfparser as u2c
 from invariants_py.SE3 import rotate_z
@@ -65,7 +65,7 @@ def inv_kin(q_init, q_joint_lim, des_p_obj, des_R_obj, window_len = 100, fatrop_
     root = "base_link"
     tip = "TCP_frame"
     ur10 = u2c.URDFparser()
-    path_to_urdf = os.path.dirname(os.path.realpath(__file__)) + "/../../data/ur10.urdf"
+    path_to_urdf = dh.find_data_path("ur10.urdf")
     ur10.from_file(path_to_urdf)
     fk_dict = ur10.get_forward_kinematics(root, tip)
     forward_kinematics = fk_dict["T_fk"]
@@ -124,18 +124,20 @@ def inv_kin(q_init, q_joint_lim, des_p_obj, des_R_obj, window_len = 100, fatrop_
 
     return joint_val.T
 
+ 
+if __name__ == "__main__":
 
-data_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/beer_1.txt'
-trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
-pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
-startpos = [0.3056, 0.0635, 0.441]
-des_p_obj = pose[:,:3,3]  + startpos
-des_R_obj = pose[:,:3,:3]
-q_init = [-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4] * np.ones((100,6))
-# q_des = [-3.18, -1.19, 1.37, -1.74, -1.58, 0.75]
-# p_obj_init = [0.9107, 0.03, 0.435]
-# R_obj_init = np.eye(3)
-q_joint_lim = [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi]
+    data_location = dh.find_data_path('beer_1.txt')
+    trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
+    pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
+    startpos = [0.3056, 0.0635, 0.441]
+    des_p_obj = pose[:,:3,3]  + startpos
+    des_R_obj = pose[:,:3,:3]
+    q_init = [-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4] * np.ones((100,6))
+    # q_des = [-3.18, -1.19, 1.37, -1.74, -1.58, 0.75]
+    # p_obj_init = [0.9107, 0.03, 0.435]
+    # R_obj_init = np.eye(3)
+    q_joint_lim = [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi]
 
-q = inv_kin(q_init, q_joint_lim, des_p_obj, des_R_obj)
-print(q)
+    q = inv_kin(q_init, q_joint_lim, des_p_obj, des_R_obj)
+    print(q)

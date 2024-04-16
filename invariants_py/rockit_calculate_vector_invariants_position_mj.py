@@ -82,8 +82,9 @@ class OCP_calc_pos:
         
         # Solve already once with dummy measurements
         self.initialize_solver(nb_samples)
-        self.ocp._method.set_option("print_level",0)
-        self.ocp._method.set_option("tol",1e-12)
+        if fatrop_solver:
+            self.ocp._method.set_option("print_level",0)
+            self.ocp._method.set_option("tol",1e-12)
         self.first_window = True
         
         # Transform the whole OCP to a Casadi function

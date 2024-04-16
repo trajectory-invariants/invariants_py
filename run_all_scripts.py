@@ -1,12 +1,12 @@
 """
-Run all the Python scripts in the /examples and /tests folder to verify everything works.
+Run all the Python scripts in the /examples and /tests folder to verify everything works, as well as the modules in invariants_py.
 """
 
 import os
 import subprocess
 
 # Directories containing the examples and tests
-directories = ["examples", "tests"]
+directories = ["examples", "tests", "invariants_py"]
 
 # Initialize an empty list to hold examples and tests that fail to execute
 failed_scripts = []

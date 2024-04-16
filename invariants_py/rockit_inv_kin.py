@@ -13,7 +13,7 @@ import casadi as cas
 import rockit
 import os
 from math import pi
-import invariants_py.read_and_write_data as rw
+import invariants_py.data_handler as dh
 import invariants_py.reparameterization as reparam
 from forward_kinematics import forward_kinematics
 from invariants_py.SE3 import rotate_z
@@ -82,24 +82,25 @@ def inv_kin(q_init, q_joint_lim, des_p_obj, des_R_obj, path_to_urdf, root = 'bas
     return joint_val
 
 
-data_location = os.path.dirname(os.path.realpath(__file__)) + '/../../data/beer_1.txt'
-trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
-pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
-N = 100
-root_link_name = "base_link"
-tip_link_name = "TCP_frame"
-path_to_urdf = os.path.dirname(os.path.realpath(__file__)) + "/../../data/ur10.urdf"
-startpos = [0.3056, 0.0635, 0.441]
-des_p_obj = pose[:,:3,3]  + startpos #[0.6818214 , 0.23448511, 0.39779707] * np.ones((N,3)) #
-des_R_obj = pose[:,:3,:3]
-# des_R_obj = np.zeros((N,3,3))
-# for i in range(N):
-#     des_R_obj[i] = pose[-1,:3,:3] #np.eye(3)
-q_init = [-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4] * np.ones((N,6))
-q_joint_lim = [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi]
-q = inv_kin(q_init, q_joint_lim, des_p_obj, des_R_obj, path_to_urdf, root_link_name, tip_link_name, N)
+if __name__ == "__main__":
+    data_location = dh.find_data_path('beer_1.txt')
+    trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
+    pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
+    N = 100
+    root_link_name = "base_link"
+    tip_link_name = "TCP_frame"
+    path_to_urdf = dh.find_data_path('ur10.urdf')
+    startpos = [0.3056, 0.0635, 0.441]
+    des_p_obj = pose[:,:3,3]  + startpos #[0.6818214 , 0.23448511, 0.39779707] * np.ones((N,3)) #
+    des_R_obj = pose[:,:3,:3]
+    # des_R_obj = np.zeros((N,3,3))
+    # for i in range(N):
+    #     des_R_obj[i] = pose[-1,:3,:3] #np.eye(3)
+    q_init = [-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4] * np.ones((N,6))
+    q_joint_lim = [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi]
+    q = inv_kin(q_init, q_joint_lim, des_p_obj, des_R_obj, path_to_urdf, root_link_name, tip_link_name, N)
 
-print(q)
+    print(q)
 
 # =======================================
 # Debugging =======================================
