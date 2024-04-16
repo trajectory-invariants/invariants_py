@@ -34,5 +34,5 @@ run_examples:
     - cd ..
 
     # Run examples
-    - python run_all_scripts.py
+    - python -u run_all_scripts.py
 
