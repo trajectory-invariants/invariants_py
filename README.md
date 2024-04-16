@@ -1,6 +1,8 @@
+![install_and_test](https://github.com/trajectory-invariants/invariants_py/actions/workflows/install_and_test.yml/badge.svg)
+
 Python library for the invariant shape descriptors.
 
-[[_TOC_]]
+
 
 # Getting started
 
