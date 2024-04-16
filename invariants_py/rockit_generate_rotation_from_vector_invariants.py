@@ -155,7 +155,7 @@ class OCP_gen_rot:
         if self.fatrop:
             tot_time = self.ocp._method.myOCP.get_stats().time_total
         else:
-            tot_time = []
+            tot_time = 0
         
         self.sol = sol
               
