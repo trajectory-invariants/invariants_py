@@ -4,7 +4,7 @@ import casadi as cas
 import invariants_py.dynamics_invariants as dynamics
 import invariants_py.ocp_helper as ocp_helper
 from invariants_py import initialization
-from invariants_py.check_solver import check_solver
+from invariants_py.ocp_helper import check_solver
 
 class OCP_calc_pos:
 

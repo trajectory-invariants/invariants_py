@@ -2,24 +2,10 @@ import numpy as np
 import casadi as cas
 import rockit
 import invariants_py.dynamics_invariants as dynamics
-from invariants_py.check_solver import check_solver
+from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag, diffR, diag
 
 class OCP_gen_pose:
 
-    def tril_vec(self,input):
-        return cas.vertcat(input[0,0], input[1,1], input[2,2], input[1,0], input[2,0], input[2,1])
-    def tril_vec_no_diag(self,input):
-        return cas.vertcat(input[1,0], input[2,0], input[2,1])
-    def three_elements(self,input):
-        return cas.vertcat(input[0,0], input[1,0], input[2,1])
-    def diffR(self,input1,input2):
-        dotproduct = cas.dot(input1[:,1],input2[:,1]) - 1
-        error_x0 = input1[0,0] - input2[0,0]
-        error_x1 = input1[1,0] - input2[1,0]
-        return cas.vertcat(dotproduct, error_x0, error_x1)
-    def diag(self,input):
-        return cas.vertcat(input[0,0], input[1,1], input[2,2])
-    
     def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, max_iters = 300, fatrop_solver = False):
         fatrop_solver = check_solver(fatrop_solver)               
        

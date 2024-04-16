@@ -6,7 +6,7 @@ import rockit
 import invariants_py.dynamics_invariants as dynamics
 from invariants_py import ocp_helper, initialization, SO3
 import time
-from invariants_py.check_solver import check_solver
+from invariants_py.ocp_helper import check_solver, tril_vec
 
 class OCP_calc_rot:
 
@@ -49,8 +49,8 @@ class OCP_calc_rot:
         #%% Specifying the constraints
         
         # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
-        ocp.subject_to(ocp.at_t0(ocp_helper.tril_vec(R_obj.T @ R_obj - np.eye(3))==0.))
-        ocp.subject_to(ocp.at_t0(ocp_helper.tril_vec(R_r.T @ R_r - np.eye(3))==0.))
+        ocp.subject_to(ocp.at_t0(tril_vec(R_obj.T @ R_obj - np.eye(3))==0.))
+        ocp.subject_to(ocp.at_t0(tril_vec(R_r.T @ R_r - np.eye(3))==0.))
 
         # Lower bounds on controls
         if bool_unsigned_invariants:
@@ -159,7 +159,7 @@ class OCP_calc_rot:
 if __name__ == "__main__":
 
     # Test data
-    measured_orientations = SO3.random_traj(N=5) # TODO replace with something more realistic
+    measured_orientations = SO3.random_traj(N=5) # TODO replace with something more realistic, now it will sometimes fail as well
     timestep = 0.1
     
     # Specify OCP symbolically

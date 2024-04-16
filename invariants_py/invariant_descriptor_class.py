@@ -11,7 +11,7 @@ optimization problems for calculating invariants and generating new trajectories
 
 import sys
 sys.path.append('../helper_programs')
-import invariants_py.plotters
+from invariants_py import plotters
 import time
 import csv
 import numpy as np
@@ -1721,7 +1721,7 @@ class MotionTrajectory:
 
 
 if __name__ == "__main(deprecated)__":
-    
+
     testfile = "/home/roboticskuleuven/catkin_ws/src/invariants_py/data/motion_profiles/single_pose.csv"
     testfile = "/home/roboticskuleuven/catkin_ws/src/invariants_py/data_old/sine_wave.txt"
 #    testfile = "/home/roboticskuleuven/catkin_ws/src/invariants_py/data_old/MPC_handover_data.txt"

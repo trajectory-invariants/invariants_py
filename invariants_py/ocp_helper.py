@@ -15,3 +15,26 @@ def weighted_sum_of_squares(weights, var):
 
 def tril_vec_no_diag(input):
     return cas.vertcat(input[1,0], input[2,0], input[2,1])
+
+def three_elements(self,input):
+    return cas.vertcat(input[0,0], input[1,0], input[2,1])
+
+def diffR(self,input1,input2):
+    dotproduct = cas.dot(input1[:,1],input2[:,1]) - 1
+    error_x0 = input1[0,0] - input2[0,0]
+    error_x1 = input1[1,0] - input2[1,0]
+    return cas.vertcat(dotproduct, error_x0, error_x1)
+
+def diag(self,input):
+    return cas.vertcat(input[0,0], input[1,1], input[2,2])
+
+def check_solver(fatrop_solver):
+    try: # check if fatropy is installed, otherwise use ipopt
+        import fatropy
+        pass
+    except:
+        if fatrop_solver:
+            print("")
+            print("Fatrop solver is not installed! Using ipopt instead")
+            fatrop_solver = False
+    return fatrop_solver

@@ -4,8 +4,7 @@ import rockit
 import invariants_py.dynamics_invariants as dynamics
 import time
 from invariants_py.generate_trajectory import generate_initvals_from_bounds
-from invariants_py.check_solver import check_solver
-from ocp_helper import tril_vec, tril_vec_no_diag
+from invariants_py.ocp_helper import tril_vec, tril_vec_no_diag, check_solver
 
 class OCP_gen_pos:
 
@@ -262,12 +261,12 @@ class OCP_gen_pos:
         self.U_sol)
 
         invariants = np.array(self.U_sol).T
+        invariants = np.vstack((invariants, invariants[-1,:])) # make a N x 3 array by repeating last row
         calculated_trajectory = np.array(self.p_obj_sol).T
-        calculated_movingframe = 0# sol.sample(self.R_t_x,grid='control')
+        calculated_movingframe = np.reshape(np.vstack((self.R_t_x_sol, self.R_t_y_sol, self.R_t_z_sol)).T, (-1,3,3)) # make a N x 3 x 3 array
 
         return invariants, calculated_trajectory, calculated_movingframe
     
-
 
 if __name__ == "__main__":
 
@@ -291,3 +290,4 @@ if __name__ == "__main__":
     print("Invariants:", invariants)
     print("Calculated Trajectory:", calculated_trajectory)
     print("Calculated Moving Frame:", calculated_movingframe)
+

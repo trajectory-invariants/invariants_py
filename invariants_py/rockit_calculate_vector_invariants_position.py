@@ -1,8 +1,8 @@
 import numpy as np
 import casadi as cas
 import rockit
-from invariants_py import ocp_helper, dynamics_invariants, initialization, check_solver
-from invariants_py.check_solver import check_solver
+from invariants_py import ocp_helper, dynamics_invariants, initialization
+from invariants_py.ocp_helper import check_solver
 
 class OCP_calc_pos:
 

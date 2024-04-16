@@ -1,13 +1,9 @@
 import numpy as np
 import casadi as cas
 import invariants_py.dynamics_invariants as dynamics
+from invariants_py.ocp_helper import jerk_invariant
 
 class OCP_calc_pos:
-
-    def jerk_invariant(self, i1,i1dot,i1ddot,i2,i2dot,i3):
-        # This is the jerk of the trajectory expressed in terms of the invariants and their derivatives
-        jerk = cas.vertcat(-i1*i2**2 + i1ddot, -i1*i2dot - 2*i2*i1dot, i1*i2*i3)
-        return jerk
 
     def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_regul = (10**-6)*np.array([1.0, 1.0, 1.0]), planar_task = False):
 
@@ -116,7 +112,7 @@ class OCP_calc_pos:
         objective_reg = 0
         for k in range(window_len-1):
 
-            jk = self.jerk_invariant(i1[k],i1dot[k],i1ddot[k],i2[k],i2dot[k],i3[k])
+            jk = jerk_invariant(i1[k],i1dot[k],i1ddot[k],i2[k],i2dot[k],i3[k])
 
             #if k!=0:
             #    err_deriv = U[:,k] - U[:,k-1] # first-order finite backwards derivative (noise smoothing effect)
