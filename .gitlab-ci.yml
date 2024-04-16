@@ -2,18 +2,25 @@
 
 # Official language image. Look for the different tagged releases at:
 # https://hub.docker.com/r/library/python/tags/
-default:
-  image: python:3.9
+image: python:3.9
 
-install_and_test:
+cache:
+  paths:
+    - .cache/pip
+    - venv/
+
+before_script:
+  - python -V  # Print out python version for debugging
+  - pip install virtualenv
+  - virtualenv venv
+  - source venv/bin/activate
+
+install_invariants_py:
   script:
-    # invariants-py installation
-    - pip install virtualenv
-    - virtualenv venv
-    - source venv/bin/activate
     - pip install .
 
-    #fatrop installation
+install_fatrop:
+  script:
     - git clone https://github.com/meco-group/fatrop.git --recursive
     - cd fatrop
     - apt-get update && apt-get install -y cmake
@@ -23,16 +30,14 @@ install_and_test:
     - pip install .
     - cd ../..
 
-    # rockit and rockit-fatrop plugin installation
+install_rockit:
+  script:
     - git clone https://gitlab.kuleuven.be/meco-software/rockit.git
     - git clone https://gitlab.kuleuven.be/u0110259/rockit_fatrop_plugin.git ./rockit/rockit/external/fatrop
     - cd rockit
     - pip install .
     - cd ..
 
-    # Run examples
+run_examples:
+  script:
     - python run_all_scripts.py
-    #python -m pytest tests/
-
-
-
