@@ -3,9 +3,9 @@ import numpy as np
 from math import pi
 import casadi as cas
 import rockit
-import invariants_py.dynamics_invariants as dynamics
-from invariants_py import ocp_helper, initialization, SO3
-import time
+from invariants_py.dynamics_invariants import dyn_vector_invariants_rotation
+from invariants_py import SO3
+from invariants_py.initialization import initialize_VI_rot
 from invariants_py.ocp_helper import check_solver, tril_vec
 
 class OCP_calc_rot:
@@ -42,7 +42,7 @@ class OCP_calc_rot:
         h = ocp.parameter(1) # stepsize
         
         # Define system discrete dynamics (integrate current state + controls to obtain next state)
-        (R_r_plus1, R_obj_plus1) = dynamics.dyn_vector_invariants_rotation(R_r, R_obj, invars, h)
+        (R_r_plus1, R_obj_plus1) = dyn_vector_invariants_rotation(R_r, R_obj, invars, h)
         ocp.set_next(R_obj,R_obj_plus1)
         ocp.set_next(R_r,R_r_plus1)
             
@@ -139,7 +139,7 @@ class OCP_calc_rot:
         # Check if this is the first function call
         if self.first_time:
             # Initialize states and controls using measurements
-            self.solution,measured_rotations = initialization.initialize_VI_rot(measured_rotations)
+            self.solution,measured_rotations = initialize_VI_rot(measured_rotations)
             self.first_time = False
 
         measured_orientations = [measured_rotations[:,:,0].T,measured_rotations[:,:,1].T,measured_rotations[:,:,2].T]
@@ -159,12 +159,12 @@ class OCP_calc_rot:
 if __name__ == "__main__":
 
     # Test data
-    measured_orientations = SO3.random_traj(N=5) # TODO replace with something more realistic, now it will sometimes fail as well
+    measured_orientations = SO3.random_traj(N=3) # TODO replace with something more realistic, now it will sometimes fail
     timestep = 0.1
     
     # Specify OCP symbolically
     N = np.size(measured_orientations,0)
-    OCP = OCP_calc_rot(window_len=N,fatrop_solver=True)
+    OCP = OCP_calc_rot(window_len=N,fatrop_solver=False, rms_error_traj=10*pi/180)
 
     # Solve the OCP using the specified data
     calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_orientations, timestep)
