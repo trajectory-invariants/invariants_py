@@ -13,3 +13,5 @@ def tril_vec(input):
 def weighted_sum_of_squares(weights, var):
     return cas.dot(weights, var**2)
 
+def tril_vec_no_diag(input):
+    return cas.vertcat(input[1,0], input[2,0], input[2,1])

@@ -3,16 +3,12 @@ import casadi as cas
 import rockit
 import invariants_py.dynamics_invariants as dynamics
 import time
-import invariants_py.generate_trajectory as generate_trajectory
+from invariants_py.generate_trajectory import generate_initvals_from_bounds
 from invariants_py.check_solver import check_solver
+from ocp_helper import tril_vec, tril_vec_no_diag
 
 class OCP_gen_pos:
 
-    def tril_vec(self,input):
-        return cas.vertcat(input[0,0], input[1,1], input[2,2], input[1,0], input[2,0], input[2,1])
-    def tril_vec_no_diag(self,input):
-        return cas.vertcat(input[1,0], input[2,0], input[2,1])
-    
     def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, max_iters = 300, fatrop_solver = False, bounds_mf = True):
         fatrop_solver = check_solver(fatrop_solver)               
        
@@ -46,12 +42,12 @@ class OCP_gen_pos:
         #%% Specifying the constraints
         
         # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
-        ocp.subject_to(ocp.at_t0(self.tril_vec(R_t.T @ R_t - np.eye(3))==0.))
+        ocp.subject_to(ocp.at_t0(tril_vec(R_t.T @ R_t - np.eye(3))==0.))
         
         # Boundary constraints
         if bounds_mf:
-            ocp.subject_to(ocp.at_t0(self.tril_vec_no_diag(R_t.T @ R_t_start - np.eye(3))) == 0.)
-            ocp.subject_to(ocp.at_tf(self.tril_vec_no_diag(R_t.T @ R_t_end - np.eye(3)) == 0.))
+            ocp.subject_to(ocp.at_t0(tril_vec_no_diag(R_t.T @ R_t_start - np.eye(3))) == 0.)
+            ocp.subject_to(ocp.at_tf(tril_vec_no_diag(R_t.T @ R_t_end - np.eye(3)) == 0.))
         ocp.subject_to(ocp.at_t0(p_obj == p_obj_start))
         ocp.subject_to(ocp.at_tf(p_obj == p_obj_end))
 
@@ -112,13 +108,13 @@ class OCP_gen_pos:
         
         if bounds_mf == False:
             self.initialize_solver()
-            self.ocp_to_function()
+            self.transform_ocp_to_function()
 
         if fatrop_solver and bounds_mf == False:
             self.ocp._method.set_option("print_level",0)
             self.ocp._method.set_option("tol",1e-11)
 
-    def ocp_to_function(self):
+    def transform_ocp_to_function(self):
         # Transform the whole OCP to a Casadi function
         
         U_sampled = cas.MX()
@@ -236,7 +232,7 @@ class OCP_gen_pos:
 
         if self.first_window:
             # Initial values
-            initial_values = generate_trajectory.generate_initvals_from_bounds(boundary_constraints, self.window_len)
+            initial_values = generate_initvals_from_bounds(boundary_constraints, self.window_len)
             R_t_init = initial_values["moving-frames"]
             p_obj_init = initial_values["trajectory"]
             U_init = initial_values["invariants"]+0.001
@@ -263,10 +259,35 @@ class OCP_gen_pos:
         self.R_t_y_sol,
         self.R_t_z_sol,
         self.p_obj_sol,
-        self.U_sol,)
+        self.U_sol)
 
         invariants = np.array(self.U_sol).T
         calculated_trajectory = np.array(self.p_obj_sol).T
         calculated_movingframe = 0# sol.sample(self.R_t_x,grid='control')
 
         return invariants, calculated_trajectory, calculated_movingframe
+    
+
+
+if __name__ == "__main__":
+
+    # Create an instance of OCP_gen_pos
+    ocp = OCP_gen_pos(fatrop_solver=True, bounds_mf=False)
+
+    # Randomly chosen data
+    invariant_model = np.random.rand(100, 3)
+    boundary_constraints = {
+        "position": {
+            "initial": np.random.rand(3),
+            "final": np.random.rand(3)
+        }
+    }
+    step_size = 0.1
+
+    # Call the generate_trajectory function
+    invariants, calculated_trajectory, calculated_movingframe = ocp.generate_trajectory_online(invariant_model, boundary_constraints, step_size)
+
+    # Print the results
+    print("Invariants:", invariants)
+    print("Calculated Trajectory:", calculated_trajectory)
+    print("Calculated Moving Frame:", calculated_movingframe)
