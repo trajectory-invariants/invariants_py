@@ -151,8 +151,8 @@ class OCP_calc_rot:
         invars, R_obj_x_sol, R_obj_y_sol, R_obj_z_sol, R_t_x_sol, R_t_y_sol, R_t_z_sol,  = self.solution # unpack the results            
         invariants = np.array(invars).T # make a N-1 x 3 array
         invariants = np.vstack((invariants, invariants[-1,:])) # make a N x 3 array by repeating last row
-        calculated_trajectory = np.reshape(np.vstack((R_obj_x_sol, R_obj_y_sol, R_obj_z_sol)).T, (-1,3,3)) # make a N x 3 x 3 array
-        calculated_movingframe = np.reshape(np.vstack((R_t_x_sol, R_t_y_sol, R_t_z_sol)).T, (-1,3,3)) # make a N x 3 x 3 array
+        calculated_trajectory = np.reshape(np.hstack((R_obj_x_sol[:], R_obj_y_sol[:], R_obj_z_sol[:])), (-1,3,3)) # make a N x 3 x 3 array
+        calculated_movingframe = np.reshape(np.hstack((R_t_x_sol[:], R_t_y_sol[:], R_t_z_sol[:])), (-1,3,3)) # make a N x 3 x 3 array
         
         return invariants, calculated_trajectory, calculated_movingframe
 
