@@ -20,6 +20,7 @@ from invariants_py.orthonormalize_rotation import orthonormalize_rotation as ort
 import invariants_py.plotters as pl
 from invariants_py.reparameterization import interpR
 from invariants_py.initialization import FSr_init
+from invariants_py.ocp_helper import solution_check_rot
 
 #%%
 data_location = dh.find_data_path('beer_1.txt')
@@ -45,10 +46,12 @@ for i in indx:
 use_fatrop_solver = True # True = fatrop, False = ipopt
 
 # specify optimization problem symbolically
+rms_error_traj = 2*pi/180
 FS_calculation_problem = FS_calc(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180, fatrop_solver = use_fatrop_solver) 
 
 # calculate invariants given measurements
 invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants(trajectory,stepsize)
+solution_check_rot(trajectory_orientation,calculate_trajectory,rms_error_traj)
 
 init_vals_calculate_trajectory = calculate_trajectory
 init_vals_movingframes = movingframes
