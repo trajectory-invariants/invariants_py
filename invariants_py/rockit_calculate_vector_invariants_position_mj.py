@@ -175,7 +175,7 @@ class OCP_calc_pos:
                     
         invariants = np.array(np.vstack((self.i1_sol,self.i2_sol,self.i3_sol))).T
         calculated_trajectory = np.array(self.p_obj_sol).T
-        calculated_movingframe = np.reshape(np.vstack((self.R_t_x_sol, self.R_t_y_sol, self.R_t_z_sol)).T, (-1,3,3))
+        calculated_movingframe = np.reshape(np.hstack((R_t_x_sol[:], R_t_y_sol[:], R_t_z_sol[:])), (-1,3,3)) # make a N x 3 x 3 array
 
 
         return invariants, calculated_trajectory, calculated_movingframe

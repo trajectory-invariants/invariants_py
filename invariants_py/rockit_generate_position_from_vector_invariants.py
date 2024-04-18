@@ -263,7 +263,7 @@ class OCP_gen_pos:
         invariants = np.array(self.U_sol).T
         invariants = np.vstack((invariants, invariants[-1,:])) # make a N x 3 array by repeating last row
         calculated_trajectory = np.array(self.p_obj_sol).T
-        calculated_movingframe = np.reshape(np.vstack((self.R_t_x_sol, self.R_t_y_sol, self.R_t_z_sol)).T, (-1,3,3)) # make a N x 3 x 3 array
+        calculated_movingframe = np.reshape(np.hstack((self.R_t_x_sol[:], self.R_t_y_sol[:], self.R_t_z_sol[:])), (-1,3,3)) # make a N x 3 x 3 array
 
         return invariants, calculated_trajectory, calculated_movingframe
     
