@@ -1,12 +1,14 @@
 """
-Run all the Python scripts in the /examples and /tests folder to verify everything works, as well as the modules in invariants_py.
+Check all examples, tests, modules and notebooks to see if they run successfully
 """
 
 import os
 import subprocess
+import nbconvert
 
 # Directories containing the examples and tests
-directories = ["examples", "tests", "invariants_py"]
+directories = ["examples", "tests", "invariants_py", "notebooks"]
+#directories = ["notebooks"]
 
 # Initialize an empty list to hold examples and tests that fail to execute
 failed_scripts = []
@@ -20,7 +22,7 @@ def run_scripts(directory):
     failed_scripts_local = []
     for root, dirs, files in os.walk(directory):
         # Get a list of all Python scripts in the current directory
-        scripts = [f for f in files if f.endswith('.py')]
+        scripts = [f for f in files if f.endswith('.py') or f.endswith('.ipynb')]
 
         # Iterate over each script
         for script in scripts:
@@ -32,7 +34,12 @@ def run_scripts(directory):
 
             # Try to execute the script
             try:
-                subprocess.check_output(["python", script_path], env=my_env)
+                if script.endswith('.py'):
+                    subprocess.check_output(["python", script_path], env=my_env)
+                elif script.endswith('.ipynb'):
+                    subprocess.check_output(["jupyter", "nbconvert", "--execute", "--to", "notebook", script_path], env=my_env)
+                    # Delete the generated notebook
+                    os.remove(os.path.splitext(script_path)[0] + '.nbconvert.ipynb')
             except subprocess.CalledProcessError:
                 # If an error occurs, add the script to the list of failed scripts
                 failed_scripts_local.append(script_path)
