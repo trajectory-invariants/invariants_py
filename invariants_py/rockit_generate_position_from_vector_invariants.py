@@ -174,8 +174,20 @@ class OCP_gen_pos:
 
         return invariants, calculated_trajectory, calculated_movingframe    
 
-    def generate_trajectory(self,U_demo,p_obj_init,R_t_init,R_t_start,R_t_end,p_obj_start,p_obj_end, step_size, w_invars = (10**-3)*np.array([1.0, 1.0, 1.0]), w_high_start = 1, w_high_end = 0, w_high_invars = (10**-3)*np.array([1.0, 1.0, 1.0]), w_high_active = 0):
+    def generate_trajectory(self,U_demo,p_obj_init,R_t_init,R_t_start,R_t_end,p_obj_start,p_obj_end, step_size, weights_params):
         
+        # Get the weights for the invariants or set default values
+        w_invars = weights_params.get('w_invars', (10**-3)*np.array([1.0, 1.0, 1.0]))
+        w_high_start = weights_params.get('w_high_start', 1)
+        w_high_end = weights_params.get('w_high_end', 0)
+        w_high_invars = weights_params.get('w_high_invars', (10**-3)*np.array([1.0, 1.0, 1.0]))
+        w_high_active = weights_params.get('w_high_active', 0)
+
+        # Set the weights for the invariants
+        weights = np.tile(w_invars, (len(U_demo), 1))
+        if w_high_active:
+            weights[w_high_start:w_high_end+1, :] = w_high_invars
+        self.ocp.set_value(self.w_invars, weights.T) 
 
         # Initialize states
         self.ocp.set_initial(self.p_obj, p_obj_init[:self.window_len,:].T)
@@ -195,29 +207,14 @@ class OCP_gen_pos:
         # Set values parameters
         self.ocp.set_value(self.h,step_size)
         self.ocp.set_value(self.U_demo, U_demo.T)   
-        weights = np.zeros((len(U_demo),3))
-        if w_high_active:
-            for i in range(len(U_demo)):
-                if i >= w_high_start and i <= w_high_end:
-                    weights[i,:] = w_high_invars
-                else:
-                    weights[i,:] = w_invars
-        else:
-            for i in range(len(U_demo)):
-                weights[i,:] = w_invars
-        self.ocp.set_value(self.w_invars, weights.T)  
-
 
         # Solve the NLP
         sol = self.ocp.solve()
         if self.fatrop:
             tot_time = self.ocp._method.myOCP.get_stats().time_total
         else:
-            tot_time = 0
-        
-        self.sol = sol
-        
-        
+            tot_time = 0 
+                
         # Extract the solved variables
         _,i_t1 = sol.sample(self.U[0],grid='control')
         _,i_t2 = sol.sample(self.U[1],grid='control')
@@ -227,7 +224,6 @@ class OCP_gen_pos:
         _,calculated_movingframe = sol.sample(self.R_t,grid='control')
         
         return invariants, calculated_trajectory, calculated_movingframe, tot_time
-    
 
 if __name__ == "__main__":
 
