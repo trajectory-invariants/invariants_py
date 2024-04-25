@@ -30,13 +30,13 @@ class OCP_gen_pos:
         h = ocp.parameter(1)
         
         # Boundary values
-        if boundary_constraints["moving-frame"]["initial"] is not None:
+        if "moving-frame" in boundary_constraints and "initial" in boundary_constraints["moving-frame"]:
             R_t_start = ocp.parameter(3,3)
-        if boundary_constraints["moving-frame"]["final"] is not None:
+        if "moving-frame" in boundary_constraints and "final" in boundary_constraints["moving-frame"]:
             R_t_end = ocp.parameter(3,3)
-        if boundary_constraints["position"]["initial"] is not None:
+        if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:
             p_obj_start = ocp.parameter(3)
-        if boundary_constraints["position"]["final"] is not None:
+        if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
             p_obj_end = ocp.parameter(3)
         
         U_demo = ocp.parameter(3,grid='control+') # model invariants
@@ -48,14 +48,16 @@ class OCP_gen_pos:
         ocp.subject_to(ocp.at_t0(tril_vec(R_t.T @ R_t - np.eye(3))==0.))
         
         # Boundary constraints
-        if boundary_constraints["moving-frame"]["initial"] is not None:
+        if "moving-frame" in boundary_constraints and "initial" in boundary_constraints["moving-frame"]:
             ocp.subject_to(ocp.at_t0(tril_vec_no_diag(R_t.T @ R_t_start - np.eye(3))) == 0.)
-        if boundary_constraints["moving-frame"]["final"] is not None:
+        if "moving-frame" in boundary_constraints and "final" in boundary_constraints["moving-frame"]:
             ocp.subject_to(ocp.at_tf(tril_vec_no_diag(R_t.T @ R_t_end - np.eye(3)) == 0.))
-        if boundary_constraints["position"]["initial"] is not None:    
+        if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:    
             ocp.subject_to(ocp.at_t0(p_obj == p_obj_start))
-        if boundary_constraints["position"]["final"] is not None:
+        if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
             ocp.subject_to(ocp.at_tf(p_obj == p_obj_end))
+
+
 
         # Dynamic constraints
         (R_t_plus1, p_obj_plus1) = dynamics.vector_invariants_position(R_t, p_obj, U, h)
@@ -87,20 +89,21 @@ class OCP_gen_pos:
             # ocp.solver('ipopt',{"print_time":True,"expand":True},{'tol':1e-4,'print_level':0,'ma57_automatic_scaling':'no','linear_solver':'mumps','max_iter':100})
 
         # Solve already once with dummy measurements
-        #ocp.set_initial(R_t_x, np.array([1,0,0]))                 
-        #ocp.set_initial(R_t_y, np.array([0,1,0]))                
-        #ocp.set_initial(R_t_z, np.array([0,0,1]))
-        #ocp.set_initial(U, 0.001+np.zeros((3,window_len)))
+        ocp.set_initial(R_t_x, np.array([1,0,0]))                 
+        ocp.set_initial(R_t_y, np.array([0,1,0]))                
+        ocp.set_initial(R_t_z, np.array([0,0,1]))
+        ocp.set_initial(U, 0.001+np.zeros((3,window_len)))
         ocp.set_value(h,0.1)
         ocp.set_value(U_demo, 0.001+np.zeros((3,window_len)))
         ocp.set_value(w_invars, 0.001+np.zeros((3,window_len)))
-        if boundary_constraints["moving-frame"]["initial"] is not None:
+        # Boundary constraints
+        if "moving-frame" in boundary_constraints and "initial" in boundary_constraints["moving-frame"]:
             ocp.set_value(R_t_start, np.eye(3))
-        if boundary_constraints["moving-frame"]["final"] is not None:
+        if "moving-frame" in boundary_constraints and "final" in boundary_constraints["moving-frame"]:
             ocp.set_value(R_t_end, np.eye(3))
-        if boundary_constraints["position"]["initial"] is not None:    
+        if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:
             ocp.set_value(p_obj_start, np.array([0,0,0]))
-        if boundary_constraints["position"]["final"] is not None:
+        if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
             ocp.set_value(p_obj_end, np.array([1,0,0]))
         ocp.solve_limited()
         
@@ -111,16 +114,17 @@ class OCP_gen_pos:
 
         bounds = []
         bounds_labels = []
-        if boundary_constraints["position"]["initial"] is not None:
+        # Boundary constraints
+        if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:
             bounds.append(ocp.value(p_obj_start))
             bounds_labels.append("p_obj_start")
-        if boundary_constraints["position"]["final"] is not None:
+        if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
             bounds.append(ocp.value(p_obj_end))
             bounds_labels.append("p_obj_end")
-        if boundary_constraints["moving-frame"]["initial"] is not None:
+        if "moving-frame" in boundary_constraints and "initial" in boundary_constraints["moving-frame"]:
             bounds.append(ocp.value(R_t_start))
             bounds_labels.append("R_t_start")
-        if boundary_constraints["moving-frame"]["final"] is not None:
+        if "moving-frame" in boundary_constraints and "final" in boundary_constraints["moving-frame"]:
             bounds.append(ocp.value(R_t_end))
             bounds_labels.append("R_t_end")
 
@@ -141,9 +145,9 @@ class OCP_gen_pos:
             ["invars2","p_obj2","R_t_x2","R_t_y2","R_t_z2"], # output labels for debugging
         )
 
-        if fatrop_solver:
-            ocp._method.set_option("print_level",0)
-            ocp._method.set_option("tol",1e-11)
+        #if fatrop_solver:
+            #ocp._method.set_option("print_level",0)
+            #ocp._method.set_option("tol",1e-11)
 
     def generate_trajectory_online(self, invariant_model, boundary_constraints, step_size):
         
@@ -158,6 +162,7 @@ class OCP_gen_pos:
         #print(self.solution)
 
         # Call solve function
+        #print(boundary_values_list)
         self.solution = self.ocp_function(step_size,invariant_model.T,w_invars,*boundary_values_list,*self.solution)
 
         # Return the results    
@@ -250,7 +255,17 @@ if __name__ == "__main__":
     invariants, calculated_trajectory, calculated_movingframe = ocp.generate_trajectory_online(invariant_model, boundary_constraints, step_size)
 
     # Print the results
-    print("Invariants:", invariants)
+    # print("Invariants:", invariants)
+    #print("Calculated Trajectory:", calculated_trajectory)
+    # print("Calculated Moving Frame:", calculated_movingframe)
+
+    # Second call to generate_trajectory_online
+    boundary_constraints["position"]["initial"] = np.array([1, 0, 0])
+    boundary_constraints["position"]["final"] = np.array([1, 2, 2])
+    invariants, calculated_trajectory, calculated_movingframe = ocp.generate_trajectory_online(invariant_model, boundary_constraints, step_size)
+
+    # Print the results
+    #print("Invariants:", invariants)
     print("Calculated Trajectory:", calculated_trajectory)
-    print("Calculated Moving Frame:", calculated_movingframe)
+    #print("Calculated Moving Frame:", calculated_movingframe)
 

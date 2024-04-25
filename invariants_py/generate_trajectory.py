@@ -12,7 +12,7 @@ def generate_initvals_from_bounds(boundary_constraints,N):
     # Generate corresponding initial invariants
     diff_vector = np.array(p1) - np.array(p0)
     L = np.linalg.norm(diff_vector)
-    initial_invariants = np.tile(np.array([[L],[0],[0]]),(1,N-1))
+    initial_invariants = np.tile(np.array([[L],[0.0001],[0.0001]]),(1,N-1))
 
     # Generate corresponding initial moving frames using Gram-Schmidt process
     e_x = diff_vector / L
