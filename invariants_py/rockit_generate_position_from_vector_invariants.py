@@ -155,6 +155,8 @@ class OCP_gen_pos:
             self.solution = generate_initvals_from_bounds(boundary_constraints, np.size(invariant_model,0))
             self.first_window = False
 
+        #print(self.solution)
+
         # Call solve function
         self.solution = self.ocp_function(step_size,invariant_model.T,w_invars,*boundary_values_list,*self.solution)
 
@@ -225,7 +227,8 @@ class OCP_gen_pos:
 if __name__ == "__main__":
 
     # Randomly chosen data
-    invariant_model = np.random.rand(100, 3)
+    N = 100
+    invariant_model = np.zeros((N,3))
 
     # Boundary constraints
     boundary_constraints = {
@@ -241,7 +244,7 @@ if __name__ == "__main__":
     step_size = 0.1
 
     # Create an instance of OCP_gen_pos
-    ocp = OCP_gen_pos(boundary_constraints,fatrop_solver=True)
+    ocp = OCP_gen_pos(boundary_constraints,fatrop_solver=True, window_len=N)
 
     # Call the generate_trajectory function
     invariants, calculated_trajectory, calculated_movingframe = ocp.generate_trajectory_online(invariant_model, boundary_constraints, step_size)

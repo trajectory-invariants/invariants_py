@@ -7,12 +7,12 @@ def generate_initvals_from_bounds(boundary_constraints,N):
     # Generate initial trajectory using linear interpolation
     p1 = boundary_constraints["position"]["final"]
     p0 = boundary_constraints["position"]["initial"]
-    initial_trajectory = np.linspace(p0, p1, N)
+    initial_trajectory = np.linspace(p0, p1, N).T
 
     # Generate corresponding initial invariants
     diff_vector = np.array(p1) - np.array(p0)
     L = np.linalg.norm(diff_vector)
-    initial_invariants = np.tile(np.array([L,0,0]),(N,1))
+    initial_invariants = np.tile(np.array([[L],[0],[0]]),(1,N-1))
 
     # Generate corresponding initial moving frames using Gram-Schmidt process
     e_x = diff_vector / L
@@ -28,11 +28,11 @@ def generate_initvals_from_bounds(boundary_constraints,N):
     #     "invariants": initial_invariants
     # }
 
-    R_t_x_sol = np.tile(e_x, (N, 1))
-    R_t_y_sol = np.tile(e_y, (N, 1))
-    R_t_z_sol = np.tile(e_z, (N, 1))
+    R_t_x_sol = np.tile(e_x, (N, 1)).T
+    R_t_y_sol = np.tile(e_y, (N, 1)).T
+    R_t_z_sol = np.tile(e_z, (N, 1)).T
 
-    return [initial_invariants.T, initial_trajectory, R_t_x_sol, R_t_y_sol, R_t_z_sol]
+    return [initial_invariants, initial_trajectory, R_t_x_sol, R_t_y_sol, R_t_z_sol]
 
 def generate_trajectory_translation(invariant_model, boundary_constraints, N=40):
     
