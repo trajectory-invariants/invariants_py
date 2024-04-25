@@ -149,11 +149,29 @@ class OCP_gen_pos:
             #ocp._method.set_option("print_level",0)
             #ocp._method.set_option("tol",1e-11)
 
-    def generate_trajectory_online(self, invariant_model, boundary_constraints, step_size):
+    def generate_trajectory_online(self, invariant_model, boundary_constraints, step_size, weights_params = {}):
         
-        boundary_values_list = [value for sublist in boundary_constraints.values() for value in sublist.values()]
+        # weights_params = {
+        # 'w_invars': (10**-3)*np.array([1.0, 1.0, 1.0]),
+        # 'w_high_start': 1,
+        # 'w_high_end': 0,
+        # 'w_high_invars': (10**-3)*np.array([1.0, 1.0, 1.0]),
+        # 'w_high_active': 0
+        # }
+        
+        # Get the weights for the invariants or set default values
+        w_invars = weights_params.get('w_invars', (10**-3)*np.array([1.0, 1.0, 1.0]))
+        w_high_start = weights_params.get('w_high_start', 1)
+        w_high_end = weights_params.get('w_high_end', 0)
+        w_high_invars = weights_params.get('w_high_invars', (10**-3)*np.array([1.0, 1.0, 1.0]))
+        w_high_active = weights_params.get('w_high_active', 0)
 
-        w_invars = (10**-2)*np.array([1.0*10**2, 1.0, 1.0])
+        # Set the weights for the invariants
+        w_invars = np.tile(w_invars, (len(invariant_model),1)).T
+        if w_high_active:
+            w_invars[:, w_high_start:w_high_end+1] = w_high_invars.reshape(-1, 1)
+
+        boundary_values_list = [value for sublist in boundary_constraints.values() for value in sublist.values()]
 
         if self.first_window:
             self.solution = generate_initvals_from_bounds(boundary_constraints, np.size(invariant_model,0))
