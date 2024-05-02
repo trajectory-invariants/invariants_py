@@ -106,6 +106,9 @@ else:
     invariant_model=model_invariants, initial_values=initial_values, boundary_constraints=boundary_constraints,
     step_size=new_stepsize, weights_params=weights)
 
+# print(new_invars)
+# input("Press Enter to continue...")
+
 if use_fatrop_solver:
     print('')
     print("TOTAL time to generate new trajectory: ")
@@ -184,6 +187,9 @@ while current_progress <= 1.0:
         fig_traj.canvas.draw()
         fig_traj.canvas.flush_events()
 
+    # print(new_invars)
+    # input("Press Enter to continue...")
+
     if show_plots:
         fig_invars.clf()
         ax_inv = fig_invars.add_subplot(131)
@@ -211,3 +217,6 @@ if show_plots:
 
 t1 = t.time()
 print(f"Total time: {t1 - t0} [s]")
+
+# print(new_invars)
+# input("Press Enter to continue...")
