@@ -20,19 +20,19 @@ def generate_initvals_from_bounds(boundary_constraints,N):
     e_y = e_y / np.linalg.norm(e_y)
     e_z = np.cross(e_x, e_y)
     R_mf = np.column_stack((e_x, e_y, e_z))
-    #initial_movingframes = np.tile(R_mf, (N,1,1)
+    initial_movingframes = np.tile(R_mf, (N,1,1))
 
-    # initial_values = {
-    #     "trajectory": initial_trajectory,
-    #     "moving-frames": initial_movingframes,
-    #     "invariants": initial_invariants
-    # }
+    initial_values = {
+         "trajectory": initial_trajectory.T,
+         "moving-frames": initial_movingframes,
+         "invariants": initial_invariants
+    }
 
     R_t_x_sol = np.tile(e_x, (N, 1)).T
     R_t_y_sol = np.tile(e_y, (N, 1)).T
     R_t_z_sol = np.tile(e_z, (N, 1)).T
 
-    return [initial_invariants, initial_trajectory, R_t_x_sol, R_t_y_sol, R_t_z_sol]
+    return [initial_invariants, initial_trajectory, R_t_x_sol, R_t_y_sol, R_t_z_sol], initial_values
 
 def generate_trajectory_translation(invariant_model, boundary_constraints, N=40):
     
@@ -40,7 +40,7 @@ def generate_trajectory_translation(invariant_model, boundary_constraints, N=40)
     OCP = OCP_gen_pos(N = N)
 
     # Initial values
-    initial_values = generate_initvals_from_bounds(boundary_constraints, N)
+    initial_values, initial_values_dict = generate_initvals_from_bounds(boundary_constraints, N)
 
     # Resample model invariants to desired number of N samples
     spline_invariant_model = sh.create_spline_model(invariant_model[:,0], invariant_model[:,1:])
@@ -48,7 +48,7 @@ def generate_trajectory_translation(invariant_model, boundary_constraints, N=40)
     model_invariants,progress_step = sh.interpolate_invariants(spline_invariant_model, progress_values)
     
     # Calculate remaining trajectory
-    invariants, trajectory, mf = OCP.generate_trajectory_global(model_invariants,initial_values,boundary_constraints,progress_step)
+    invariants, trajectory, mf = OCP.generate_trajectory_global(model_invariants,initial_values_dict,boundary_constraints,progress_step)
 
     return invariants, trajectory, mf, progress_values
 
