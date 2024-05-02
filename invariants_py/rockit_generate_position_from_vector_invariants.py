@@ -174,7 +174,7 @@ class OCP_gen_pos:
             #ocp._method.set_option("print_level",0)
             #ocp._method.set_option("tol",1e-11)
 
-    def generate_trajectory_online(self, invariant_model, boundary_constraints, step_size, weights_params = {}):
+    def generate_trajectory_online(self, invariant_model, boundary_constraints, step_size, weights_params = {}, initial_values = {}):
         
         # weights_params = {
         # 'w_invars': (10**-3)*np.array([1.0, 1.0, 1.0]),
@@ -198,8 +198,11 @@ class OCP_gen_pos:
 
         boundary_values_list = [value for sublist in boundary_constraints.values() for value in sublist.values()]
 
-        if self.first_window:
+        if self.first_window and not initial_values:
             self.solution,initvals_dict = generate_initvals_from_bounds(boundary_constraints, np.size(invariant_model,0))
+            self.first_window = False
+        elif self.first_window:
+            self.solution = [initial_values["invariants"], initial_values["trajectory"], initial_values["moving-frames"][:,:,:1], initial_values["moving-frames"][:,:,1], initial_values["moving-frames"][:,:,2]]
             self.first_window = False
 
         #print(self.solution)
