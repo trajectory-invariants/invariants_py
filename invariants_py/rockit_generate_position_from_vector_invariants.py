@@ -82,7 +82,9 @@ class OCP_gen_pos:
         ocp.add_objective(objective)
         if fatrop_solver:
             ocp.method(rockit.external_method('fatrop' , N=window_len-1))
-            ocp._method.set_name("/codegen/generation_position")
+
+            import random, string
+            ocp._method.set_name("/codegen/generation_position" + random.choice(string.ascii_lowercase))
         else:
             ocp.method(rockit.MultipleShooting(N=window_len-1))
             ocp.solver('ipopt', {'expand':True})
@@ -174,8 +176,10 @@ class OCP_gen_pos:
             #ocp._method.set_option("print_level",0)
             #ocp._method.set_option("tol",1e-11)
 
-    def generate_trajectory_online(self, invariant_model, boundary_constraints, step_size, weights_params = {}, initial_values = {}):
+    def generate_trajectory(self, invariant_model, boundary_constraints, step_size, weights_params = {}, initial_values = {}):
         
+        N = invariant_model.shape[0]
+
         # weights_params = {
         # 'w_invars': (10**-3)*np.array([1.0, 1.0, 1.0]),
         # 'w_high_start': 1,
@@ -202,7 +206,7 @@ class OCP_gen_pos:
             self.solution,initvals_dict = generate_initvals_from_bounds(boundary_constraints, np.size(invariant_model,0))
             self.first_window = False
         elif self.first_window:
-            self.solution = [initial_values["invariants"], initial_values["trajectory"], initial_values["moving-frames"][:,:,:1], initial_values["moving-frames"][:,:,1], initial_values["moving-frames"][:,:,2]]
+            self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["trajectory"][:N,:].T, initial_values["moving-frames"][:N,:,0].T, initial_values["moving-frames"][:N,:,1].T, initial_values["moving-frames"][:N,:,2].T]
             self.first_window = False
 
         #print(self.solution)
@@ -212,19 +216,30 @@ class OCP_gen_pos:
         self.solution = self.ocp_function(step_size,invariant_model.T,w_invars,*boundary_values_list,*self.solution)
 
         # Return the results    
-        invars, p_obj_sol, R_t_x_sol, R_t_y_sol, R_t_z_sol,  = self.solution # unpack the results            
+        invars, p_obj_sol, R_t_x_sol, R_t_y_sol, R_t_z_sol,  = self.solution # unpack the results     
+
+        print(p_obj_sol.shape)
+
         invariants = np.array(invars).T # make a N-1 x 3 array
         invariants = np.vstack((invariants, invariants[-1,:])) # make a N x 3 array by repeating last row
         calculated_trajectory = np.array(p_obj_sol).T # make a N x 3 array
         calculated_movingframe = np.reshape(np.hstack((R_t_x_sol[:], R_t_y_sol[:], R_t_z_sol[:])), (-1,3,3)) # make a N x 3 x 3 array
 
+        # # Solve the NLP
+        # sol = self.ocp.solve()
+        # if self.fatrop:
+        #      tot_time = self.ocp._method.myOCP.get_stats().time_total
+        # else:
+        #      tot_time = 0 
 
+        print(invariants.shape)
+        print(invariant_model.shape)
 
-        return invariants, calculated_trajectory, calculated_movingframe    
+        return invariants, calculated_trajectory, calculated_movingframe, 0
 
-    def generate_trajectory_OLD(self,U_demo,initial_values,boundary_constraints, step_size, weights_params):
+    def generate_trajectory_OLD(self,invariant_model,initial_values,boundary_constraints, step_size, weights_params):
         
-        N = np.size(U_demo,0)
+        N = np.size(invariant_model,0)
         
         p_obj_init = initial_values['trajectory']
         R_t_init = initial_values['moving-frames']
@@ -243,7 +258,7 @@ class OCP_gen_pos:
         w_high_active = weights_params.get('w_high_active', 0)
 
         # Set the weights for the invariants
-        weights = np.tile(w_invars, (len(U_demo), 1))
+        weights = np.tile(w_invars, (len(invariant_model), 1))
         if w_high_active:
             weights[w_high_start:w_high_end+1, :] = w_high_invars
         self.ocp.set_value(self.w_invars, weights.T) 
@@ -265,7 +280,7 @@ class OCP_gen_pos:
 
         # Set values parameters
         self.ocp.set_value(self.h,step_size)
-        self.ocp.set_value(self.U_demo, U_demo.T)   
+        self.ocp.set_value(self.U_demo, invariant_model.T)   
 
         # Solve the NLP
         sol = self.ocp.solve()
@@ -307,17 +322,17 @@ if __name__ == "__main__":
     ocp = OCP_gen_pos(boundary_constraints,fatrop_solver=True, window_len=N)
 
     # Call the generate_trajectory function
-    invariants, calculated_trajectory, calculated_movingframe = ocp.generate_trajectory_online(invariant_model, boundary_constraints, step_size)
+    invariants, calculated_trajectory, calculated_movingframe = ocp.generate_trajectory(invariant_model, boundary_constraints, step_size)
 
     # Print the results
     # print("Invariants:", invariants)
     #print("Calculated Trajectory:", calculated_trajectory)
     # print("Calculated Moving Frame:", calculated_movingframe)
 
-    # Second call to generate_trajectory_online
+    # Second call to generate_trajectory
     boundary_constraints["position"]["initial"] = np.array([1, 0, 0])
     boundary_constraints["position"]["final"] = np.array([1, 2, 2])
-    invariants, calculated_trajectory, calculated_movingframe = ocp.generate_trajectory_online(invariant_model, boundary_constraints, step_size)
+    invariants, calculated_trajectory, calculated_movingframe = ocp.generate_trajectory(invariant_model, boundary_constraints, step_size)
 
     # Print the results
     #print("Invariants:", invariants)
