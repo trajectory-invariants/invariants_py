@@ -84,19 +84,32 @@ pl.plot_interpolated_invariants(invariants, model_invariants, arclength_n, progr
 
 # new constraints
 current_index = round(current_progress*len(trajectory))
-p_obj_start = calculate_trajectory[current_index]
-p_obj_end = calculate_trajectory[-1] + np.array([0.1,0.05,0.05])
-R_FS_start = movingframes[current_index]
-R_FS_end = movingframes[-1]
+boundary_constraints = {
+    "position": {
+        "initial": calculate_trajectory[current_index],
+        "final": calculate_trajectory[-1] + np.array([0.1,0.05,0.05])
+    },
+    "moving-frame": {
+        "initial": movingframes[current_index],
+        "final": movingframes[-1]
+    },
+}
+initial_values = {
+    "trajectory": calculate_trajectory,
+    "moving-frames": movingframes,
+    "invariants": model_invariants,
+}
 
 
 # specify optimization problem symbolically
-FS_online_generation_problem = FS_gen(window_len=number_samples,fatrop_solver = use_fatrop_solver)
+FS_online_generation_problem = FS_gen(boundary_constraints, window_len=number_samples, fatrop_solver = use_fatrop_solver)
 
-w_invars_pos = np.array([5*10**1, 1.0, 1.0])
+weights = {}
+weights['w_invars'] = np.array([5*10**1, 1.0, 1.0])
 
 # Solve
-new_invars, new_trajectory, new_movingframes, tot_time_pos = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = calculate_trajectory, R_t_init = movingframes, R_t_start = R_FS_start, R_t_end = R_FS_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize, w_invars = w_invars_pos)
+new_invars, new_trajectory, new_movingframes, tot_time_pos = FS_online_generation_problem.generate_trajectory_OLD(U_demo = model_invariants, initial_values = initial_values, boundary_constraints = boundary_constraints, step_size = new_stepsize, weights_params = weights)
+
 if use_fatrop_solver:
     print('')
     print("TOTAL time to generate new trajectory: ")
@@ -122,7 +135,7 @@ if plt.get_backend() != 'agg':
 window_len = 20
 
 # specify optimization problem symbolically
-FS_online_generation_problem = FS_gen(window_len=window_len, fatrop_solver=use_fatrop_solver)
+FS_online_generation_problem = FS_gen(boundary_constraints, window_len=window_len, fatrop_solver=use_fatrop_solver)
 
 current_progress = 0.0
 old_progress = 0.0
@@ -146,13 +159,25 @@ while current_progress <= 1.0:
     
     # Boundary constraints
     current_index = round( (current_progress - old_progress) * len(calculate_trajectory))
-    p_obj_start = calculate_trajectory[current_index]
-    p_obj_end = trajectory[-1] - current_progress*np.array([-0.2, 0.0, 0.0])
-    R_FS_start = movingframes[current_index] 
-    R_FS_end = movingframes[-1] 
+
+    boundary_constraints = {
+        "position": {
+            "initial": calculate_trajectory[current_index],
+            "final": trajectory[-1] - current_progress*np.array([-0.2, 0.0, 0.0])
+        },
+        "moving-frame": {
+            "initial": movingframes[current_index],
+            "final":movingframes[-1]
+        },
+    }
+    initial_values = {
+        "trajectory": calculate_trajectory,
+        "moving-frames": movingframes,
+        "invariants": model_invariants,
+    }
 
     # Calculate remaining trajectory
-    new_invars, calculate_trajectory, movingframes, tot_time_pos = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = calculate_trajectory, R_t_init = movingframes, R_t_start = R_FS_start, R_t_end = R_FS_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize, w_invars = w_invars_pos)
+    new_invars, calculate_trajectory, movingframes, tot_time_pos = FS_online_generation_problem.generate_trajectory_OLD(U_demo = model_invariants, initial_values=initial_values, boundary_constraints=boundary_constraints, step_size = new_stepsize, weights_params = weights)
     if use_fatrop_solver:
         print('')
         print("TOTAL time to generate new trajectory: ")

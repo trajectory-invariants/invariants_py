@@ -145,6 +145,31 @@ class OCP_gen_pos:
             ["invars2","p_obj2","R_t_x2","R_t_y2","R_t_z2"], # output labels for debugging
         )
 
+        # Save variables
+        # Save variables (only needed for old way of trajectory generation)
+        self.R_t_x = R_t_x
+        self.R_t_y = R_t_y
+        self.R_t_z = R_t_z
+        self.R_t = R_t
+        self.p_obj = p_obj
+        self.U = U
+        self.U_demo = U_demo
+        self.w_invars = w_invars
+        if "moving-frame" in boundary_constraints and "initial" in boundary_constraints["moving-frame"]:
+            self.R_t_start = R_t_start
+        if "moving-frame" in boundary_constraints and "final" in boundary_constraints["moving-frame"]:
+            self.R_t_end = R_t_end
+        if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:
+            self.p_obj_start = p_obj_start
+        if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
+            self.p_obj_end = p_obj_end
+        self.h = h
+        self.window_len = window_len
+        self.ocp = ocp
+        self.sol = None
+        self.first_window = True
+        self.fatrop = fatrop_solver
+
         #if fatrop_solver:
             #ocp._method.set_option("print_level",0)
             #ocp._method.set_option("tol",1e-11)
@@ -174,7 +199,7 @@ class OCP_gen_pos:
         boundary_values_list = [value for sublist in boundary_constraints.values() for value in sublist.values()]
 
         if self.first_window:
-            self.solution = generate_initvals_from_bounds(boundary_constraints, np.size(invariant_model,0))
+            self.solution,initvals_dict = generate_initvals_from_bounds(boundary_constraints, np.size(invariant_model,0))
             self.first_window = False
 
         #print(self.solution)
@@ -190,10 +215,23 @@ class OCP_gen_pos:
         calculated_trajectory = np.array(p_obj_sol).T # make a N x 3 array
         calculated_movingframe = np.reshape(np.hstack((R_t_x_sol[:], R_t_y_sol[:], R_t_z_sol[:])), (-1,3,3)) # make a N x 3 x 3 array
 
+
+
         return invariants, calculated_trajectory, calculated_movingframe    
 
-    def generate_trajectory(self,U_demo,p_obj_init,R_t_init,R_t_start,R_t_end,p_obj_start,p_obj_end, step_size, weights_params):
+    def generate_trajectory_OLD(self,U_demo,initial_values,boundary_constraints, step_size, weights_params):
         
+        N = np.size(U_demo,0)
+        
+        p_obj_init = initial_values['trajectory']
+        R_t_init = initial_values['moving-frames']
+        U_init = initial_values['invariants']
+
+        R_t_start = boundary_constraints["moving-frame"]["initial"]
+        R_t_end = boundary_constraints["moving-frame"]["final"]
+        p_obj_start = boundary_constraints["position"]["initial"]
+        p_obj_end = boundary_constraints["position"]["final"]
+
         # Get the weights for the invariants or set default values
         w_invars = weights_params.get('w_invars', (10**-3)*np.array([1.0, 1.0, 1.0]))
         w_high_start = weights_params.get('w_high_start', 1)
@@ -214,7 +252,7 @@ class OCP_gen_pos:
         self.ocp.set_initial(self.R_t_z, R_t_init[:self.window_len,:,2].T)
             
         # Initialize controls
-        self.ocp.set_initial(self.U,U_demo[:-1,:].T)
+        self.ocp.set_initial(self.U,U_init[:-1,:].T)
 
         # Set values boundary constraints
         self.ocp.set_value(self.R_t_start,R_t_start)
