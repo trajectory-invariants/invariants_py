@@ -322,7 +322,7 @@ if __name__ == "__main__":
     ocp = OCP_gen_pos(boundary_constraints,fatrop_solver=True, window_len=N)
 
     # Call the generate_trajectory function
-    invariants, calculated_trajectory, calculated_movingframe = ocp.generate_trajectory(invariant_model, boundary_constraints, step_size)
+    invariants, calculated_trajectory, calculated_movingframe, solve_time = ocp.generate_trajectory(invariant_model, boundary_constraints, step_size)
 
     # Print the results
     # print("Invariants:", invariants)
@@ -332,7 +332,7 @@ if __name__ == "__main__":
     # Second call to generate_trajectory
     boundary_constraints["position"]["initial"] = np.array([1, 0, 0])
     boundary_constraints["position"]["final"] = np.array([1, 2, 2])
-    invariants, calculated_trajectory, calculated_movingframe = ocp.generate_trajectory(invariant_model, boundary_constraints, step_size)
+    invariants, calculated_trajectory, calculated_movingframe, solve_time = ocp.generate_trajectory(invariant_model, boundary_constraints, step_size)
 
     # Print the results
     #print("Invariants:", invariants)
