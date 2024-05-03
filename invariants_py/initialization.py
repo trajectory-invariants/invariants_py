@@ -87,12 +87,14 @@ def initialize_VI_pos(input_trajectory):
     Pdiff = np.vstack((Pdiff, Pdiff[-1]))
 
     [ex,ey,ez] = estimate_initial_frames(Pdiff)
-    R_t_x_sol =  ex.T 
-    R_t_y_sol =  ey.T 
-    R_t_z_sol =  ez.T 
+
+    R_t = np.zeros((3,3*N))
+    for i in range(N-1):
+        R_t[:,3*i:3*(i+1)] = np.array([ex[i,:],ey[i,:],ez[i,:]])   
+
     p_obj_sol =  measured_positions.T 
     invars = np.vstack((1e0*np.ones((1,N-1)),1e-1*np.ones((1,N-1)), 1e-12*np.ones((1,N-1))))
-    return [invars, p_obj_sol, R_t_x_sol, R_t_y_sol, R_t_z_sol], measured_positions
+    return [invars, p_obj_sol, R_t], measured_positions
 
 def initialize_VI_rot(input_trajectory):
 
