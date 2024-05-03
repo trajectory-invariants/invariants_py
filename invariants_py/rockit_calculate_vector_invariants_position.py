@@ -122,7 +122,7 @@ class OCP_calc_pos:
         invariants = np.array(invars).T # make a N-1 x 3 array
         invariants = np.vstack((invariants, invariants[-1,:])) # make a N x 3 array by repeating last row
         calculated_trajectory = np.array(p_obj_sol).T # make a N x 3 array
-        calculated_movingframe = np.transpose(np.reshape(R_t_sol.T, (N, 3, 3)), (0, 2, 1))
+        calculated_movingframe = np.transpose(np.reshape(R_t_sol.T, (-1, 3, 3)), (0, 2, 1))
         return invariants, calculated_trajectory, calculated_movingframe
     
 if __name__ == "__main__":
