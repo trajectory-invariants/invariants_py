@@ -120,6 +120,10 @@ class OCP_gen_rot:
         if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
             ocp.set_value(R_obj_end, rotate_x(np.pi/4))
         ocp.solve_limited() # code generation
+        if fatrop_solver:
+            tot_time = ocp._method.myOCP.get_stats().time_total
+        else:
+            tot_time = 0
 
         self.first_window = True
 
@@ -161,34 +165,60 @@ class OCP_gen_rot:
         )
 
         # Save variables
-        # self.R_r_x = R_r_x
-        # self.R_r_y = R_r_y
-        # self.R_r_z = R_r_z
-        # self.R_r = R_r
-        # self.R_obj_x = R_obj_x
-        # self.R_obj_y = R_obj_y
-        # self.R_obj_z = R_obj_z
-        # self.R_obj = R_obj
-        # self.invars = invars
-        # self.invars_demo = invars_demo
-        # self.w_invars = w_invars
-        # if bound_mf:
-        #     self.R_r_start = R_r_start
-        #     self.R_r_end = R_r_end
-        # self.R_obj_start = R_obj_start
-        # self.R_obj_end = R_obj_end
-        # self.h = h
-        # self.window_len = window_len
-        # self.ocp = ocp
-        # self.fatrop = fatrop_solver
+        self.R_r_x = R_r_x
+        self.R_r_y = R_r_y
+        self.R_r_z = R_r_z
+        self.R_r = R_r
+        self.R_obj_x = R_obj_x
+        self.R_obj_y = R_obj_y
+        self.R_obj_z = R_obj_z
+        self.R_obj = R_obj
+        self.invars = invars
+        self.invars_demo = invars_demo
+        self.w_invars = w_invars
+        if "moving-frame" in boundary_constraints and "initial" in boundary_constraints["moving-frame"]:
+            self.R_r_start = R_r_start
+        if "moving-frame" in boundary_constraints and "final" in boundary_constraints["moving-frame"]:
+            self.R_r_end = R_r_end
+        if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
+            self.R_obj_start = R_obj_start
+        if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
+            self.R_obj_end = R_obj_end
+        self.h = h
+        self.window_len = window_len
+        self.ocp = ocp
+        self.sol = None
+        self.first_window = True
+        self.fatrop = fatrop_solver
+        self.tot_time = tot_time
         
          
-    def generate_trajectory(self,invars_demo,R_obj_init,R_r_init,R_r_start,R_r_end,R_obj_start,R_obj_end,step_size, invars_init=None,w_invars = (10**-3)*np.array([1.0, 1.0, 1.0]), w_high_start = 1, w_high_end = 0, w_high_invars = (10**-3)*np.array([1.0, 1.0, 1.0]), w_high_active = 0):
-        #%%
-      
-        if invars_init is None:
-            invars_init = invars_demo
+    def generate_trajectory_OLD(self,invariant_model,boundary_constraints, step_size, weights_params,initial_values):
+
+        N = np.size(invariant_model,0)
         
+        R_obj_init = initial_values['trajectory']
+        R_r_init = initial_values['moving-frame']
+        invars_init = initial_values['invariants']
+
+        R_r_start = boundary_constraints["moving-frame"]["initial"]
+        R_r_end = boundary_constraints["moving-frame"]["final"]
+        R_obj_start = boundary_constraints["orientation"]["initial"]
+        R_obj_end = boundary_constraints["orientation"]["final"]
+
+        # Get the weights for the invariants or set default values
+        w_invars = weights_params.get('w_invars', (10**-3)*np.array([1.0, 1.0, 1.0]))
+        w_high_start = weights_params.get('w_high_start', 1)
+        w_high_end = weights_params.get('w_high_end', 0)
+        w_high_invars = weights_params.get('w_high_invars', (10**-3)*np.array([1.0, 1.0, 1.0]))
+        w_high_active = weights_params.get('w_high_active', 0)
+
+        # Set the weights for the invariants
+        weights = np.tile(w_invars, (len(invariant_model), 1))
+        if w_high_active:
+            weights[w_high_start:w_high_end+1, :] = w_high_invars
+        self.ocp.set_value(self.w_invars, weights.T) 
+
         # Initialize states
         self.ocp.set_initial(self.R_obj_x, R_obj_init[:self.window_len,:,0].T) 
         self.ocp.set_initial(self.R_obj_y, R_obj_init[:self.window_len,:,1].T) 
@@ -198,38 +228,25 @@ class OCP_gen_rot:
         self.ocp.set_initial(self.R_r_z, R_r_init[:self.window_len,:,2].T) 
             
         # Initialize controls
-        self.ocp.set_initial(self.invars,invars_init[:-1,:].T)
+        self.ocp.set_initial(self.invars,invars_init.T)
 
         # Set values boundary constraints
         self.ocp.set_value(self.R_r_start,R_r_start)
         self.ocp.set_value(self.R_r_end,R_r_end)
         self.ocp.set_value(self.R_obj_start,R_obj_start)
         self.ocp.set_value(self.R_obj_end,R_obj_end)
-                
+
         # Set values parameters
         self.ocp.set_value(self.h,step_size)
-        self.ocp.set_value(self.invars_demo, invars_demo.T)     
-        weights = np.zeros((len(invars_demo),3))
-        if w_high_active:
-            for i in range(len(invars_demo)):
-                if i >= w_high_start and i <= w_high_end:
-                    weights[i,:] = w_high_invars
-                else:
-                    weights[i,:] = w_invars
-        else:
-            for i in range(len(invars_demo)):
-                weights[i,:] = w_invars
-        self.ocp.set_value(self.w_invars, weights.T) 
+        self.ocp.set_value(self.invars_demo, invariant_model.T)  
 
         # Solve the NLP
         sol = self.ocp.solve()
-        if self.fatrop:
-            tot_time = self.ocp._method.myOCP.get_stats().time_total
-        else:
-            tot_time = 0
-        
-        self.sol = sol
-              
+        # if self.fatrop:
+        #     tot_time = self.ocp._method.myOCP.get_stats().time_total
+        # else:
+        #     tot_time = 0
+                      
         # Extract the solved variables
         _,i_r1 = sol.sample(self.invars[0],grid='control')
         _,i_r2 = sol.sample(self.invars[1],grid='control')
@@ -238,21 +255,36 @@ class OCP_gen_rot:
         _,calculated_trajectory = sol.sample(self.R_obj,grid='control')
         _,calculated_movingframe = sol.sample(self.R_r,grid='control')
                 
-        return invariants, calculated_trajectory, calculated_movingframe, tot_time
+        return invariants, calculated_trajectory, calculated_movingframe, self.tot_time
     
-    def generate_trajectory_online(self, invariant_model, boundary_constraints, step_size):
+    def generate_trajectory(self, invariant_model, boundary_constraints, step_size, weights_params = {}, initial_values = {}):
 
-        invars_demo = invariant_model
-        w_invars = (10**-3)*np.array([1.0, 1.0, 1.0])
+        N = invariant_model.shape[0]
+
+        # Get the weights for the invariants or set default values
+        w_invars = weights_params.get('w_invars', (10**-3)*np.array([1.0, 1.0, 1.0]))
+        w_high_start = weights_params.get('w_high_start', 1)
+        w_high_end = weights_params.get('w_high_end', 0)
+        w_high_invars = weights_params.get('w_high_invars', (10**-3)*np.array([1.0, 1.0, 1.0]))
+        w_high_active = weights_params.get('w_high_active', 0)
+
+        # Set the weights for the invariants
+        w_invars = np.tile(w_invars, (len(invariant_model),1)).T
+        if w_high_active:
+            w_invars[:, w_high_start:w_high_end+1] = w_high_invars.reshape(-1, 1)
 
         boundary_values_list = [value for sublist in boundary_constraints.values() for value in sublist.values()]
 
-        if self.first_window:
-            self.solution = generate_initvals_from_bounds_rot(boundary_constraints, np.size(invars_demo,0))
+        if self.first_window and not initial_values:
+            self.solution = generate_initvals_from_bounds_rot(boundary_constraints, np.size(invariant_model,0))
+            self.first_window = False
+        elif self.first_window:
+            self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["moving-frame"][:N,:,0].T, initial_values["moving-frame"][:N,:,1].T, initial_values["moving-frame"][:N,:,2].T, initial_values["trajectory"][:N,:,0].T, initial_values["trajectory"][:N,:,1].T, initial_values["trajectory"][:N,:,2].T]
             self.first_window = False
 
+
         # Call solve function
-        self.solution = self.ocp_function(invars_demo.T,w_invars,step_size,*boundary_values_list,*self.solution)
+        self.solution = self.ocp_function(invariant_model.T,w_invars,step_size,*boundary_values_list,*self.solution)
 
         #Return the results
         invars_sol, R_r_x_sol, R_r_y_sol, R_r_z_sol, R_obj_x_sol, R_obj_y_sol, R_obj_z_sol = self.solution # unpack the results            
@@ -261,7 +293,7 @@ class OCP_gen_rot:
         calculated_trajectory = np.reshape(np.hstack((R_obj_x_sol[:], R_obj_y_sol[:], R_obj_z_sol[:])), (-1,3,3)) # make a N x 3 x 3 array
         calculated_movingframe = np.reshape(np.hstack((R_r_x_sol[:], R_r_y_sol[:], R_r_z_sol[:])), (-1,3,3)) # make a N x 3 x 3 array
 
-        return invariants, calculated_trajectory, calculated_movingframe
+        return invariants, calculated_trajectory, calculated_movingframe, self.tot_time
     
 if __name__ == "__main__":
 
@@ -286,7 +318,7 @@ if __name__ == "__main__":
     ocp = OCP_gen_rot(boundary_constraints,fatrop_solver=True, window_len=N)
 
     # Call the generate_trajectory function
-    invariants, calculated_trajectory, calculated_movingframe = ocp.generate_trajectory_online(invariant_model, boundary_constraints, step_size)
+    invariants, calculated_trajectory, calculated_movingframe = ocp.generate_trajectory(invariant_model, boundary_constraints, step_size)
 
     # Print the results
     print("Invariants_start:", invariants[0])
@@ -300,7 +332,7 @@ if __name__ == "__main__":
     # Second call to generate_trajectory_online
     boundary_constraints["orientation"]["initial"] = boundary_constraints["orientation"]["final"]
     boundary_constraints["orientation"]["final"] = rotate_x(np.pi/8)
-    invariants, calculated_trajectory, calculated_movingframe = ocp.generate_trajectory_online(invariant_model, boundary_constraints, step_size)
+    invariants, calculated_trajectory, calculated_movingframe = ocp.generate_trajectory(invariant_model, boundary_constraints, step_size)
 
     # Print the results
     print("Invariants_start:", invariants[0])

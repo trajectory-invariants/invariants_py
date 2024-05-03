@@ -105,19 +105,23 @@ R_obj_end =  orthonormalize(rotate.as_matrix() @ calculate_trajectory[-1])
 # R_r_start = orthonormalize(movingframes[current_index])
 # R_r_end = orthonormalize(movingframes[-1])
 
-
-# specify optimization problem symbolically
-FS_online_generation_problem = FS_gen(window_len=number_samples, fatrop_solver = use_fatrop_solver)
-
 # Linear initialization
 R_obj_init = interpR(np.linspace(0, 1, len(calculate_trajectory)), [0,1], np.array([R_obj_start, R_obj_end]))
 
 R_r_init, R_r_init_array, invars_init = FSr_init(R_obj_start, R_obj_end)
 
-w_invars_rot = 10**2*np.array([10**1, 1.0, 1.0])
+initial_values = {"invariants": invars_init, "trajectory": R_obj_init, "moving-frame": R_r_init_array}
+
+weight_params = {"w_invars": 10**2*np.array([10**1, 1.0, 1.0])}
+
+boundary_constraints = {"orientation": {"initial": R_obj_start, "final": R_obj_end}, "moving-frame": {"initial": R_r_init, "final": R_r_init}}
+
+# specify optimization problem symbolically
+FS_online_generation_problem = FS_gen(boundary_constraints, number_samples, fatrop_solver = use_fatrop_solver)
 
 # Solve
-new_invars, new_trajectory, new_movingframes, tot_time_rot = FS_online_generation_problem.generate_trajectory(invars_demo = model_invariants*0., invars_init = invars_init, R_obj_init = R_obj_init, R_r_init = R_r_init_array, R_r_start = R_r_init, R_r_end = R_r_init, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
+new_invars, new_trajectory, new_movingframes, tot_time_rot = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weight_params,initial_values)
+
 if use_fatrop_solver:
     print('')
     print("TOTAL time to generate new trajectory: ")
@@ -158,19 +162,20 @@ if plt.get_backend() != 'agg':
 window_len = 20
 
 # specify optimization problem symbolically
-FS_online_generation_problem = FS_gen(window_len=window_len, fatrop_solver = use_fatrop_solver)
+FS_online_generation_problem2 = FS_gen(boundary_constraints, window_len, fatrop_solver = use_fatrop_solver)
 
 current_progress = 0.0
 old_progress = 0.0
 
-R_obj_end = calculate_trajectory[-1] # initialise R_obj_end with end point of reconstructed trajectory
-iterative_trajectory = calculate_trajectory.copy()
-iterative_movingframes = movingframes.copy()
+# plt.ion()  # Interactive plotting
+# fig_traj = plt.figure(figsize=(8, 8))
+# fig_invars = plt.figure(figsize=(12, 4))
+
+R_obj_end = calculate_trajectory[-1]
 trajectory_position_iter = trajectory_position.copy()
 fig_invars = plt.figure(figsize=(10, 6))
 fig = plt.figure(figsize=(14,8))
 ax = fig.add_subplot(111, projection='3d')
-
 while current_progress <= 1.0:
     
     print(f"current progress = {current_progress}")
@@ -180,43 +185,54 @@ while current_progress <= 1.0:
     model_invariants,new_stepsize = interpolate_model_invariants(spline_model_trajectory,progress_values)
     
     # Boundary constraints
-    current_index = round( (current_progress - old_progress) * len(iterative_trajectory))
-    R_obj_start = iterative_trajectory[current_index]
+    current_index = round( (current_progress - old_progress) * len(calculate_trajectory))
     rotate = R.from_euler('z', 30/window_len, degrees=True)
     R_obj_end =  orthonormalize(rotate.apply(R_obj_end))
-    R_r_start = iterative_movingframes[current_index] 
-    R_r_end = iterative_movingframes[-1] 
+    boundary_constraints = {"orientation": {"initial": calculate_trajectory[current_index], "final": R_obj_end}, "moving-frame": {"initial": movingframes[current_index], "final": movingframes[-1]}}
+
+    initial_values = {"invariants": model_invariants, "trajectory": calculate_trajectory, "moving-frame": movingframes}
 
     # Calculate remaining trajectory
-    new_invars, iterative_trajectory, iterative_movingframes, tot_time_rot = FS_online_generation_problem.generate_trajectory(invars_demo = model_invariants, R_obj_init = calculate_trajectory, R_r_init = movingframes, R_r_start = R_r_start, R_r_end = R_r_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize, w_invars = w_invars_rot)
+    new_invars, calculate_trajectory, movingframes, tot_time_rot = FS_online_generation_problem2.generate_trajectory_OLD(model_invariants,boundary_constraints,new_stepsize,weight_params,initial_values)
     if use_fatrop_solver:
         print('')
         print("TOTAL time to generate new trajectory: ")
         print(str(tot_time_rot) + '[s]')
 
-    for i in range(len(iterative_trajectory)):
-        iterative_trajectory[i] = orthonormalize(iterative_trajectory[i])
+    # fig_traj.clf()
+    # ax_traj = fig_traj.add_subplot(111, projection='3d')
+    # ax_traj.view_init(elev=26, azim=-40)
+    # ax_traj.plot(trajectory[:, 0], trajectory[:, 1], trajectory[:, 2], 'b')
+    # ax_traj.plot(calculate_trajectory[:, 0], calculate_trajectory[:, 1], calculate_trajectory[:, 2], 'r')
+    # fig_traj.canvas.draw()
+    # fig_traj.canvas.flush_events()
 
-    # Visualization
-    clear_output(wait=True)
+
+    for i in range(len(calculate_trajectory)):
+        calculate_trajectory[i] = orthonormalize(calculate_trajectory[i])
+
+    # NEED TO WORK ON THE VISUALIZATION!!!####################################
+    
+    # # Visualization
+    # clear_output(wait=True)
     
 
-    ax.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,2],'b')
-    for i in indx:
-        plot_stl(opener_location,trajectory_position[i,:],calculate_trajectory[i,:,:],colour="c",alpha=0.2,ax=ax)
-    cut_trajectory_position = trajectory_position_iter[current_index:,:]
-    interp = ip.interp1d(np.linspace(0,1,len(cut_trajectory_position)),cut_trajectory_position, axis = 0)
-    trajectory_position_iter = interp(np.linspace(0,1,len(iterative_trajectory)))
-    indx_iter = np.trunc(np.linspace(0,len(iterative_trajectory)-1,n_frames))
-    indx_iter = indx_iter.astype(int)
-    for i in indx_iter:
-        plot_3d_frame(trajectory_position_iter[i,:],iterative_trajectory[i,:,:],1,0.05,['red','green','blue'],ax)
-        plot_stl(opener_location,trajectory_position_iter[i,:],iterative_trajectory[i,:,:],colour="r",alpha=0.2,ax=ax)
+    # ax.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,2],'b')
+    # for i in indx:
+    #     plot_stl(opener_location,trajectory_position[i,:],calculate_trajectory[i,:,:],colour="c",alpha=0.2,ax=ax)
+    # cut_trajectory_position = trajectory_position_iter[current_index:,:]
+    # interp = ip.interp1d(np.linspace(0,1,len(cut_trajectory_position)),cut_trajectory_position, axis = 0)
+    # trajectory_position_iter = interp(np.linspace(0,1,len(calculate_trajectory)))
+    # indx_iter = np.trunc(np.linspace(0,len(calculate_trajectory)-1,n_frames))
+    # indx_iter = indx_iter.astype(int)
+    # for i in indx_iter:
+    #     plot_3d_frame(trajectory_position_iter[i,:],calculate_trajectory[i,:,:],1,0.05,['red','green','blue'],ax)
+    #     plot_stl(opener_location,trajectory_position_iter[i,:],calculate_trajectory[i,:,:],colour="r",alpha=0.2,ax=ax)
     
-    pl.plot_invariants(invariants,new_invars,arclength_n,progress_values,inv_type='FS_rot',fig=fig_invars)
+    # pl.plot_invariants(invariants,new_invars,arclength_n,progress_values,inv_type='FS_rot',fig=fig_invars)
 
-    if plt.get_backend() != 'agg':
-        plt.show()
+    # if plt.get_backend() != 'agg':
+    #     plt.show()
     
     old_progress = current_progress
     current_progress = old_progress + 1/window_len
