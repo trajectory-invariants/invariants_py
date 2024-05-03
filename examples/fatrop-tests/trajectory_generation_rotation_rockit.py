@@ -112,12 +112,12 @@ FS_online_generation_problem = FS_gen(window_len=number_samples, fatrop_solver =
 # Linear initialization
 R_obj_init = interpR(np.linspace(0, 1, len(calculate_trajectory)), [0,1], np.array([R_obj_start, R_obj_end]))
 
-R_r_init, R_r_init_array, U_init = FSr_init(R_obj_start, R_obj_end)
+R_r_init, R_r_init_array, invars_init = FSr_init(R_obj_start, R_obj_end)
 
 w_invars_rot = 10**2*np.array([10**1, 1.0, 1.0])
 
 # Solve
-new_invars, new_trajectory, new_movingframes, tot_time_rot = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants*0., U_init = U_init, R_obj_init = R_obj_init, R_r_init = R_r_init_array, R_r_start = R_r_init, R_r_end = R_r_init, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
+new_invars, new_trajectory, new_movingframes, tot_time_rot = FS_online_generation_problem.generate_trajectory(invars_demo = model_invariants*0., invars_init = invars_init, R_obj_init = R_obj_init, R_r_init = R_r_init_array, R_r_start = R_r_init, R_r_end = R_r_init, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
 if use_fatrop_solver:
     print('')
     print("TOTAL time to generate new trajectory: ")
@@ -188,7 +188,7 @@ while current_progress <= 1.0:
     R_r_end = iterative_movingframes[-1] 
 
     # Calculate remaining trajectory
-    new_invars, iterative_trajectory, iterative_movingframes, tot_time_rot = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, R_obj_init = calculate_trajectory, R_r_init = movingframes, R_r_start = R_r_start, R_r_end = R_r_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize, w_invars = w_invars_rot)
+    new_invars, iterative_trajectory, iterative_movingframes, tot_time_rot = FS_online_generation_problem.generate_trajectory(invars_demo = model_invariants, R_obj_init = calculate_trajectory, R_r_init = movingframes, R_r_start = R_r_start, R_r_end = R_r_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize, w_invars = w_invars_rot)
     if use_fatrop_solver:
         print('')
         print("TOTAL time to generate new trajectory: ")

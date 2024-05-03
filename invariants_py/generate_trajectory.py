@@ -1,6 +1,8 @@
 from invariants_py.opti_generate_position_from_vector_invariants import OCP_gen_pos
 import numpy as np
 import invariants_py.spline_handler as sh
+from invariants_py.reparameterization import interpR
+from invariants_py.initialization import FSr_init
 
 def generate_initvals_from_bounds(boundary_constraints,N):
     
@@ -29,6 +31,24 @@ def generate_initvals_from_bounds(boundary_constraints,N):
     }
 
     return initial_values
+
+def generate_initvals_from_bounds_rot(boundary_constraints,N):
+    R0 = boundary_constraints["orientation"]["initial"]
+    R1 = boundary_constraints["orientation"]["final"]
+    # Linear initialization
+    initial_trajectory = interpR(np.linspace(0, 1, N), [0,1], np.array([R0, R1]))
+
+    _, R_r_sol, initial_invariants = FSr_init(R0, R1)
+    R_r_sol_x = R_r_sol[:,:,0].T
+    R_r_sol_y = R_r_sol[:,:,1].T
+    R_r_sol_z = R_r_sol[:,:,2].T
+
+    R_obj_sol_x = initial_trajectory[:,:,0].T
+    R_obj_sol_y = initial_trajectory[:,:,1].T
+    R_obj_sol_z = initial_trajectory[:,:,2].T
+
+
+    return [initial_invariants.T, R_r_sol_x, R_r_sol_y, R_r_sol_z, R_obj_sol_x, R_obj_sol_y, R_obj_sol_z]
 
 def generate_trajectory_translation(invariant_model, boundary_constraints, N=40):
     

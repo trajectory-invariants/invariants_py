@@ -4,11 +4,14 @@ import rockit
 import invariants_py.dynamics_invariants as dynamics
 import time
 from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag, diffR, diag
+from SO3 import rotate_x
+from invariants_py.generate_trajectory import generate_initvals_from_bounds_rot
 
 class OCP_gen_rot:
 
 
-    def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, max_iters = 300, fatrop_solver = False):
+    def __init__(self, boundary_constraints, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, max_iters = 300, fatrop_solver = False):
+        
         fatrop_solver = check_solver(fatrop_solver)               
        
         #%% Create decision variables and parameters for the optimization problem
@@ -26,18 +29,22 @@ class OCP_gen_rot:
         R_r = cas.horzcat(R_r_x,R_r_y,R_r_z)
 
         # Define system controls (invariants at every time step)
-        U = ocp.control(3)
+        invars = ocp.control(3)
 
         # Define system parameters P (known values in optimization that need to be set right before solving)
         h = ocp.parameter(1)
         
         # Boundary values
-        R_r_start = ocp.parameter(3,3)
-        R_r_end = ocp.parameter(3,3)
-        R_obj_start = ocp.parameter(3,3)
-        R_obj_end = ocp.parameter(3,3)
+        if "moving-frame" in boundary_constraints and "initial" in boundary_constraints["moving-frame"]:
+            R_r_start = ocp.parameter(3,3)
+        if "moving-frame" in boundary_constraints and "final" in boundary_constraints["moving-frame"]:
+            R_r_end = ocp.parameter(3,3)
+        if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
+            R_obj_start = ocp.parameter(3,3)
+        if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
+            R_obj_end = ocp.parameter(3,3)
         
-        U_demo = ocp.parameter(3,grid='control',include_last=True) # model invariants
+        invars_demo = ocp.parameter(3,grid='control',include_last=True) # model invariants
         
         w_invars = ocp.parameter(3,grid='control',include_last=True) # weights for invariants
 
@@ -48,11 +55,14 @@ class OCP_gen_rot:
         ocp.subject_to(ocp.at_t0(tril_vec(R_obj.T @ R_obj - np.eye(3))==0.))
         
         # Boundary constraints
-        ocp.subject_to(ocp.at_t0(tril_vec_no_diag(R_r.T @ R_r_start - np.eye(3)) == 0.))
-        ocp.subject_to(ocp.at_t0(tril_vec_no_diag(R_obj.T @ R_obj_start - np.eye(3)) == 0.))
-
-        ocp.subject_to(ocp.at_tf(tril_vec_no_diag(R_r.T @ R_r_end - np.eye(3)) == 0.))
-        ocp.subject_to(ocp.at_tf(tril_vec_no_diag(R_obj.T @ R_obj_end - np.eye(3)) == 0.))
+        if "moving-frame" in boundary_constraints and "initial" in boundary_constraints["moving-frame"]:
+            ocp.subject_to(ocp.at_t0(tril_vec_no_diag(R_r.T @ R_r_start - np.eye(3)) == 0.))
+        if "moving-frame" in boundary_constraints and "final" in boundary_constraints["moving-frame"]:
+            ocp.subject_to(ocp.at_tf(tril_vec_no_diag(R_r.T @ R_r_end - np.eye(3)) == 0.))
+        if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
+            ocp.subject_to(ocp.at_t0(tril_vec_no_diag(R_obj.T @ R_obj_start - np.eye(3)) == 0.))
+        if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
+            ocp.subject_to(ocp.at_tf(tril_vec_no_diag(R_obj.T @ R_obj_end - np.eye(3)) == 0.))
 
         #ocp.subject_to(ocp.at_t0(R_r == R_r_start))
         #ocp.subject_to(ocp.at_t0(self.diffR(R_r,R_r_start)) == 0)
@@ -65,7 +75,7 @@ class OCP_gen_rot:
         #ocp.subject_to(ocp.at_tf(self.diffR(R_obj,R_obj_end)) == 0)
             
         # Dynamic constraints
-        (R_r_plus1, R_obj_plus1) = dynamics.dyn_vector_invariants_rotation(R_r, R_obj, U, h)
+        (R_r_plus1, R_obj_plus1) = dynamics.dyn_vector_invariants_rotation(R_r, R_obj, invars, h)
         # Integrate current state to obtain next state (next rotation and position)
         ocp.set_next(R_obj_x,R_obj_plus1[:,0])
         ocp.set_next(R_obj_y,R_obj_plus1[:,1])
@@ -77,7 +87,7 @@ class OCP_gen_rot:
         #%% Specifying the objective
 
         # Fitting constraint to remain close to measurements
-        objective = ocp.sum(1/window_len*cas.dot(w_invars*(U - U_demo),w_invars*(U - U_demo)),include_last=True)
+        objective = ocp.sum(1/window_len*cas.dot(w_invars*(invars - invars_demo),w_invars*(invars - invars_demo)),include_last=True)
 
         #%% Define solver and save variables
         ocp.add_objective(objective)
@@ -90,33 +100,94 @@ class OCP_gen_rot:
             ocp.solver('ipopt', {'expand':True, 'ipopt.print_info_string': 'yes'})
             # ocp.solver('ipopt',{"print_time":True,"expand":True},{'tol':1e-4,'print_level':0,'ma57_automatic_scaling':'no','linear_solver':'mumps','max_iter':100})
         
+        # Solve already once with dummy values for code generation (TODO: can this step be avoided somehow?)
+        ocp.set_initial(R_r_x, np.array([1,0,0]))
+        ocp.set_initial(R_r_y, np.array([0,1,0]))
+        ocp.set_initial(R_r_z, np.array([0,0,1]))
+        ocp.set_initial(invars, np.array([1,0.01,0.01]))
+        ocp.set_initial(R_obj_x, np.array([1,0,0]))
+        ocp.set_initial(R_obj_y, np.array([0,1,0]))
+        ocp.set_initial(R_obj_z, np.array([0,0,1]))
+        ocp.set_value(invars_demo, 0.001+np.zeros((3,window_len)))
+        ocp.set_value(w_invars, 0.001+np.zeros((3,window_len)))
+        ocp.set_value(h, 0.01)
+        if "moving-frame" in boundary_constraints and "initial" in boundary_constraints["moving-frame"]:
+            ocp.set_value(R_r_start, np.eye(3))
+        if "moving-frame" in boundary_constraints and "final" in boundary_constraints["moving-frame"]:
+            ocp.set_value(R_r_end, np.eye(3))
+        if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
+            ocp.set_value(R_obj_start, np.eye(3))
+        if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
+            ocp.set_value(R_obj_end, rotate_x(np.pi/4))
+        ocp.solve_limited() # code generation
+
+        self.first_window = True
+
+        # Encapsulate whole rockit specification in a casadi function
+        invars_sampled = ocp.sample(invars_demo, grid='control')[1] # sampled demonstration invariants
+        w_sampled = ocp.sample(w_invars, grid='control')[1] # sampled invariants weights 
+        h_value = ocp.value(h) # value of stepsize
+
+        bounds = []
+        bounds_labels = []
+        if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
+            bounds.append(ocp.value(R_obj_start))
+            bounds_labels.append("R_obj_start")
+        if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
+            bounds.append(ocp.value(R_obj_end))
+            bounds_labels.append("R_obj_end")
+        if "moving-frame" in boundary_constraints and "initial" in boundary_constraints["moving-frame"]:
+            bounds.append(ocp.value(R_r_start))
+            bounds_labels.append("R_r_start")
+        if "moving-frame" in boundary_constraints and "final" in boundary_constraints["moving-frame"]:
+            bounds.append(ocp.value(R_r_end))
+            bounds_labels.append("R_r_end")
+        
+        solution = [ocp.sample(invars, grid='control-')[1],
+            ocp.sample(R_r_x, grid='control')[1], # sampled FS frame (first axis)
+            ocp.sample(R_r_y, grid='control')[1], # sampled FS frame (second axis)
+            ocp.sample(R_r_z, grid='control')[1], # sampled FS frame (third axis)
+            ocp.sample(R_obj_x, grid='control')[1], # sampled object orientation (first axis)
+            ocp.sample(R_obj_y, grid='control')[1], # sampled object orientation (second axis)
+            ocp.sample(R_obj_z, grid='control')[1]] # sampled object orientation (third axis)
+
+        self.ocp = ocp # save the optimization problem locally, avoids problems when multiple rockit ocp's are created
+
+        self.ocp_function = self.ocp.to_function('ocp_function', 
+            [invars_sampled,w_sampled,h_value,*bounds,*solution], # inputs
+            [*solution], # outputs
+            ["invars","w_invars","stepsize",*bounds_labels,"invars1","R_r_x1","R_r_y1","R_r_z1","R_obj_x1","R_obj_y1","R_obj_z1"], # input labels for debugging
+            ["invars2","R_r_x2","R_r_y2","R_r_z2","R_obj_x2","R_obj_y2","R_obj_z2"], # output labels for debugging
+        )
+
         # Save variables
-        self.R_r_x = R_r_x
-        self.R_r_y = R_r_y
-        self.R_r_z = R_r_z
-        self.R_r = R_r
-        self.R_obj_x = R_obj_x
-        self.R_obj_y = R_obj_y
-        self.R_obj_z = R_obj_z
-        self.R_obj = R_obj
-        self.U = U
-        self.U_demo = U_demo
-        self.w_invars = w_invars
-        self.R_r_start = R_r_start
-        self.R_r_end = R_r_end
-        self.R_obj_start = R_obj_start
-        self.R_obj_end = R_obj_end
-        self.h = h
-        self.window_len = window_len
-        self.ocp = ocp
-        self.fatrop = fatrop_solver
+        # self.R_r_x = R_r_x
+        # self.R_r_y = R_r_y
+        # self.R_r_z = R_r_z
+        # self.R_r = R_r
+        # self.R_obj_x = R_obj_x
+        # self.R_obj_y = R_obj_y
+        # self.R_obj_z = R_obj_z
+        # self.R_obj = R_obj
+        # self.invars = invars
+        # self.invars_demo = invars_demo
+        # self.w_invars = w_invars
+        # if bound_mf:
+        #     self.R_r_start = R_r_start
+        #     self.R_r_end = R_r_end
+        # self.R_obj_start = R_obj_start
+        # self.R_obj_end = R_obj_end
+        # self.h = h
+        # self.window_len = window_len
+        # self.ocp = ocp
+        # self.fatrop = fatrop_solver
         
          
-    def generate_trajectory(self,U_demo,R_obj_init,R_r_init,R_r_start,R_r_end,R_obj_start,R_obj_end,step_size, U_init=None,w_invars = (10**-3)*np.array([1.0, 1.0, 1.0]), w_high_start = 1, w_high_end = 0, w_high_invars = (10**-3)*np.array([1.0, 1.0, 1.0]), w_high_active = 0):
+    def generate_trajectory(self,invars_demo,R_obj_init,R_r_init,R_r_start,R_r_end,R_obj_start,R_obj_end,step_size, invars_init=None,w_invars = (10**-3)*np.array([1.0, 1.0, 1.0]), w_high_start = 1, w_high_end = 0, w_high_invars = (10**-3)*np.array([1.0, 1.0, 1.0]), w_high_active = 0):
         #%%
       
-        if U_init is None:
-            U_init = U_demo
+        if invars_init is None:
+            invars_init = invars_demo
         
         # Initialize states
         self.ocp.set_initial(self.R_obj_x, R_obj_init[:self.window_len,:,0].T) 
@@ -127,7 +198,7 @@ class OCP_gen_rot:
         self.ocp.set_initial(self.R_r_z, R_r_init[:self.window_len,:,2].T) 
             
         # Initialize controls
-        self.ocp.set_initial(self.U,U_init[:-1,:].T)
+        self.ocp.set_initial(self.invars,invars_init[:-1,:].T)
 
         # Set values boundary constraints
         self.ocp.set_value(self.R_r_start,R_r_start)
@@ -137,16 +208,16 @@ class OCP_gen_rot:
                 
         # Set values parameters
         self.ocp.set_value(self.h,step_size)
-        self.ocp.set_value(self.U_demo, U_demo.T)     
-        weights = np.zeros((len(U_demo),3))
+        self.ocp.set_value(self.invars_demo, invars_demo.T)     
+        weights = np.zeros((len(invars_demo),3))
         if w_high_active:
-            for i in range(len(U_demo)):
+            for i in range(len(invars_demo)):
                 if i >= w_high_start and i <= w_high_end:
                     weights[i,:] = w_high_invars
                 else:
                     weights[i,:] = w_invars
         else:
-            for i in range(len(U_demo)):
+            for i in range(len(invars_demo)):
                 weights[i,:] = w_invars
         self.ocp.set_value(self.w_invars, weights.T) 
 
@@ -160,11 +231,83 @@ class OCP_gen_rot:
         self.sol = sol
               
         # Extract the solved variables
-        _,i_r1 = sol.sample(self.U[0],grid='control')
-        _,i_r2 = sol.sample(self.U[1],grid='control')
-        _,i_r3 = sol.sample(self.U[2],grid='control')
+        _,i_r1 = sol.sample(self.invars[0],grid='control')
+        _,i_r2 = sol.sample(self.invars[1],grid='control')
+        _,i_r3 = sol.sample(self.invars[2],grid='control')
         invariants = np.array((i_r1,i_r2,i_r3)).T
         _,calculated_trajectory = sol.sample(self.R_obj,grid='control')
         _,calculated_movingframe = sol.sample(self.R_r,grid='control')
                 
         return invariants, calculated_trajectory, calculated_movingframe, tot_time
+    
+    def generate_trajectory_online(self, invariant_model, boundary_constraints, step_size):
+
+        invars_demo = invariant_model
+        w_invars = (10**-3)*np.array([1.0, 1.0, 1.0])
+
+        boundary_values_list = [value for sublist in boundary_constraints.values() for value in sublist.values()]
+
+        if self.first_window:
+            self.solution = generate_initvals_from_bounds_rot(boundary_constraints, np.size(invars_demo,0))
+            self.first_window = False
+
+        # Call solve function
+        self.solution = self.ocp_function(invars_demo.T,w_invars,step_size,*boundary_values_list,*self.solution)
+
+        #Return the results
+        invars_sol, R_r_x_sol, R_r_y_sol, R_r_z_sol, R_obj_x_sol, R_obj_y_sol, R_obj_z_sol = self.solution # unpack the results            
+        invariants = np.array(invars_sol).T
+        invariants = np.vstack((invariants, invariants[-1,:])) # make a N x 3 array by repeating last row
+        calculated_trajectory = np.reshape(np.hstack((R_obj_x_sol[:], R_obj_y_sol[:], R_obj_z_sol[:])), (-1,3,3)) # make a N x 3 x 3 array
+        calculated_movingframe = np.reshape(np.hstack((R_r_x_sol[:], R_r_y_sol[:], R_r_z_sol[:])), (-1,3,3)) # make a N x 3 x 3 array
+
+        return invariants, calculated_trajectory, calculated_movingframe
+    
+if __name__ == "__main__":
+
+    # Randomly chosen data
+    N = 100
+    invariant_model = np.ones((N,3))*[1,0.001,0.001]
+
+    # Boundary constraints
+    boundary_constraints = {
+        "orientation": {
+            "initial": np.eye(3),
+            "final": rotate_x(np.pi/6)
+        },
+        "moving-frame": {
+            "initial": np.eye(3),
+            "final": np.eye(3)
+        },
+    }
+    step_size = 0.1
+
+    # Create an instance of OCP_gen_pos
+    ocp = OCP_gen_rot(boundary_constraints,fatrop_solver=True, window_len=N)
+
+    # Call the generate_trajectory function
+    invariants, calculated_trajectory, calculated_movingframe = ocp.generate_trajectory_online(invariant_model, boundary_constraints, step_size)
+
+    # Print the results
+    print("Invariants_start:", invariants[0])
+    print("Invariants_end:", invariants[-1])
+    print("Calculated Trajectory_start:", calculated_trajectory[0])
+    print("Calculated Trajectory_end:", calculated_trajectory[-1])
+    print("Calculated Moving Frame_start:", calculated_movingframe[0])
+    print("Calculated Moving Frame_end:", calculated_movingframe[-1])
+    err1 = calculated_trajectory[-1].T @ boundary_constraints["orientation"]["final"]
+
+    # Second call to generate_trajectory_online
+    boundary_constraints["orientation"]["initial"] = boundary_constraints["orientation"]["final"]
+    boundary_constraints["orientation"]["final"] = rotate_x(np.pi/8)
+    invariants, calculated_trajectory, calculated_movingframe = ocp.generate_trajectory_online(invariant_model, boundary_constraints, step_size)
+
+    # Print the results
+    print("Invariants_start:", invariants[0])
+    print("Invariants_end:", invariants[-1])
+    print("Calculated Trajectory_start:", calculated_trajectory[0])
+    print("Calculated Trajectory_end:", calculated_trajectory[-1])
+    print("Calculated Moving Frame_start:", calculated_movingframe[0])
+    print("Calculated Moving Frame_end:", calculated_movingframe[-1])
+    print("Error1:", err1)
+    print("Error2:", calculated_trajectory[-1].T @ boundary_constraints["orientation"]["final"])
