@@ -122,9 +122,9 @@ class OCP_calc_pos:
         invariants = np.array(invars).T # make a N-1 x 3 array
         invariants = np.vstack((invariants, invariants[-1,:])) # make a N x 3 array by repeating last row
         calculated_trajectory = np.array(p_obj_sol).T # make a N x 3 array
-        calculated_movingframe = np.reshape(R_t_sol, (-1,3,3)) # make a N x 3 x 3 array
+        calculated_movingframe = np.transpose(np.reshape(R_t_sol.T, (N, 3, 3)), (0, 2, 1))
         return invariants, calculated_trajectory, calculated_movingframe
-
+    
 if __name__ == "__main__":
     # Test data
     measured_positions = np.array([[1, 2, 3], [4.1, 5.5, 6], [7, 8.5, 9], [10, 11.9, 12]])
@@ -147,6 +147,6 @@ if __name__ == "__main__":
     #print(calc_invariants)
     #print(np.size(calc_invariants))
     #print("Calculated Moving Frame:")
-    #print(calc_movingframes)
+    print(calc_movingframes)
     #print("Calculated Trajectory:")
     print(calc_trajectory)
