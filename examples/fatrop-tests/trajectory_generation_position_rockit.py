@@ -16,7 +16,7 @@ import scipy.interpolate as ip
 import invariants_py.plotters as pl
 
 t0 = t.time()
-show_plots = True
+show_plots = False
 use_fatrop_solver = True  # True = fatrop, False = ipopt
 ocp_to_func = True
 
@@ -147,6 +147,7 @@ while current_progress <= 1.0:
 
     # Boundary constraints
     current_index = round((current_progress - old_progress) * len(calculate_trajectory))
+    #boundary_constraints["position"]["initial"] = calculate_trajectory[current_index]
     boundary_constraints = {
         "position": {
             "initial": calculate_trajectory[current_index],
@@ -156,6 +157,7 @@ while current_progress <= 1.0:
             "initial": movingframes[current_index],
             "final": movingframes[-1]
         },
+        #  speed/acceleration values - velocity/(acceleration vectors) - moving frame
     }
     initial_values = {
         "trajectory": calculate_trajectory,

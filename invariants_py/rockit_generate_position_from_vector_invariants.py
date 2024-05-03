@@ -3,7 +3,7 @@ import casadi as cas
 import rockit
 import invariants_py.dynamics_invariants as dynamics
 import time
-from invariants_py.generate_trajectory import generate_initvals_from_bounds
+from invariants_py.initialization import generate_initvals_from_bounds
 from invariants_py.ocp_helper import tril_vec, tril_vec_no_diag, check_solver
 
 class OCP_gen_pos:

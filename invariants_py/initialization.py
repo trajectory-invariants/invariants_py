@@ -21,7 +21,37 @@ def FSr_init(R_obj_start,R_obj_end):
 
     return R_r_init, R_r_init_array, U_init
 
+def generate_initvals_from_bounds(boundary_constraints,N):
+    
+    # Generate initial trajectory using linear interpolation
+    p1 = boundary_constraints["position"]["final"]
+    p0 = boundary_constraints["position"]["initial"]
+    initial_trajectory = np.linspace(p0, p1, N).T
 
+    # Generate corresponding initial invariants
+    diff_vector = np.array(p1) - np.array(p0)
+    L = np.linalg.norm(diff_vector)
+    initial_invariants = np.tile(np.array([[L],[0.0001],[0.0001]]),(1,N-1))
+
+    # Generate corresponding initial moving frames using Gram-Schmidt process
+    e_x = diff_vector / L
+    e_y = np.array([0, 1, 0]) - np.dot(np.array([0, 1, 0]), e_x) * e_x
+    e_y = e_y / np.linalg.norm(e_y)
+    e_z = np.cross(e_x, e_y)
+    R_mf = np.column_stack((e_x, e_y, e_z))
+    initial_movingframes = np.tile(R_mf, (N,1,1))
+
+    initial_values = {
+         "trajectory": initial_trajectory.T,
+         "moving-frames": initial_movingframes,
+         "invariants": initial_invariants
+    }
+
+    R_t_x_sol = np.tile(e_x, (N, 1)).T
+    R_t_y_sol = np.tile(e_y, (N, 1)).T
+    R_t_z_sol = np.tile(e_z, (N, 1)).T
+
+    return [initial_invariants, initial_trajectory, R_t_x_sol, R_t_y_sol, R_t_z_sol], initial_values
 
 def calculate_velocity_from_discrete_rotations(R, timestamps):
     """
