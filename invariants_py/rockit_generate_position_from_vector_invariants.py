@@ -190,8 +190,8 @@ class OCP_gen_pos:
         
         # Get the weights for the invariants or set default values
         w_invars = weights_params.get('w_invars', (10**-3)*np.array([1.0, 1.0, 1.0]))
-        w_high_start = weights_params.get('w_high_start', 1)
-        w_high_end = weights_params.get('w_high_end', 0)
+        w_high_start = weights_params.get('w_high_start', N)
+        w_high_end = weights_params.get('w_high_end', N)
         w_high_invars = weights_params.get('w_high_invars', (10**-3)*np.array([1.0, 1.0, 1.0]))
         w_high_active = weights_params.get('w_high_active', 0)
 
@@ -206,7 +206,7 @@ class OCP_gen_pos:
             self.solution,initvals_dict = generate_initvals_from_bounds(boundary_constraints, np.size(invariant_model,0))
             self.first_window = False
         elif self.first_window:
-            self.solution = [invariant_model[:-1,:].T, initial_values["trajectory"][:N,:].T, initial_values["moving-frames"][:N,:,0].T, initial_values["moving-frames"][:N,:,1].T, initial_values["moving-frames"][:N,:,2].T]
+            self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["trajectory"][:N,:].T, initial_values["moving-frames"][:N,:,0].T, initial_values["moving-frames"][:N,:,1].T, initial_values["moving-frames"][:N,:,2].T]
             self.first_window = False
 
         #print(self.solution)

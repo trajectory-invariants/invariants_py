@@ -143,7 +143,7 @@ def generate_trajectory(data_location, optim_calc_results, p_obj_end, rotate, us
     initial_values = {
         "trajectory": optim_calc_results.Obj_pos,
         "moving-frames": optim_calc_results.FSt_frames,
-        "invariants": model_invariants,
+        "invariants": model_invariants[:,3:],
     }
 
     # specify optimization problem symbolically
