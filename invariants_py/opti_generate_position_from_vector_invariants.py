@@ -2,6 +2,8 @@ import numpy as np
 import casadi as cas
 import invariants_py.dynamics_invariants as dynamics
 from invariants_py import ocp_helper
+from invariants_py.initialization import generate_initvals_from_bounds
+from invariants_py import spline_handler as sh
 
 class OCP_gen_pos:
 
@@ -157,4 +159,21 @@ class OCP_gen_pos:
         
         return invariants, calculated_trajectory, calculated_movingframe
 
+def generate_trajectory_translation(invariant_model, boundary_constraints, N=40):
+    
+    # Specify optimization problem symbolically
+    OCP = OCP_gen_pos(N = N)
+
+    # Initial values
+    initial_values, initial_values_dict = generate_initvals_from_bounds(boundary_constraints, N)
+
+    # Resample model invariants to desired number of N samples
+    spline_invariant_model = sh.create_spline_model(invariant_model[:,0], invariant_model[:,1:])
+    progress_values = np.linspace(invariant_model[0,0],invariant_model[-1,0],N)
+    model_invariants,progress_step = sh.interpolate_invariants(spline_invariant_model, progress_values)
+    
+    # Calculate remaining trajectory
+    invariants, trajectory, mf = OCP.generate_trajectory_global(model_invariants,initial_values_dict,boundary_constraints,progress_step)
+
+    return invariants, trajectory, mf, progress_values
 
