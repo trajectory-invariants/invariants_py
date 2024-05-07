@@ -8,7 +8,7 @@ from invariants_py.ocp_helper import check_solver
 
 class OCP_calc_pos:
 
-    def __init__(self, nb_samples = 100, w_pos = 1, w_regul_jerk = 10**-6 , w_regul_invars = 10**-10, fatrop_solver = False):
+    def __init__(self, nb_samples = 100, w_pos = 1, w_regul_jerk = 10**-6 , w_regul_invars = 10**-10, fatrop_solver = False, planar_task = False):
         fatrop_solver = check_solver(fatrop_solver)               
 
         #%% Decision variables and parameters for the optimization problem 
@@ -50,6 +50,13 @@ class OCP_calc_pos:
         self.ocp.set_next(self.i1dot,self.i1dot + self.i1ddot * self.h)
         self.ocp.set_next(self.i2,self.i2 + self.i2dot * self.h)
                      
+        # Planar task constraint
+        if planar_task:
+            # Constraint the third axis of moving frame (binormal axis) lies along the vertical direction
+            # a . b > 0 -> a and b are pointing in the same direction
+            # a . b < 0 -> a and b are pointing in the opposite direction 
+            self.ocp.subject_to(cas.dot( self.R_t_z , np.array([0,0,1]) ) > 0)  
+
         #%% Objective function
         self.N_controls = nb_samples-1
 
