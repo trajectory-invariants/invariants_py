@@ -143,7 +143,13 @@ class OCP_calc_pos:
         #%%
         if self.first_window:
             N = self.N_controls
-            [ex,ey,ez] = initialization.estimate_initial_frames(measured_positions)
+
+            Pdiff = np.diff(measured_positions, axis=0)
+            Pdiff = np.vstack((Pdiff, Pdiff[-1]))
+            [ex,ey,ez] = initialization.estimate_initial_frames(Pdiff)
+
+            #[ex,ey,ez] = initialization.initialize_VI_pos(measured_positions)
+            
             self.R_t_x_sol =  ex.T 
             self.R_t_y_sol =  ey.T 
             self.R_t_z_sol =  ez.T 
@@ -186,8 +192,6 @@ class OCP_calc_pos:
 
 
         return invariants, calculated_trajectory, calculated_movingframe
-
-
 
         
     #%%     
