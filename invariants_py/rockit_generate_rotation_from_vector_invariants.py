@@ -41,7 +41,7 @@ class OCP_gen_rot:
             R_r_end = ocp.parameter(3,3)
         if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
             R_obj_start = ocp.parameter(3,3)
-        if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
+        if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
             R_obj_end = ocp.parameter(3,3)
         
         invars_demo = ocp.parameter(3,grid='control',include_last=True) # model invariants
@@ -318,7 +318,7 @@ if __name__ == "__main__":
     ocp = OCP_gen_rot(boundary_constraints,fatrop_solver=True, window_len=N)
 
     # Call the generate_trajectory function
-    invariants, calculated_trajectory, calculated_movingframe = ocp.generate_trajectory(invariant_model, boundary_constraints, step_size)
+    invariants, calculated_trajectory, calculated_movingframe, tot_time = ocp.generate_trajectory(invariant_model, boundary_constraints, step_size)
 
     # Print the results
     print("Invariants_start:", invariants[0])
@@ -332,7 +332,7 @@ if __name__ == "__main__":
     # Second call to generate_trajectory_online
     boundary_constraints["orientation"]["initial"] = boundary_constraints["orientation"]["final"]
     boundary_constraints["orientation"]["final"] = rotate_x(np.pi/8)
-    invariants, calculated_trajectory, calculated_movingframe = ocp.generate_trajectory(invariant_model, boundary_constraints, step_size)
+    invariants, calculated_trajectory, calculated_movingframe, tot_time = ocp.generate_trajectory(invariant_model, boundary_constraints, step_size)
 
     # Print the results
     print("Invariants_start:", invariants[0])

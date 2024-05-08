@@ -45,9 +45,6 @@ R_obj_end =  orthonormalize(rotate.as_matrix() @ optim_calc_results.Obj_frames[-
 # define new class for OCP results
 optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
 
-# specify optimization problem symbolically
-FS_online_generation_problem_rot = FS_gen_rot(window_len=number_samples, fatrop_solver = 1)
-
 # Linear initialization
 R_obj_init = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end]))
 # R_r_init = interpR(np.linspace(0, 1, len(optim_calc_results.FSr_frames)), [0,1], np.array([FSr_start, FSr_end]))
@@ -56,7 +53,7 @@ skew_angle = SO3.logm(R_obj_start.T @ R_obj_end)
 angle_vec_in_body = np.array([skew_angle[2,1],skew_angle[0,2],skew_angle[1,0]])
 angle_vec_in_world = R_obj_start@angle_vec_in_body
 angle_norm = np.linalg.norm(angle_vec_in_world)
-U_init = np.tile(np.array([angle_norm,0.001,0.001]),(100,1))
+invars_init = np.tile(np.array([angle_norm,0.001,0.001]),(number_samples-1,1))
 e_x_fs_init = angle_vec_in_world/angle_norm
 e_y_fs_init = [0,1,0]
 e_y_fs_init = e_y_fs_init - np.dot(e_y_fs_init,e_x_fs_init)*e_x_fs_init
@@ -65,12 +62,19 @@ e_z_fs_init = np.cross(e_x_fs_init,e_y_fs_init)
 R_fs_init = np.array([e_x_fs_init,e_y_fs_init,e_z_fs_init]).T
 
 R_fs_init_array = []
-for k in range(100):
+for k in range(number_samples):
     R_fs_init_array.append(R_fs_init)
 R_fs_init_array = np.array(R_fs_init_array)
 
+boundary_constraints = {"orientation": {"initial": R_obj_start, "final": R_obj_end}, "moving-frame": {"initial": R_fs_init, "final": R_fs_init}}
+
+initial_values = {"invariants": invars_init, "trajectory": R_obj_init, "moving-frame": R_fs_init_array}
+
+# specify optimization problem symbolically
+FS_online_generation_problem_rot = FS_gen_rot(boundary_constraints, number_samples, fatrop_solver = 1)
+
 # Solve
-optim_gen_results.invariants[:,:3], optim_gen_results.Obj_frames, optim_gen_results.FSr_frames, tot_time_rot = FS_online_generation_problem_rot.generate_trajectory(U_demo = model_invariants[:,:3]*0., U_init = U_init, R_obj_init = R_obj_init, R_r_init = R_fs_init_array, R_r_start = R_fs_init, R_r_end = R_fs_init, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
+optim_gen_results.invariants[:,:3], optim_gen_results.Obj_frames, optim_gen_results.FSr_frames, tot_time_rot = FS_online_generation_problem_rot.generate_trajectory(model_invariants[:,:3],boundary_constraints,new_stepsize,initial_values=initial_values)
 
 
 for i in range(len(optim_gen_results.Obj_frames)):

@@ -130,23 +130,29 @@ def generate_trajectory(data_location, optim_calc_results, p_obj_end, rotate, us
     # define new class for OCP results
     optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
 
-    # specify optimization problem symbolically
-    FS_online_generation_problem_pos = FS_gen_pos(window_len=number_samples, fatrop_solver = use_fatrop_solver)
-    FS_online_generation_problem_rot = FS_gen_rot(window_len=number_samples, fatrop_solver = use_fatrop_solver)
 
     # Linear initialization
     R_obj_init = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end]))
     
     if not traj_type == "position":
-        R_r_init, R_r_init_array, U_init = FSr_init(R_obj_start, R_obj_end)
+        R_r_init, R_r_init_array, invars_init = FSr_init(R_obj_start, R_obj_end)
+
+    boundary_constraints = {"orientation": {"final": R_obj_end}}
+
+    initial_values = {"invariants": invars_init, "trajectory": R_obj_init, "moving-frame": R_r_init_array}
+
 
     # Define OCP weights
     w_invars_pos = np.array([5*10**1, 1.0, 1.0])
-    w_invars_rot = 10**2*np.array([10**1, 1.0, 1.0])
+    weight_params = {"w_invars": 10**2*np.array([10**1, 1.0, 1.0])}
+    
+    # specify optimization problem symbolically
+    FS_online_generation_problem_pos = FS_gen_pos(window_len=number_samples, fatrop_solver = use_fatrop_solver)
+    FS_online_generation_problem_rot = FS_gen_rot(boundary_constraints, number_samples, fatrop_solver = use_fatrop_solver)
 
     # Solve
     if not traj_type == "position":
-        optim_gen_results.invariants[:,:3], optim_gen_results.Obj_frames, optim_gen_results.FSr_frames, tot_time_rot = FS_online_generation_problem_rot.generate_trajectory(U_demo = model_invariants[:,:3]*0., U_init = U_init, R_obj_init = R_obj_init, R_r_init = R_r_init_array, R_r_start = R_r_init, R_r_end = R_r_init, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
+        optim_gen_results.invariants[:,:3], optim_gen_results.Obj_frames, optim_gen_results.FSr_frames, tot_time_rot = FS_online_generation_problem_rot.generate_trajectory(model_invariants[:,:3],boundary_constraints,new_stepsize,weight_params,initial_values)
         if traj_type == "pose":
             optim_gen_results.invariants[:,3:], optim_gen_results.Obj_pos, optim_gen_results.FSt_frames, tot_time_pos = FS_online_generation_problem_pos.generate_trajectory(U_demo = model_invariants[:,3:], p_obj_init = optim_calc_results.Obj_pos, R_t_init = optim_calc_results.FSt_frames, R_t_start = FSt_start, R_t_end = FSt_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize, w_invars = w_invars_pos)
         else:
