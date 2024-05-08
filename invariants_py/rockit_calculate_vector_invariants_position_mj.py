@@ -35,7 +35,11 @@ class OCP_calc_pos:
         self.h = self.ocp.register_parameter(cas.MX.sym('step_size'))
 
         #%% Constraints
-        
+
+        # test initial constraint on position
+        self.ocp.subject_to(self.ocp.at_tf(self.p_obj == self.p_obj_m))
+        self.ocp.subject_to(self.ocp.at_t0(self.p_obj == self.p_obj_m))
+
         # Orthonormality of rotation matrix (only needed for one timestep, property is propagated by integrator)  
         self.ocp.subject_to(self.ocp.at_t0(ocp_helper.tril_vec(R_t.T @ R_t - np.eye(3))==0.))
 
@@ -141,7 +145,13 @@ class OCP_calc_pos:
         
     def calculate_invariants_online(self,measured_positions,stepsize,window_step=1):
         #%%
-        if self.first_window:
+        use_previous_solution = False 
+        # ---> Added by Arno, it might not be the best way to always use the previous solution as initialisation for the next window. 
+        # For example, if at one instance the solution does not converge, but instead diverges to a very nervous solution, 
+        # this solution would then be used as an initialisation for the next window, which is not desired. 
+        # We want to get rid of that 'outlier solution' as soon as possible to increase the overall robustness of this online calculation. 
+
+        if not(use_previous_solution) or self.first_window: 
             N = self.N_controls
 
             Pdiff = np.diff(measured_positions, axis=0)
