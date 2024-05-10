@@ -1,12 +1,13 @@
 import numpy as np
 import invariants_py.SO3 as SO3
+from invariants_py.reparameterization import interpR
 
-def FSr_init(R_obj_start,R_obj_end):
+def FSr_init(R_obj_start,R_obj_end,N=100):
     skew_angle = SO3.logm(R_obj_start.T @ R_obj_end)
     angle_vec_in_body = np.array([skew_angle[2,1],skew_angle[0,2],skew_angle[1,0]])
     angle_vec_in_world = R_obj_start@angle_vec_in_body
     angle_norm = np.linalg.norm(angle_vec_in_world)
-    U_init = np.tile(np.array([angle_norm,0.001,0.001]),(100,1))
+    U_init = np.tile(np.array([angle_norm,0.001,0.001]),(N-1,1))
     e_x_fs_init = angle_vec_in_world/angle_norm
     e_y_fs_init = [0,1,0]
     e_y_fs_init = e_y_fs_init - np.dot(e_y_fs_init,e_x_fs_init)*e_x_fs_init
@@ -15,7 +16,7 @@ def FSr_init(R_obj_start,R_obj_end):
     R_r_init = np.array([e_x_fs_init,e_y_fs_init,e_z_fs_init]).T
 
     R_r_init_array = []
-    for k in range(100):
+    for k in range(N):
         R_r_init_array.append(R_r_init)
     R_r_init_array = np.array(R_r_init_array)
 
@@ -52,6 +53,24 @@ def generate_initvals_from_bounds(boundary_constraints,N):
     R_t_z_sol = np.tile(e_z, (N, 1)).T
 
     return [initial_invariants, initial_trajectory, R_t_x_sol, R_t_y_sol, R_t_z_sol], initial_values
+
+def generate_initvals_from_bounds_rot(boundary_constraints,N):
+    R0 = boundary_constraints["orientation"]["initial"]
+    R1 = boundary_constraints["orientation"]["final"]
+    # Linear initialization
+    initial_trajectory = interpR(np.linspace(0, 1, N), [0,1], np.array([R0, R1]))
+
+    _, R_r_sol, initial_invariants = FSr_init(R0, R1)
+    R_r_sol_x = R_r_sol[:,:,0].T
+    R_r_sol_y = R_r_sol[:,:,1].T
+    R_r_sol_z = R_r_sol[:,:,2].T
+
+    R_obj_sol_x = initial_trajectory[:,:,0].T
+    R_obj_sol_y = initial_trajectory[:,:,1].T
+    R_obj_sol_z = initial_trajectory[:,:,2].T
+
+
+    return [initial_invariants.T, R_r_sol_x, R_r_sol_y, R_r_sol_z, R_obj_sol_x, R_obj_sol_y, R_obj_sol_z]
 
 def calculate_velocity_from_discrete_rotations(R, timestamps):
     """

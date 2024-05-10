@@ -405,7 +405,10 @@ def plot_invariants(invariants1, invariants2, progress1, progress2=[], inv_type=
                 if len(invariants2):
                     ax.plot(progress2, invariants2[:, i+3], 'r')
         for i in range(3):
-            ax = fig.add_subplot(131 + i, title=f'$i_{{r{i+1}}}$')
+            if inv_type == 'eFS':
+                ax = fig.add_subplot(2, 3, 1 + i, title=f'$i_{{r{i+1}}}$')
+            else:
+                ax = fig.add_subplot(1, 3, 1 + i, title=f'$i_{{r{i+1}}}$')
             ax.plot(progress1, invariants1[:, i], 'b')
             if len(invariants2):
                 ax.plot(progress2, invariants2[:, i], 'r')
