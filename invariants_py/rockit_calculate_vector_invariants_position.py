@@ -17,10 +17,7 @@ class OCP_calc_pos:
 
         # Define states
         p_obj = ocp.state(3,1) # object position
-        R_t_x = ocp.state(3,1) # Frenet-Serret frame, first axis
-        R_t_y = ocp.state(3,1) # Frenet-Serret frame, second axis
-        R_t_z = ocp.state(3,1) # Frenet-Serret frame, third axis
-        R_t = cas.horzcat(R_t_x,R_t_y,R_t_z)
+        R_t = ocp.state(3,3) # Frenet-Serret frame
 
         # Define controls
         invars = ocp.control(3) # three invariants [velocity | curvature rate | torsion rate]
@@ -33,9 +30,7 @@ class OCP_calc_pos:
         # System dynamics (integrate current states + controls to obtain next states)
         (R_t_plus1, p_obj_plus1) = dynamics_invariants.vector_invariants_position(R_t, p_obj, invars, h)
         ocp.set_next(p_obj,p_obj_plus1)
-        ocp.set_next(R_t_x,R_t_plus1[:,0])
-        ocp.set_next(R_t_y,R_t_plus1[:,1])
-        ocp.set_next(R_t_z,R_t_plus1[:,2])
+        ocp.set_next(R_t,R_t_plus1)
 
         #% Constraints
 
@@ -85,9 +80,7 @@ class OCP_calc_pos:
             # ocp.solver('ipopt',{"print_time":True,"expand":True},{'gamma_theta':1e-12,'max_iter':200,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
         
         # Solve already once with dummy values for code generation (TODO: can this step be avoided somehow?)
-        ocp.set_initial(R_t_x, np.array([1,0,0]))
-        ocp.set_initial(R_t_y, np.array([0,1,0]))
-        ocp.set_initial(R_t_z, np.array([0,0,1]))
+        ocp.set_initial(R_t, np.eye(3))
         ocp.set_initial(invars, np.array([1,0.01,0.01]))
         ocp.set_value(p_obj_m, np.vstack((np.linspace(0, 1, N), np.ones((2, N)))))
         ocp.set_value(h, 0.01)
@@ -104,16 +97,14 @@ class OCP_calc_pos:
         h_value = ocp.value(h) # value of stepsize
         solution = [ocp.sample(invars, grid='control-')[1],
             ocp.sample(p_obj, grid='control')[1], # sampled object positions
-            ocp.sample(R_t_x, grid='control')[1], # sampled FS frame (first axis)
-            ocp.sample(R_t_y, grid='control')[1], # sampled FS frame (second axis)
-            ocp.sample(R_t_z, grid='control')[1]] # sampled FS frame (third axis)
-        
+            ocp.sample(R_t, grid='control')[1]] # sampled FS frame
+
         self.ocp = ocp # save the optimization problem locally, avoids problems when multiple rockit ocp's are created
         self.ocp_function = self.ocp.to_function('ocp_function', 
             [p_obj_m_sampled,h_value,*solution], # inputs
             [*solution], # outputs
-            ["p_obj_m","h","invars1","p_obj1","R_t_x1","R_t_y1","R_t_z1"], # input labels for debugging
-            ["invars2","p_obj2","R_t_x2","R_t_y2","R_t_z2"], # output labels for debugging
+            ["p_obj_m","h","invars1","p_obj1","R_t_1"], # input labels for debugging
+            ["invars2","p_obj2","R_t_2"], # output labels for debugging
         )
 
     def calculate_invariants(self,measured_positions,stepsize):
@@ -127,13 +118,13 @@ class OCP_calc_pos:
         self.solution = self.ocp_function(measured_positions.T, stepsize, *self.solution)
 
         # Return the results    
-        invars, p_obj_sol, R_t_x_sol, R_t_y_sol, R_t_z_sol,  = self.solution # unpack the results            
+        invars, p_obj_sol, R_t_sol  = self.solution # unpack the results            
         invariants = np.array(invars).T # make a N-1 x 3 array
         invariants = np.vstack((invariants, invariants[-1,:])) # make a N x 3 array by repeating last row
         calculated_trajectory = np.array(p_obj_sol).T # make a N x 3 array
-        calculated_movingframe = np.reshape(np.hstack((R_t_x_sol[:], R_t_y_sol[:], R_t_z_sol[:])), (-1,3,3)) # make a N x 3 x 3 array
+        calculated_movingframe = np.transpose(np.reshape(R_t_sol.T, (-1, 3, 3)), (0, 2, 1))
         return invariants, calculated_trajectory, calculated_movingframe
-
+    
 if __name__ == "__main__":
     # Test data
     measured_positions = np.array([[1, 2, 3], [4.1, 5.5, 6], [7, 8.5, 9], [10, 11.9, 12]])
@@ -156,6 +147,6 @@ if __name__ == "__main__":
     #print(calc_invariants)
     #print(np.size(calc_invariants))
     #print("Calculated Moving Frame:")
-    #print(calc_movingframes)
+    print(calc_movingframes)
     #print("Calculated Trajectory:")
-    #print(calc_trajectory)
+    print(calc_trajectory)

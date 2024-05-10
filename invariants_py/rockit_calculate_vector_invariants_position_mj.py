@@ -8,7 +8,7 @@ from invariants_py.ocp_helper import check_solver
 
 class OCP_calc_pos:
 
-    def __init__(self, nb_samples = 100, w_pos = 1, w_regul_jerk = 10**-6 , w_regul_invars = 10**-10, fatrop_solver = False):
+    def __init__(self, nb_samples = 100, w_pos = 1, w_regul_jerk = 10**-6 , w_regul_invars = 10**-10, fatrop_solver = False, planar_task = False):
         fatrop_solver = check_solver(fatrop_solver)               
 
         #%% Decision variables and parameters for the optimization problem 
@@ -35,7 +35,11 @@ class OCP_calc_pos:
         self.h = self.ocp.register_parameter(cas.MX.sym('step_size'))
 
         #%% Constraints
-        
+
+        # test initial constraint on position
+        self.ocp.subject_to(self.ocp.at_tf(self.p_obj == self.p_obj_m))
+        self.ocp.subject_to(self.ocp.at_t0(self.p_obj == self.p_obj_m))
+
         # Orthonormality of rotation matrix (only needed for one timestep, property is propagated by integrator)  
         self.ocp.subject_to(self.ocp.at_t0(ocp_helper.tril_vec(R_t.T @ R_t - np.eye(3))==0.))
 
@@ -50,6 +54,13 @@ class OCP_calc_pos:
         self.ocp.set_next(self.i1dot,self.i1dot + self.i1ddot * self.h)
         self.ocp.set_next(self.i2,self.i2 + self.i2dot * self.h)
                      
+        # Planar task constraint
+        if planar_task:
+            # Constraint the third axis of moving frame (binormal axis) lies along the vertical direction
+            # a . b > 0 -> a and b are pointing in the same direction
+            # a . b < 0 -> a and b are pointing in the opposite direction 
+            self.ocp.subject_to(cas.dot( self.R_t_z , np.array([0,0,1]) ) > 0)  
+
         #%% Objective function
         self.N_controls = nb_samples-1
 
@@ -134,9 +145,21 @@ class OCP_calc_pos:
         
     def calculate_invariants_online(self,measured_positions,stepsize,window_step=1):
         #%%
-        if self.first_window:
+        use_previous_solution = False 
+        # ---> Added by Arno, it might not be the best way to always use the previous solution as initialisation for the next window. 
+        # For example, if at one instance the solution does not converge, but instead diverges to a very nervous solution, 
+        # this solution would then be used as an initialisation for the next window, which is not desired. 
+        # We want to get rid of that 'outlier solution' as soon as possible to increase the overall robustness of this online calculation. 
+
+        if not(use_previous_solution) or self.first_window: 
             N = self.N_controls
-            [ex,ey,ez] = initialization.estimate_initial_frames(measured_positions)
+
+            Pdiff = np.diff(measured_positions, axis=0)
+            Pdiff = np.vstack((Pdiff, Pdiff[-1]))
+            [ex,ey,ez] = initialization.estimate_initial_frames(Pdiff)
+
+            #[ex,ey,ez] = initialization.initialize_VI_pos(measured_positions)
+            
             self.R_t_x_sol =  ex.T 
             self.R_t_y_sol =  ey.T 
             self.R_t_z_sol =  ez.T 
@@ -179,8 +202,6 @@ class OCP_calc_pos:
 
 
         return invariants, calculated_trajectory, calculated_movingframe
-
-
 
         
     #%%     

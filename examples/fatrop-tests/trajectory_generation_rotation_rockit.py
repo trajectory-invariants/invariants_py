@@ -110,11 +110,11 @@ R_obj_init = interpR(np.linspace(0, 1, len(calculate_trajectory)), [0,1], np.arr
 
 R_r_init, R_r_init_array, invars_init = FSr_init(R_obj_start, R_obj_end)
 
-initial_values = {"invariants": invars_init, "trajectory": R_obj_init, "moving-frame": R_r_init_array}
+initial_values = {"invariants-orientation": invars_init, "trajectory-orientation": R_obj_init, "moving-frame-orientation": R_r_init_array}
 
 weight_params = {"w_invars": 10**2*np.array([10**1, 1.0, 1.0])}
 
-boundary_constraints = {"orientation": {"initial": R_obj_start, "final": R_obj_end}, "moving-frame": {"initial": R_r_init, "final": R_r_init}}
+boundary_constraints = {"orientation": {"initial": R_obj_start, "final": R_obj_end}, "moving-frame-orientation": {"initial": R_r_init, "final": R_r_init}}
 
 # specify optimization problem symbolically
 FS_online_generation_problem = FS_gen(boundary_constraints, number_samples, fatrop_solver = use_fatrop_solver)
@@ -188,9 +188,9 @@ while current_progress <= 1.0:
     current_index = round( (current_progress - old_progress) * len(calculate_trajectory))
     rotate = R.from_euler('z', 30/window_len, degrees=True)
     R_obj_end =  orthonormalize(rotate.apply(R_obj_end))
-    boundary_constraints = {"orientation": {"initial": calculate_trajectory[current_index], "final": R_obj_end}, "moving-frame": {"initial": movingframes[current_index], "final": movingframes[-1]}}
+    boundary_constraints = {"orientation": {"initial": calculate_trajectory[current_index], "final": R_obj_end}, "moving-frame-orientation": {"initial": movingframes[current_index], "final": movingframes[-1]}}
 
-    initial_values = {"invariants": model_invariants, "trajectory": calculate_trajectory, "moving-frame": movingframes}
+    initial_values = {"invariants-orientation": model_invariants, "trajectory-orientation": calculate_trajectory, "moving-frame-orientation": movingframes}
 
     # Calculate remaining trajectory
     new_invars, calculate_trajectory, movingframes, tot_time_rot = FS_online_generation_problem2.generate_trajectory_OLD(model_invariants,boundary_constraints,new_stepsize,weight_params,initial_values)
