@@ -157,13 +157,12 @@ def initialize_VI_rot(input_trajectory):
 
     [ex,ey,ez] = estimate_initial_frames(Rdiff)
 
-    R_r_x_sol =  ex.T 
-    R_r_y_sol =  ey.T 
-    R_r_z_sol =  ez.T 
-    R_obj_x =  measured_orientation[:,:,0].T
-    R_obj_y =  measured_orientation[:,:,1].T
-    R_obj_z =  measured_orientation[:,:,2].T
+    R_r = np.zeros((3,3*N))
+    R_obj = np.zeros((3,3*N))
+    for i in range(N-1):
+        R_r[:,3*i:3*(i+1)] = np.array([ex[i,:],ey[i,:],ez[i,:]])  
+        R_obj[:,3*i:3*(i+1)] =  np.array([measured_orientation[i,0],measured_orientation[i,1],measured_orientation[i,2]])
 
     invars = np.vstack((1e0*np.ones((1,N-1)),1e-1*np.ones((1,N-1)), 1e-12*np.ones((1,N-1))))
 
-    return [invars, R_obj_x, R_obj_y, R_obj_z, R_r_x_sol, R_r_y_sol, R_r_z_sol], measured_orientation
+    return [invars, R_obj, R_r], measured_orientation
