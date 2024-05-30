@@ -95,7 +95,10 @@ class OCP_calc_rot:
         ocp.set_value(R_obj_m_x, np.tile(np.array([1,0,0]), (N,1)).T)
         ocp.set_value(R_obj_m_y, np.tile(np.array([0,1,0]), (N,1)).T)
         ocp.set_value(R_obj_m_z, np.tile(np.array([0,0,1]), (N,1)).T)
-        # ocp.set_value(R_obj_m, np.eye(3)*np.ones((N,3,3)))
+        # eye = np.zeros((3,3*N))
+        # for i in range(N-1):
+        #     eye[:,3*i:3*(i+1)] = np.array([np.array([1,0,0]),np.array([0,1,0]),np.array([0,0,1])]) 
+        # ocp.set_value(R_obj_m, eye)
         ocp.set_value(h, 0.01)
         ocp.solve_limited() # code generation
 
@@ -106,6 +109,7 @@ class OCP_calc_rot:
         self.first_time = True
         
         # Encapsulate whole rockit specification in a casadi function
+        # R_obj_m_sampled = ocp.sample(R_obj_m, grid='control')[1] # sampled measured object orientation (first axis)
         R_obj_m_x_sampled = ocp.sample(R_obj_m_x, grid='control')[1] # sampled measured object orientation (first axis)
         R_obj_m_y_sampled = ocp.sample(R_obj_m_y, grid='control')[1] # sampled measured object orientation (second axis)
         R_obj_m_z_sampled = ocp.sample(R_obj_m_z, grid='control')[1] # sampled measured object orientation (third axis)

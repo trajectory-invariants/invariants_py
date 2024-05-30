@@ -22,18 +22,9 @@ class OCP_gen_pose_jointlim:
         
         # Define system states X (unknown object pose + moving frame pose at every time step) 
         p_obj = ocp.state(3) # object position
-        R_obj_x = ocp.state(3,1) # object orientation
-        R_obj_y = ocp.state(3,1) # object orientation
-        R_obj_z = ocp.state(3,1) # object orientation
-        R_obj = cas.horzcat(R_obj_x,R_obj_y,R_obj_z)
-        R_t_x = ocp.state(3,1) # translational Frenet-Serret frame
-        R_t_y = ocp.state(3,1) # translational Frenet-Serret frame
-        R_t_z = ocp.state(3,1) # translational Frenet-Serret frame
-        R_t = cas.horzcat(R_t_x,R_t_y,R_t_z)
-        R_r_x = ocp.state(3,1) # rotational Frenet-Serret frame
-        R_r_y = ocp.state(3,1) # rotational Frenet-Serret frame
-        R_r_z = ocp.state(3,1) # rotational Frenet-Serret frame
-        R_r = cas.horzcat(R_r_x,R_r_y,R_r_z)
+        R_obj = ocp.state(3,3) # object orientation
+        R_t = ocp.state(3,3) # translational Frenet-Serret frame
+        R_r = ocp.state(3,3) # rotational Frenet-Serret frame
         q = ocp.state(nb_joints)
 
         # Define system controls (invariants at every time step)
@@ -84,15 +75,9 @@ class OCP_gen_pose_jointlim:
         (R_r_plus1, R_obj_plus1) = dynamics.dyn_vector_invariants_rotation(R_r, R_obj, U[:3], h)
         # Integrate current state to obtain next state (next rotation and position)
         ocp.set_next(p_obj,p_obj_plus1)
-        ocp.set_next(R_obj_x,R_obj_plus1[:,0])
-        ocp.set_next(R_obj_y,R_obj_plus1[:,1])
-        ocp.set_next(R_obj_z,R_obj_plus1[:,2])
-        ocp.set_next(R_t_x,R_t_plus1[:,0])
-        ocp.set_next(R_t_y,R_t_plus1[:,1])
-        ocp.set_next(R_t_z,R_t_plus1[:,2])
-        ocp.set_next(R_r_x,R_r_plus1[:,0])
-        ocp.set_next(R_r_y,R_r_plus1[:,1])
-        ocp.set_next(R_r_z,R_r_plus1[:,2])
+        ocp.set_next(R_obj,R_obj_plus1)
+        ocp.set_next(R_t,R_t_plus1)
+        ocp.set_next(R_r,R_r_plus1)
         ocp.set_next(q,qdot)
 
         # Forward kinematics
@@ -131,18 +116,9 @@ class OCP_gen_pose_jointlim:
 
         
         # Save variables
-        self.R_t_x = R_t_x
-        self.R_t_y = R_t_y
-        self.R_t_z = R_t_z
         self.R_t = R_t
-        self.R_r_x = R_r_x
-        self.R_r_y = R_r_y
-        self.R_r_z = R_r_z
         self.R_r = R_r
         self.p_obj = p_obj
-        self.R_obj_x = R_obj_x
-        self.R_obj_y = R_obj_y
-        self.R_obj_z = R_obj_z
         self.R_obj = R_obj
         self.q = q
         self.nb_joints = nb_joints
@@ -172,15 +148,9 @@ class OCP_gen_pose_jointlim:
 
         # Initialize states
         self.ocp.set_initial(self.p_obj, p_obj_init[:self.window_len,:].T)
-        self.ocp.set_initial(self.R_obj_x, R_obj_init[:self.window_len,:,0].T) 
-        self.ocp.set_initial(self.R_obj_y, R_obj_init[:self.window_len,:,1].T) 
-        self.ocp.set_initial(self.R_obj_z, R_obj_init[:self.window_len,:,2].T) 
-        self.ocp.set_initial(self.R_t_x, R_t_init[:self.window_len,:,0].T)
-        self.ocp.set_initial(self.R_t_y, R_t_init[:self.window_len,:,1].T)
-        self.ocp.set_initial(self.R_t_z, R_t_init[:self.window_len,:,2].T)
-        self.ocp.set_initial(self.R_r_x, R_r_init[:self.window_len,:,0].T) 
-        self.ocp.set_initial(self.R_r_y, R_r_init[:self.window_len,:,1].T) 
-        self.ocp.set_initial(self.R_r_z, R_r_init[:self.window_len,:,2].T) 
+        self.ocp.set_initial(self.R_obj, R_obj_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len))  ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
+        self.ocp.set_initial(self.R_t, R_t_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len))   ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
+        self.ocp.set_initial(self.R_r, R_r_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len))   ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
         self.ocp.set_initial(self.q,q_init.T)
             
         # Initialize controls

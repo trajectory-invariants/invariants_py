@@ -193,7 +193,7 @@ while current_progress <= 1.0:
     initial_values = {"invariants-orientation": model_invariants, "trajectory-orientation": calculate_trajectory, "moving-frame-orientation": movingframes}
 
     # Calculate remaining trajectory
-    new_invars, calculate_trajectory, movingframes, tot_time_rot = FS_online_generation_problem2.generate_trajectory_OLD(model_invariants,boundary_constraints,new_stepsize,weight_params,initial_values)
+    new_invars, calculate_trajectory, movingframes, tot_time_rot = FS_online_generation_problem2.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weight_params,initial_values)
     if use_fatrop_solver:
         print('')
         print("TOTAL time to generate new trajectory: ")

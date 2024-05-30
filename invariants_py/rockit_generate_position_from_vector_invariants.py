@@ -18,10 +18,7 @@ class OCP_gen_pos:
         
         # Define system states X (unknown object pose + moving frame pose at every time step) 
         p_obj = ocp.state(3) # object position
-        R_t_x = ocp.state(3,1) # translational Frenet-Serret frame
-        R_t_y = ocp.state(3,1) # translational Frenet-Serret frame
-        R_t_z = ocp.state(3,1) # translational Frenet-Serret frame
-        R_t = cas.horzcat(R_t_x,R_t_y,R_t_z)
+        R_t = ocp.state(3,3) # translational Frenet-Serret frame
 
         # Define system controls (invariants at every time step)
         U = ocp.control(3)
@@ -64,9 +61,7 @@ class OCP_gen_pos:
 
         # Integrate current state to obtain next state (next rotation and position)
         ocp.set_next(p_obj,p_obj_plus1)
-        ocp.set_next(R_t_x,R_t_plus1[:,0])
-        ocp.set_next(R_t_y,R_t_plus1[:,1])
-        ocp.set_next(R_t_z,R_t_plus1[:,2])
+        ocp.set_next(R_t,R_t_plus1)
             
         # Lower bounds on controls
         if bool_unsigned_invariants:
@@ -91,9 +86,7 @@ class OCP_gen_pos:
             # ocp.solver('ipopt',{"print_time":True,"expand":True},{'tol':1e-4,'print_level':0,'ma57_automatic_scaling':'no','linear_solver':'mumps','max_iter':100})
 
         # Solve already once with dummy measurements
-        ocp.set_initial(R_t_x, np.array([1,0,0]))                 
-        ocp.set_initial(R_t_y, np.array([0,1,0]))                
-        ocp.set_initial(R_t_z, np.array([0,0,1]))
+        ocp.set_initial(R_t, np.eye(3))
         ocp.set_initial(U, 0.001+np.zeros((3,window_len)))
         ocp.set_value(h,0.1)
         ocp.set_value(U_demo, 0.001+np.zeros((3,window_len)))
@@ -134,24 +127,19 @@ class OCP_gen_pos:
 
         solution = [ocp.sample(U, grid='control-')[1],
             ocp.sample(p_obj, grid='control')[1], # sampled object positions
-            ocp.sample(R_t_x, grid='control')[1], # sampled FS frame (first axis)
-            ocp.sample(R_t_y, grid='control')[1], # sampled FS frame (second axis)
-            ocp.sample(R_t_z, grid='control')[1]] # sampled FS frame (third axis)
+            ocp.sample(R_t, grid='control')[1]] # sampled FS frame
         
         self.first_window = True
         self.ocp = ocp
         self.ocp_function = self.ocp.to_function('ocp_function',
             [h_value,U_model_sampled,w_sampled,*bounds,*solution], # inputs
             [*solution], # outputs
-            ["h_value","invars_model","weights",*bounds_labels,"invars1","p_obj1","R_t_x1","R_t_y1","R_t_z1"], # input labels for debugging
-            ["invars2","p_obj2","R_t_x2","R_t_y2","R_t_z2"], # output labels for debugging
+            ["h_value","invars_model","weights",*bounds_labels,"invars1","p_obj1","R_t1"], # input labels for debugging
+            ["invars2","p_obj2","R_t2"], # output labels for debugging
         )
 
         # Save variables
         # Save variables (only needed for old way of trajectory generation)
-        self.R_t_x = R_t_x
-        self.R_t_y = R_t_y
-        self.R_t_z = R_t_z
         self.R_t = R_t
         self.p_obj = p_obj
         self.U = U
@@ -206,7 +194,7 @@ class OCP_gen_pos:
             self.solution,initvals_dict = generate_initvals_from_bounds(boundary_constraints, np.size(invariant_model,0))
             self.first_window = False
         elif self.first_window:
-            self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["trajectory"][:N,:].T, initial_values["moving-frames"][:N,:,0].T, initial_values["moving-frames"][:N,:,1].T, initial_values["moving-frames"][:N,:,2].T]
+            self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["trajectory"][:N,:].T, initial_values["moving-frames"][:N].T.transpose(1,2,0).reshape(3,3*N)]
             self.first_window = False
 
         #print(self.solution)
@@ -216,14 +204,14 @@ class OCP_gen_pos:
         self.solution = self.ocp_function(step_size,invariant_model.T,w_invars,*boundary_values_list,*self.solution)
 
         # Return the results    
-        invars, p_obj_sol, R_t_x_sol, R_t_y_sol, R_t_z_sol,  = self.solution # unpack the results     
+        invars, p_obj_sol, R_t_sol,  = self.solution # unpack the results     
 
         print(p_obj_sol.shape)
 
         invariants = np.array(invars).T # make a N-1 x 3 array
         invariants = np.vstack((invariants, invariants[-1,:])) # make a N x 3 array by repeating last row
         calculated_trajectory = np.array(p_obj_sol).T # make a N x 3 array
-        calculated_movingframe = np.reshape(np.hstack((R_t_x_sol[:], R_t_y_sol[:], R_t_z_sol[:])), (-1,3,3)) # make a N x 3 x 3 array
+        calculated_movingframe = np.transpose(np.reshape(R_t_sol.T, (-1, 3, 3)), (0, 2, 1)) 
 
         # # Solve the NLP
         # sol = self.ocp.solve()
@@ -265,9 +253,7 @@ class OCP_gen_pos:
 
         # Initialize states
         self.ocp.set_initial(self.p_obj, p_obj_init[:self.window_len,:].T)
-        self.ocp.set_initial(self.R_t_x, R_t_init[:self.window_len,:,0].T)
-        self.ocp.set_initial(self.R_t_y, R_t_init[:self.window_len,:,1].T)
-        self.ocp.set_initial(self.R_t_z, R_t_init[:self.window_len,:,2].T)
+        self.ocp.set_initial(self.R_t, R_t_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len)) ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
             
         # Initialize controls
         self.ocp.set_initial(self.U,U_init[:-1,:].T)
