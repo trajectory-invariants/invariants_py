@@ -1,32 +1,17 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jul 19 2023
-
-@author: u0148800
-"""
-
-import sys
-import os 
-# setting the path to invariants_py
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-parent = os.path.dirname(parent)
-if not parent in sys.path:
-    sys.path.append(parent)
 
 # Imports
 import numpy as np
 import os
-import invariants_py.read_and_write_data as rw
+import invariants_py.data_handler as dh
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_py.class_frenetserret_calculation_reformulation_position import FrenetSerret_calc_pos
-from invariants_py.class_frenetserret_generation_position import FrenetSerret_gen_pos
+from invariants_py.opti_calculate_vector_invariants_position import OCP_calc_pos
+from invariants_py.opti_generate_position_from_vector_invariants import OCP_gen_pos
 from IPython.display import clear_output
 
-data_location = parent + '/data/beer_1.txt'
-trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
+data_location = dh.find_data_path('beer_1.txt')
+trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
 trajectory = pose[:,0:3,3]
@@ -38,7 +23,7 @@ ax.plot(trajectory[:,0],trajectory[:,1],trajectory[:,2],'.-')
 
 #%%
 # specify optimization problem symbolically
-FS_calculation_problem = FrenetSerret_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.001)
+FS_calculation_problem = OCP_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.001)
 
 # calculate invariants given measurements
 invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
@@ -104,7 +89,7 @@ R_FS_end = movingframes[-1]
 
 
 # specify optimization problem symbolically
-FS_online_generation_problem = FrenetSerret_gen_pos(window_len=number_samples,w_invars = np.array([5*10**1, 1.0, 1.0]))
+FS_online_generation_problem = OCP_gen_pos(N=number_samples,w_invars = np.array([5*10**1, 1.0, 1.0]))
 
 # Solve
 new_invars, new_trajectory, new_movingframes = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = calculate_trajectory, R_t_init = movingframes, R_t_start = R_FS_start, R_t_end = R_FS_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize)
@@ -133,7 +118,8 @@ plt.plot(arclength_n,invariants[:,2],'b')
 plt.plot(0,0)
 plt.title('Torsion [rad/m]')
 
-plt.show()
+if plt.get_backend() != 'agg':
+    plt.show()
 
 
 #%% Visualization
@@ -141,13 +127,22 @@ plt.show()
 window_len = 20
 
 # specify optimization problem symbolically
-FS_online_generation_problem = FrenetSerret_gen_pos(window_len=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
+FS_online_generation_problem = OCP_gen_pos(N=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
 
 current_progress = 0.0
 old_progress = 0.0
 
 calculate_trajectory = init_vals_calculate_trajectory
 movingframes = init_vals_movingframes
+
+fig = plt.figure(figsize=(14,8))
+ax = fig.add_subplot(111, projection='3d')
+ax.plot(trajectory[:,0],trajectory[:,1],trajectory[:,2],'b')
+
+fig2 = plt.figure()
+ax1 = fig2.add_subplot(1,3,1)
+ax2 = fig2.add_subplot(1,3,2)
+ax3 = fig2.add_subplot(1,3,3)
 
 while current_progress <= 1.0:
     
@@ -170,32 +165,30 @@ while current_progress <= 1.0:
     # Visualization
     clear_output(wait=True)
     
-    fig = plt.figure(figsize=(14,8))
-    ax = fig.add_subplot(111, projection='3d')
+    ax.clear()
     ax.plot(trajectory[:,0],trajectory[:,1],trajectory[:,2],'b')
     ax.plot(calculate_trajectory[:,0],calculate_trajectory[:,1],calculate_trajectory[:,2],'r')
     
-    fig = plt.figure()
-
-    plt.subplot(1,3,1)
-    plt.plot(progress_values,new_invars[:,0],'r')
-    plt.plot(arclength_n,invariants[:,0],'b')
-    plt.plot(0,0)
-    plt.title('velocity [m/m]')
+    ax1.clear()
+    ax1.plot(progress_values,new_invars[:,0],'r')
+    ax1.plot(arclength_n,invariants[:,0],'b')
+    ax1.plot(0,0)
+    ax1.set_title('velocity [m/m]')
     
-    plt.subplot(1,3,2)
-    plt.plot(progress_values,(new_invars[:,1]),'r')
-    plt.plot(arclength_n,invariants[:,1],'b')
-    plt.plot(0,0)
-    plt.title('curvature [rad/m]')
+    ax2.clear()
+    ax2.plot(progress_values,(new_invars[:,1]),'r')
+    ax2.plot(arclength_n,invariants[:,1],'b')
+    ax2.plot(0,0)
+    ax2.set_title('curvature [rad/m]')
     
-    plt.subplot(1,3,3)
-    plt.plot(progress_values,(new_invars[:,2]),'r')
-    plt.plot(arclength_n,invariants[:,2],'b')
-    plt.plot(0,0)
-    plt.title('torsion [rad/m]')
+    ax3.clear()
+    ax3.plot(progress_values,(new_invars[:,2]),'r')
+    ax3.plot(arclength_n,invariants[:,2],'b')
+    ax3.plot(0,0)
+    ax3.set_title('torsion [rad/m]')
 
-    plt.show()
+    if plt.get_backend() != 'agg':
+        plt.show()
     
     old_progress = current_progress
     current_progress = old_progress + 1/window_len

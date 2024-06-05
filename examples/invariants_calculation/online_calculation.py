@@ -1,22 +1,14 @@
-import sys
-import os 
-# setting the path to invariants_py
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-parent = os.path.dirname(parent)
-if not parent in sys.path:
-    sys.path.append(parent)
 
 import numpy as np
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_py.class_frenetserret_calculation import FrenetSerret_calc
+from invariants_py.opti_calculate_vector_invariants_position_mf import OCP_calc_pos
 from IPython.display import clear_output
+from invariants_py import data_handler as dh
 
 #%%
-data_location = parent + '/data/contour_coordinates.out'
-#data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/contour_coordinates.out'
+data_location = dh.find_data_path('contour_coordinates.out')
 position_data = np.loadtxt(data_location, dtype='float')
 trajectory,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_positiontrajectory_arclength(position_data)
 stepsize_orig = stepsize
@@ -28,7 +20,7 @@ plt.plot(trajectory[:,0],trajectory[:,1],'.-')
 
 #%%
 # specify optimization problem symbolically
-FS_calculation_problem = FrenetSerret_calc(window_len=nb_samples, bool_unsigned_invariants = True, w_pos = 100, w_deriv = (10**-12)*np.array([1.0, 1.0, 1.0]), w_abs = (10**-5)*np.array([1.0, 1.0]))
+FS_calculation_problem = OCP_calc_pos(window_len=nb_samples, bool_unsigned_invariants = True, w_pos = 100, w_deriv = (10**-12)*np.array([1.0, 1.0, 1.0]), w_abs = (10**-5)*np.array([1.0, 1.0]))
 
 # calculate invariants given measurements
 invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
@@ -79,7 +71,7 @@ stepsize = 0.005
 window_increment = 10
 
 # specify optimization problem symbolically
-FS_online_calculation_problem = FrenetSerret_calc(window_len=window_len,
+FS_online_calculation_problem = OCP_calc_pos(window_len=window_len,
                                                   bool_unsigned_invariants = True, 
                                                   w_pos = 10, w_deriv = (10**-7)*np.array([1.0, 1.0, 1.0]), 
                                                   w_abs = (10**-6)*np.array([1.0, 1.0]))
@@ -100,7 +92,6 @@ while current_progress <= arclength_n[-1]:
     
     clear_output(wait=True)
     
-    plt.figure(figsize=(14,6))
     plt.subplot(2,2,1)
     plt.plot(trajectory[:,0],trajectory[:,1],'.-')
     plt.plot(measurements[:,0],measurements[:,1],'k.')
@@ -124,7 +115,7 @@ while current_progress <= arclength_n[-1]:
     plt.plot(0,1)
     plt.title('Torsion [rad/-]')
 
-    plt.show()
-    
+    if plt.get_backend() != 'agg':
+        plt.show()
     
     current_progress = round(current_progress + window_increment*stepsize,3) # start index next window

@@ -1,13 +1,17 @@
 """
-@author: Zeno Gillis, Victor Van Wymeersch, Maxim Vochten
+
+Note: This class has been deprecated.
 
 Implementation of extended Frenet-Serret invariants:
 optimization problems for calculating invariants and generating new trajectories
+
+@author: Zeno Gillis, Victor Van Wymeersch, Maxim Vochten
+
 """
 
 import sys
 sys.path.append('../helper_programs')
-import invariants_py.plotters
+from invariants_py import plotters
 import time
 import csv
 import numpy as np
@@ -21,7 +25,7 @@ import pickle
 import math
 
 import casadi as cas
-import invariants_py.integrator_functions as helper
+import invariants_py.dynamics_invariants as helper
 
 from collections import OrderedDict
 
@@ -80,7 +84,7 @@ class MotionTrajectory:
 
     def __init__(self, motionDataFile = None, invariantSignatureFile = None, invariantType = 'timebased', suppressPlotting = False):
         """
-        Shape desciptor from given data file, if none is presented a sinusoidal motion profile will be generated
+        Shape desciptor from given data file, if none is presented a sine_waveoidal motion profile will be generated
             - the data file 'motionDataFile' can either be a .txt file or a .csv file of timestamps with Quaternion pose data
             - A MotionTrajectory is defined as [ [timeStamp0, Pose0], [timeStamp1, Pose1], ... , [timeStampN, PoseN]]
         """
@@ -434,7 +438,7 @@ class MotionTrajectory:
 
 
     #%% generate motion profiles
-    def generateSinusoidalMotion(self):
+    def generatesine_waveoidalMotion(self):
         #TODO  implement
         print("TODO")
 
@@ -1716,9 +1720,10 @@ class MotionTrajectory:
 
 
 
-if __name__ == "__main__":
+if __name__ == "__main(deprecated)__":
+
     testfile = "/home/roboticskuleuven/catkin_ws/src/invariants_py/data/motion_profiles/single_pose.csv"
-    testfile = "/home/roboticskuleuven/catkin_ws/src/invariants_py/data_old/sinus.txt"
+    testfile = "/home/roboticskuleuven/catkin_ws/src/invariants_py/data_old/sine_wave.txt"
 #    testfile = "/home/roboticskuleuven/catkin_ws/src/invariants_py/data_old/MPC_handover_data.txt"
     testfile = "data/motion_tajectories/recorded_motion.csv"
     descriptor = MotionTrajectory(testfile, invariantType='timebased')
@@ -1782,7 +1787,8 @@ if __name__ == "__main__":
 #        fig, p_list = descriptor.plotMotionTrajectory(next_windowPoses, figure = fig)
         print(("window nr "+ str(n)))
         plt.pause(0.0001)
-        plt.show()
+        if plt.get_backend() != 'agg':
+            plt.show()
 
         time.sleep(0.02)
         if n < len(descriptor.getPositions())-10:

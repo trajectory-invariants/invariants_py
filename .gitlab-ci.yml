@@ -1,19 +1,22 @@
-# This pipeline installs the invariants-py package and then runs the examples.
+image: python:3.9
 
-# Official language image. Look for the different tagged releases at:
-# https://hub.docker.com/r/library/python/tags/
-default:
-  image: python:3.9
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.pip"
 
-install_and_test:
+cache:
+  paths:
+    - .pip
+    
+before_script:
+  - python -V  # Print out python version for debugging
+
+run_examples:
   script:
-    # invariants-py installation
-    - pip install virtualenv
-    - virtualenv venv
-    - source venv/bin/activate
+    # install invariants_py
+    - pip install --upgrade pip
     - pip install .
 
-    #fatrop installation
+    # install fatrop
     - git clone https://github.com/meco-group/fatrop.git --recursive
     - cd fatrop
     - apt-get update && apt-get install -y cmake
@@ -23,7 +26,7 @@ install_and_test:
     - pip install .
     - cd ../..
 
-    # rockit and rockit-fatrop plugin installation
+    # install rockit and rockit-fatrop plugin
     - git clone https://gitlab.kuleuven.be/meco-software/rockit.git
     - git clone https://gitlab.kuleuven.be/u0110259/rockit_fatrop_plugin.git ./rockit/rockit/external/fatrop
     - cd rockit
@@ -31,8 +34,5 @@ install_and_test:
     - cd ..
 
     # Run examples
-    - python run_all_examples.py
-    #python -m pytest tests/
-
-
+    - python -u run_all_scripts.py
 

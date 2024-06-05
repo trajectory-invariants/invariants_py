@@ -1,25 +1,15 @@
-import sys
-import os 
-# setting the path to invariants_py
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-parent = os.path.dirname(parent)
-parent = os.path.dirname(parent)
-parent = os.path.dirname(parent)
-if not parent in sys.path:
-    sys.path.append(parent)
 
-from invariants_py import read_and_write_data
-import invariants_py.read_and_write_data as rw
+from invariants_py import data_handler
+import invariants_py.data_handler as dh
 import invariants_py.reparameterization as reparam
-from invariants_py.class_frenetserret_calculation import FrenetSerret_calc
+from invariants_py.opti_calculate_vector_invariants_position_mf import OCP_calc_pos
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 
 plt.close('all')
           
-data_location = parent + '/data/sinus.txt'
+data_location = dh.find_data_path('sine_wave.txt')
 parameterization = 'arclength' # {time,arclength,screwprogress}
 
 """
@@ -27,7 +17,7 @@ Load and reparameterize data
 """
 
 # load data
-trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
+trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
 
 # reparameterization
 trajectory_geom,arclength,arclength_n,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
@@ -37,7 +27,7 @@ Example calculation invariants using the full horizon
 """
 
 # symbolic specification
-FS_calculation_problem = FrenetSerret_calc(window_len=nb_samples)
+FS_calculation_problem = OCP_calc_pos(window_len=nb_samples)
 
 # calculate invariants given measurements
 result = FS_calculation_problem.calculate_invariants_global(trajectory_geom,stepsize=stepsize)
@@ -50,7 +40,8 @@ plt.plot(arclength,invariants[:,2],label = '$\omega_\u03C4$ [rad/m]',color='b')
 plt.xlabel('s [m]')
 plt.legend()
 plt.title('Calculated invariants (full horizon)')
-plt.show()
+if plt.get_backend() != 'agg':
+    plt.show()
 
 """
 Example calculation invariants using a smaller moving horizon
@@ -60,7 +51,7 @@ window_len = 20
 window_increment = 10
 
 # symbolic specification
-FS_online_calculation_problem = FrenetSerret_calc(window_len=window_len)
+FS_online_calculation_problem = OCP_calc_pos(window_len=window_len)
 
 
 n = 0
@@ -86,5 +77,6 @@ plt.plot(arclength,invariants[:,2],label = '$\omega_\u03C4$ [rad/m]',color='b')
 plt.xlabel('s [m]')
 plt.legend()
 plt.title('Calculated invariants (moving horizon)')
-plt.show()
+if plt.get_backend() != 'agg':
+    plt.show()
 

@@ -1,16 +1,16 @@
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
 """
-Created on Tue Aug 31 10:36:02 2021
+Note: this module has been deprecated
+
+Test to decouple the trajectory calculation from the ROS communication
 
 @author: Glenn Maes
 
-Test to decouple the trajectory calculation from the ROS communication
+
 """
 
 import numpy as np
 import time
-from . import invariant_descriptor_class as invars
+from invariants_py import invariant_descriptor_class as invars
 
 class CalculateTrajectory:
     

@@ -1,42 +1,23 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Jul 10 2023
-
-@author: Riccardo
-"""
-
-import sys
-import os 
-# setting the path to invariants_py
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-parent = os.path.dirname(parent)
-if not parent in sys.path:
-    sys.path.append(parent)
 
 # Imports
 import numpy as np
 from math import pi
-import invariants_py.read_and_write_data as rw
+import invariants_py.data_handler as dh
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_py.class_frenetserret_calculation_reformulation_rotation import FrenetSerret_calc_rot
-from invariants_py.class_frenetserret_generation_rotation import FrenetSerret_gen_rot
+from invariants_py.opti_calculate_vector_invariants_rotation import OCP_calc_rot
+from invariants_py.opti_generate_rotation_from_vector_invariants import OCP_gen_rot
 from IPython.display import clear_output
-from invariants_py.plotting_functions.plot_3d_frame import plot_3d_frame
-from invariants_py.plotting_functions.plot_orientation import plot_orientation
-from invariants_py.plotting_functions.plot_stl import plot_stl
+from invariants_py.plotters import plot_3d_frame, plot_orientation, plot_stl
 from stl import mesh
 from scipy.spatial.transform import Rotation as R
-from invariants_py.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
+from invariants_py.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 #%%
-data_location = parent + '/data/beer_1.txt'
-opener_location = parent + '/data/opener.stl'
-#data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/beer_1.txt'
-#opener_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/opener.stl'
-trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
+data_location = dh.find_data_path('beer_1.txt')
+opener_location = dh.find_data_path('opener.stl')
+trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
 trajectory_position = pose[:,:3,3]
@@ -56,7 +37,7 @@ for i in indx:
 
 #%%
 # specify optimization problem symbolically
-FS_calculation_problem = FrenetSerret_calc_rot(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180) 
+FS_calculation_problem = OCP_calc_rot(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180) 
 
 # calculate invariants given measurements
 invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
@@ -84,7 +65,8 @@ ax2.set_title('Curvature [rad/m]')
 ax3.plot(arclength_n,invariants[:,2])
 ax3.set_title('Torsion [rad/m]')
 
-plt.show()
+if plt.get_backend() != 'agg':
+    plt.show()
 
 #%%
 # Spline of model
@@ -128,7 +110,7 @@ R_r_end = orthonormalize(movingframes[-1])
 
 
 # specify optimization problem symbolically
-FS_online_generation_problem = FrenetSerret_gen_rot(window_len=number_samples,w_invars = 10**2*np.array([10**1, 1.0, 1.0]))
+FS_online_generation_problem = OCP_gen_rot(window_len=number_samples,w_invars = 10**2*np.array([10**1, 1.0, 1.0]))
 
 # Solve
 new_invars, new_trajectory, new_movingframes = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, R_obj_init = calculate_trajectory, R_r_init = movingframes, R_r_start = R_r_start, R_r_end = R_r_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
@@ -170,14 +152,15 @@ plt.plot(arclength_n,invariants[:,2],'b')
 plt.plot(0,0)
 plt.title('Torsion [rad/m]')
 
-plt.show()
+if plt.get_backend() != 'agg':
+    plt.show()
 
 #%% Visualization
 
 window_len = 20
 
 # specify optimization problem symbolically
-FS_online_generation_problem = FrenetSerret_gen_rot(window_len=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
+FS_online_generation_problem = OCP_gen_rot(window_len=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
 
 current_progress = 0.0
 old_progress = 0.0
@@ -186,6 +169,12 @@ R_obj_end = calculate_trajectory[-1] # initialise R_obj_end with end point of re
 iterative_trajectory = calculate_trajectory.copy()
 iterative_movingframes = movingframes.copy()
 trajectory_position_iter = trajectory_position.copy()
+
+fig_traj = plt.figure(figsize=(14,8))
+ax = fig_traj.add_subplot(111, projection='3d')    
+
+fig_invars, axes = plt.subplots(1, 3, sharey=True, figsize=(10,3))
+    
 while current_progress <= 1.0:
     
     print(f"current progress = {current_progress}")
@@ -210,8 +199,6 @@ while current_progress <= 1.0:
     # Visualization
     clear_output(wait=True)
     
-    fig = plt.figure(figsize=(14,8))
-    ax = fig.add_subplot(111, projection='3d')
     ax.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,2],'b')
     for i in indx:
         plot_stl(opener_location,trajectory_position[i,:],calculate_trajectory[i,:,:],colour="c",alpha=0.2,ax=ax)
@@ -223,28 +210,24 @@ while current_progress <= 1.0:
     for i in indx_iter:
         plot_3d_frame(trajectory_position_iter[i,:],iterative_trajectory[i,:,:],1,0.05,['red','green','blue'],ax)
         plot_stl(opener_location,trajectory_position_iter[i,:],iterative_trajectory[i,:,:],colour="r",alpha=0.2,ax=ax)
-    
-    fig = plt.figure()
+    if plt.get_backend() != 'agg':
+        plt.show()
 
-    plt.subplot(1,3,1)
-    plt.plot(progress_values,new_invars[:,0],'r')
-    plt.plot(arclength_n,invariants[:,0],'b')
-    plt.plot(0,0)
-    plt.title('velocity [m/m]')
+    axes[0].plot(progress_values,new_invars[:,0],'r')
+    axes[0].plot(arclength_n,invariants[:,0],'b')
+    axes[0].plot(0,0)
+    axes[0].set_title('velocity [m/m]')
     
-    plt.subplot(1,3,2)
-    plt.plot(progress_values,(new_invars[:,1]),'r')
-    plt.plot(arclength_n,invariants[:,1],'b')
-    plt.plot(0,0)
-    plt.title('curvature [rad/m]')
+    axes[1].plot(progress_values,(new_invars[:,1]),'r')
+    axes[1].plot(arclength_n,invariants[:,1],'b')
+    axes[1].plot(0,0)
+    axes[1].set_title('curvature [rad/m]')
     
-    plt.subplot(1,3,3)
-    plt.plot(progress_values,(new_invars[:,2]),'r')
-    plt.plot(arclength_n,invariants[:,2],'b')
-    plt.plot(0,0)
-    plt.title('torsion [rad/m]')
+    axes[2].plot(progress_values,(new_invars[:,2]),'r')
+    axes[2].plot(arclength_n,invariants[:,2],'b')
+    axes[2].plot(0,0)
+    axes[2].set_title('torsion [rad/m]')
 
-    plt.show()
-    
+
     old_progress = current_progress
     current_progress = old_progress + 1/window_len

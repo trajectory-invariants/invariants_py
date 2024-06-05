@@ -1,21 +1,10 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Sep  5 09:52:48 2019
-
-@author: Zeno Gillis, Victor Van Wymeersch, Maxim Vochten
-
-Functions for plotting invariant signatures and trajectories
-
-"""
 
 # TODO separate dynamic plots with Qt5 from regular plots in separate file
 
 import numpy as np
-import matplotlib
-import sys
 from mpl_toolkits import mplot3d
 from stl import mesh
-from invariants_py.robotics_functions.rot2quat import rot2quat
+from invariants_py.rot2quat import rot2quat
 from scipy import interpolate as ip
 #import PyQt5
 #sys.modules.get("PyQt5")
@@ -29,7 +18,51 @@ import matplotlib.pyplot as plt
 #sns.set(style='whitegrid',context='paper')
 #from IPython import get_ipython
 
+def plot_trajectory_and_bounds(boundary_constraints, trajectory):
+    # Extract x, y, and z coordinates from the trajectory
+    x = trajectory[:, 0]
+    y = trajectory[:, 1]
+    z = trajectory[:, 2]
 
+    # Create a 3D plot
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(x, y, z)
+
+    # Plot the boundary constraints as red dots
+    initial_point = boundary_constraints["position"]["initial"]
+    final_point = boundary_constraints["position"]["final"]
+    ax.scatter(initial_point[0], initial_point[1], initial_point[2], color='red', label='Initial Point')
+    ax.scatter(final_point[0], final_point[1], final_point[2], color='red', label='Final Point')
+
+    # Set labels for the axes
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+
+    # Show the plot
+    if plt.get_backend() != 'agg':
+        plt.show()
+
+def plot_trajectory(trajectory):
+    # Extract x, y, and z coordinates from the trajectory
+    x = trajectory[:, 0]
+    y = trajectory[:, 1]
+    z = trajectory[:, 2]
+
+    # Create a 3D plot
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(x, y, z)
+
+    # Set labels for the axes
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+
+    # Show the plot
+    if plt.get_backend() != 'agg':
+        plt.show()
 
 def plot_trajectory_test(trajectory):
     fig = plt.figure(figsize=(8,8))
@@ -93,7 +126,8 @@ def plotPose(pose, figure = '', label = '', c='b', m='.', orientation = False):
 
 #    plt.autoscale(True, 'both', True)
 #    plt.ion()
-    plt.show()
+    if plt.get_backend() != 'agg':
+        plt.show()
 
     return fig, p
 
@@ -183,7 +217,8 @@ def plotTrajectory(trajectory, figure = None, label = "trajectory", title = '', 
 
 
 #    plt.title(title)
-    plt.show()
+    if plt.get_backend() != 'agg':
+        plt.show()
 
     return fig, p_lst
 
@@ -236,7 +271,8 @@ def plot_trajectory_invariants(trajectory,trajectory_recon,arclength_n,invariant
     plt.plot(0,1)
     plt.title('Torsion [rad/-]')
     
-    plt.show()
+    if plt.get_backend() != 'agg':
+        plt.show()
 
 def removeMultipleAxis(pList):
     for i in range(len(pList)):
@@ -336,69 +372,59 @@ def plot_interpolated_invariants(initial_invariants, interpolated_invariants, pr
         
 
 
-def plot_invariants(invariants1, invariants2, progress1, progress2 = [], inv_type = 'eFS'):
+def plot_invariants(invariants1, invariants2, progress1, progress2=[], inv_type='eFS', fig=None):
     """
-    plots invariant signature
+    Plots invariants before and after interpolation.
 
     Parameters
     ----------
-    invariants1 : numpy array (N,6) or (N,3) with invariants of the first trajectory
-    invariants2 : numpy array (N,6) or (N,3) with invariants of the second trajectory (if not required, just leave blank [])
-    progress1 : numpy array (N,1) containing progress along first trajectory
-    progress2 : numpy array (N,1) containing progress along second trajectory (if not required, leave blank)
-    inv_type : string defining the type of invariants to plot, possible entries 'eFS','FS_pos','FS_rot'
+    invariants1 : numpy array
+        Invariants before interpolation.
+    invariants2 : numpy array
+        Invariants after interpolation.
+    progress1 : numpy array
+        Trajectory progress before interpolation.
+    progress2 : numpy array, optional
+        Trajectory progress after interpolation. Default is an empty array.
+    inv_type : str, optional
+        Type of invariants to plot. Possible values are 'eFS', 'FS_pos', 'FS_rot'. Default is 'eFS'.
+    fig : matplotlib Figure, optional
+        Handle to an existing figure. If provided, the plot will be updated on the existing figure. Default is None.
 
+    Returns
+    -------
+    None
     """
-    # TODO include other types of invariants and corresponidngly update units of titles, make it work for 2D
-    fig = plt.figure(figsize=(10,6))
-    size = 100
+    if fig is None:
+        fig = plt.figure(figsize=(10, 6))
     if inv_type == 'FS_rot' or inv_type == 'eFS':
         if inv_type == 'eFS':
-            ax4 = fig.add_subplot(234)
-            ax4.set_title('i_t1')
-            ax4.plot(progress1,invariants1[:,3],'b')
-            ax5 = fig.add_subplot(235)
-            ax5.set_title('i_t2')
-            ax5.plot(progress1,invariants1[:,4],'b')
-            ax6 = fig.add_subplot(236)
-            ax6.set_title('i_t3')
-            ax6.plot(progress1,invariants1[:,5],'b')
-            size = size + 100
+            for i in range(3):
+                ax = fig.add_subplot(2, 3, i+4, title=f'$i_{{t{i+1}}}$')
+                ax.plot(progress1, invariants1[:, i+3], 'b')
+                if len(invariants2):
+                    ax.plot(progress2, invariants2[:, i+3], 'r')
+        for i in range(3):
+            if inv_type == 'eFS':
+                ax = fig.add_subplot(2, 3, 1 + i, title=f'$i_{{r{i+1}}}$')
+            else:
+                ax = fig.add_subplot(1, 3, 1 + i, title=f'$i_{{r{i+1}}}$')
+            ax.plot(progress1, invariants1[:, i], 'b')
             if len(invariants2):
-                ax4.plot(progress2,invariants2[:,3],'r')
-                ax5.plot(progress2,invariants2[:,4],'r')
-                ax6.plot(progress2,invariants2[:,5],'r')
-        ax1 = fig.add_subplot(size+31)
-        ax1.set_title('i_r1')
-        ax1.plot(progress1,invariants1[:,0],'b')
-        ax2 = fig.add_subplot(size+32)
-        ax2.set_title('i_r2')
-        ax2.plot(progress1,invariants1[:,1],'b')
-        ax3 = fig.add_subplot(size+33)
-        ax3.set_title('i_r3')
-        ax3.plot(progress1,invariants1[:,2],'b')
-        if len(invariants2):
-            ax1.plot(progress2,invariants2[:,0],'r')
-            ax2.plot(progress2,invariants2[:,1],'r')
-            ax3.plot(progress2,invariants2[:,2],'r')
+                ax.plot(progress2, invariants2[:, i], 'r')
     elif inv_type == 'FS_pos':
-        ax4 = fig.add_subplot(131)
-        ax4.set_title('i_t1')
-        ax4.plot(progress1,invariants1[:,0],'b')
-        ax5 = fig.add_subplot(132)
-        ax5.set_title('i_t2')
-        ax5.plot(progress1,invariants1[:,1],'b')
-        ax6 = fig.add_subplot(133)
-        ax6.set_title('i_t3')
-        ax6.plot(progress1,invariants1[:,2],'b')
-        if len(invariants2):
-            ax4.plot(progress2,invariants2[:,0],'r')
-            ax5.plot(progress2,invariants2[:,1],'r')
-            ax6.plot(progress2,invariants2[:,2],'r')
+        for i in range(3):
+            ax = fig.add_subplot(1, 3, i+1, title=f'$i_{{t{i+1}}}$')
+            ax.plot(progress1, invariants1[:, i], 'b')
+            if len(invariants2):
+                ax.plot(progress2, invariants2[:, i], 'r')
+
+    fig.canvas.draw()
+    fig.canvas.flush_events()
 
 def plot_stl(stl_file_location,pos,R,colour,alpha,ax):
     """
-    insert a 3D mesh into an existing 3D plot by reading an stl file
+    Insert a 3D mesh into an existing 3D plot by reading an stl file
 
     Parameters
     ----------
@@ -420,6 +446,30 @@ def plot_stl(stl_file_location,pos,R,colour,alpha,ax):
     collection.set_facecolor(colour); collection.set_alpha(alpha)
     ax.add_collection3d(collection)
 
+
+def compare_invariants(invariants, new_invariants, arclength_n, progress_values):
+
+    fig = plt.figure()
+    plt.subplot(1,3,1)
+    plt.plot(progress_values,new_invariants[:,0],'r')
+    plt.plot(arclength_n,invariants[:,0],'b')
+    plt.plot(0,0)
+    plt.title('Velocity [m/m]')
+
+    plt.subplot(1,3,2)
+    plt.plot(progress_values,(new_invariants[:,1]),'r')
+    plt.plot(arclength_n,invariants[:,1],'b')
+    plt.plot(0,0)
+    plt.title('Curvature [rad/m]')
+
+    plt.subplot(1,3,3)
+    plt.plot(progress_values,(new_invariants[:,2]),'r')
+    plt.plot(arclength_n,invariants[:,2],'b')
+    plt.plot(0,0)
+    plt.title('Torsion [rad/m]')
+
+    if plt.get_backend() != 'agg':
+        plt.show()
 
 def plot_orientation(trajectory1,trajectory2,current_index = 0):
     """
@@ -469,6 +519,39 @@ def plot_orientation(trajectory1,trajectory2,current_index = 0):
     # arrow3(trajectory2.Obj_location,trajectory2.Obj_location+0.05*axang2(:,1:3),['_b' 0.2],0.5,1)
     # axis equal; grid on; box on;
 
+def plot_invariants_new(invariants,arclength):
+    plt.figure()
+    plt.plot(arclength, invariants[:, 0], label='$v$ [m]', color='r')
+    plt.plot(arclength, invariants[:, 1], label='$\omega_\kappa$ [rad/m]', color='g')
+    plt.plot(arclength, invariants[:, 2], label='$\omega_\u03C4$ [rad/m]', color='b')
+    plt.xlabel('s [m]')
+    plt.legend()
+    plt.title('Calculated invariants (full horizon)')
+    if plt.get_backend() != 'agg':
+        plt.show()
+    #plt.close()
+
+def plot_invariants_new(invariants, arclength):
+    
+    fig = plt.figure()
+    plt.subplot(1,3,1)
+    plt.plot(arclength,invariants[:,0],'b')
+    plt.plot(0,0)
+    plt.title('Velocity [m/m]')
+
+    plt.subplot(1,3,2)
+    plt.plot(arclength,invariants[:,1],'b')
+    plt.plot(0,0)
+    plt.title('Curvature [rad/m]')
+
+    plt.subplot(1,3,3)
+    plt.plot(arclength,invariants[:,2],'b')
+    plt.plot(0,0)
+    plt.title('Torsion [rad/m]')
+
+    if plt.get_backend() != 'agg':
+        plt.show()
+
 
 def plot_3d_frame(p,R,scale_arrow,length_arrow,my_color,ax3d):
     """
@@ -508,3 +591,10 @@ def plot_3d_frame(p,R,scale_arrow,length_arrow,my_color,ax3d):
     ax3d.set_xlabel('x [m]')
     ax3d.set_ylabel('y [m]')
     ax3d.set_zlabel('z [m]')
+
+
+import numpy as np
+import math as math
+from mpl_toolkits import mplot3d
+from stl import mesh
+

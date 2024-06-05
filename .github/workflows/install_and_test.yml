@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  install_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install virtualenv and activate
+      run: |
+        pip install virtualenv
+        virtualenv venv
+        source venv/bin/activate
+
+    - name: Install invariants-py
+      run: pip install .
+
+    - name: Install fatrop
+      run: |
+        git clone https://github.com/meco-group/fatrop.git --recursive
+        cd fatrop
+        sudo apt-get update && sudo apt-get install -y cmake
+        export CMAKE_ARGS="-DBLASFEO_TARGET=X64_AUTOMATIC -DENABLE_MULTITHREADING=OFF"
+        cd fatropy
+        pip install --upgrade pip setuptools
+        pip install .
+        cd ../..
+
+    - name: Install rockit and rockit-fatrop plugin
+      run: |
+        git clone https://gitlab.kuleuven.be/meco-software/rockit.git
+        git clone https://gitlab.kuleuven.be/u0110259/rockit_fatrop_plugin.git ./rockit/rockit/external/fatrop
+        cd rockit
+        pip install .
+        cd ..
+
+    - name: Run examples
+      run: python run_all_scripts.py

@@ -1,6 +1,7 @@
 *.pyc
 *.pkl
 *.bak
+.vscode/
 .spyproject/
 .ipynb_checkpoints
 invariants_python.egg-info
@@ -9,3 +10,7 @@ build/
 foobar/
 reformulation_*
 generation_*
+codegen/
+__pycache__/
+casadi_codegen.obj
+invariants_py/data/sine_wave_invariants.csv

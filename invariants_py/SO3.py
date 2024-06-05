@@ -8,7 +8,6 @@ matrices and rotational velocities.
 *Erwin Aertbelien, 2021*
 """
 
-
 #from numba import jit
 import numpy as np
 from numpy.linalg import norm
@@ -25,6 +24,11 @@ def random():
         U[:,2]=-U[:,2];
     return U 
 
+def random_traj(N=1):
+    """
+    Returns a random trajectory of N 4x4 homogeneous transformation matrices
+    """
+    return np.array([random() for i in range(N)])
 
 def crossmat(v):
     r"""

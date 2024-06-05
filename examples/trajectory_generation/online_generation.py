@@ -1,34 +1,18 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Feb  9 21:27:38 2022
-
-@author: u0091864
-"""
-
-import sys
-import os 
-# setting the path to invariants_py
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-parent = os.path.dirname(parent)
-if not parent in sys.path:
-    sys.path.append(parent)
 
 # Imports
 import numpy as np
-import invariants_py.read_and_write_data as rw
+import invariants_py.data_handler as dh
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
-from invariants_py.class_frenetserret_calculation import FrenetSerret_calc
-from invariants_py.class_frenetserret_generation_position import FrenetSerret_gen_pos
+from invariants_py.opti_calculate_vector_invariants_position_mf import OCP_calc_pos
+from invariants_py.opti_generate_position_from_vector_invariants import OCP_gen_pos
 import invariants_py.spline_handler as spline_handler
 import invariants_py.plotters as plotters
 
 """Input data"""
 
-data_location = parent + '/data/sinus.txt'
-#data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/sinus.txt'
-trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
+data_location = dh.find_data_path("sine_wave.txt")
+trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
 trajectory = pose[:,0:3,3]
@@ -37,7 +21,7 @@ plotters.plot_trajectory_test(trajectory)
 """Calculate invariants"""
 
 # Symbolic specification
-FS_calculation_problem = FrenetSerret_calc(window_len=nb_samples, bool_unsigned_invariants = False, w_pos = 1, w_deriv = (10**-5)*np.array([1.0, 1.0, 1.0]), w_abs = (10**-6)*np.array([1.0, 1.0]))
+FS_calculation_problem = OCP_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, w_pos = 1, w_deriv = (10**-5)*np.array([1.0, 1.0, 1.0]), w_abs = (10**-6)*np.array([1.0, 1.0]))
 
 # Calculate invariants given measurements
 invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
@@ -92,7 +76,7 @@ R_FS_end = movingframes[-1]
 
 
 # specify optimization problem symbolically
-FS_online_generation_problem = FrenetSerret_gen_pos(window_len=number_samples,w_invars = 10**2*np.array([10**1, 1.0, 1.0]))
+FS_online_generation_problem = OCP_gen_pos(N=number_samples,w_invars = 10**2*np.array([10**1, 1.0, 1.0]))
 
 # Solve
 new_invars, new_trajectory, new_movingframes = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = calculate_trajectory, R_t_init = movingframes, R_t_start = R_FS_start, R_t_end = R_FS_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize)
@@ -122,7 +106,8 @@ plt.plot(arclength_n,invariants[:,2],'b')
 plt.plot(0,0)
 plt.title('Torsion [rad/m]')
 
-plt.show()
+if plt.get_backend() != 'agg':
+    plt.show()
 
 
 #%% Visualization
@@ -130,7 +115,7 @@ plt.show()
 window_len = 20
 
 # specify optimization problem symbolically
-FS_online_generation_problem = FrenetSerret_gen_pos(window_len=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
+FS_online_generation_problem = OCP_gen_pos(N=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
 
 
 

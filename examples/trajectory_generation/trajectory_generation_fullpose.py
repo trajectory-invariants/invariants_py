@@ -1,41 +1,25 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Aug 3 2023
-
-@author: Riccardo
-"""
-
-import sys
-import os 
-# setting the path to invariants_py
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-parent = os.path.dirname(parent)
-if not parent in sys.path:
-    sys.path.append(parent)
 
 # Imports
 import numpy as np
 from math import pi
-import invariants_py.read_and_write_data as rw
+import invariants_py.data_handler as dh
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_py.class_frenetserret_calculation_reformulation_rotation import FrenetSerret_calc_rot
-from invariants_py.class_frenetserret_calculation_reformulation_position import FrenetSerret_calc_pos as FrenetSerret_calc_pos
-from invariants_py.class_frenetserret_generation_rotation import FrenetSerret_gen_rot
-from invariants_py.class_frenetserret_generation_position import FrenetSerret_gen_pos as FrenetSerret_gen_pos
+from invariants_py.opti_calculate_vector_invariants_rotation import OCP_calc_rot
+from invariants_py.opti_calculate_vector_invariants_position import OCP_calc_pos as OCP_calc_pos
+from invariants_py.opti_generate_rotation_from_vector_invariants import OCP_gen_rot
+from invariants_py.opti_generate_position_from_vector_invariants import OCP_gen_pos as OCP_gen_pos
 from IPython.display import clear_output
 from scipy.spatial.transform import Rotation as R
-from invariants_py.robotics_functions.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
+from invariants_py.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
 from stl import mesh
 import invariants_py.plotters as pl
 #%%
-data_location = parent + '/data/beer_1.txt'
-opener_location = parent + '/data/opener.stl'
-#data_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/beer_1.txt'
-#opener_location = os.path.dirname(os.path.realpath(__file__)) + '/../data/opener.stl'
-trajectory,time = rw.read_pose_trajectory_from_txt(data_location)
+data_location = dh.find_data_path('beer_1.txt')
+opener_location =  dh.find_data_path('opener.stl')
+
+trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
 trajectory_position = pose[:,:3,3]
@@ -67,8 +51,8 @@ class OCP_results:
 optim_calc_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((len(trajectory),6)))
 
 # specify optimization problem symbolically
-FS_calculation_problem_pos = FrenetSerret_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.01)
-FS_calculation_problem_rot = FrenetSerret_calc_rot(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 10*pi/180) 
+FS_calculation_problem_pos = OCP_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.01)
+FS_calculation_problem_rot = OCP_calc_rot(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 10*pi/180) 
 
 # calculate invariants given measurements
 optim_calc_results.invariants[:,3:], optim_calc_results.Obj_pos, optim_calc_results.FSt_frames = FS_calculation_problem_pos.calculate_invariants_global(trajectory,stepsize)
@@ -90,7 +74,8 @@ pl.plot_orientation(optim_calc_results.Obj_frames,trajectory_orientation)
 
 pl.plot_invariants(optim_calc_results.invariants,[],arclength_n)
 
-plt.show()
+if plt.get_backend() != 'agg':
+    plt.show()
 
 #%%
 # Spline of model
@@ -131,8 +116,8 @@ FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
 optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
 
 # specify optimization problem symbolically
-FS_online_generation_problem_pos = FrenetSerret_gen_pos(window_len=number_samples,w_invars = np.array([5*10**1, 1.0, 1.0]))
-FS_online_generation_problem_rot = FrenetSerret_gen_rot(window_len=number_samples,w_invars = 10**2*np.array([10**1, 1.0, 1.0]))
+FS_online_generation_problem_pos = OCP_gen_pos(N=number_samples,w_invars = np.array([5*10**1, 1.0, 1.0]))
+FS_online_generation_problem_rot = OCP_gen_rot(window_len=number_samples,w_invars = 10**2*np.array([10**1, 1.0, 1.0]))
 
 # Solve
 optim_gen_results.invariants[:,3:], optim_gen_results.Obj_pos, optim_gen_results.FSt_frames = FS_online_generation_problem_pos.generate_trajectory(U_demo = model_invariants[:,3:], p_obj_init = optim_calc_results.Obj_pos, R_t_init = optim_calc_results.FSt_frames, R_t_start = FSt_start, R_t_end = FSt_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize)
@@ -158,7 +143,8 @@ pl.plot_orientation(optim_calc_results.Obj_frames,optim_gen_results.Obj_frames,c
 
 pl.plot_invariants(optim_calc_results.invariants, optim_gen_results.invariants, arclength_n, progress_values)
 
-plt.show()
+if plt.get_backend() != 'agg':
+    plt.show()
 
 #%% Visualization
 
@@ -168,8 +154,8 @@ window_len = 20
 optim_iter_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((window_len,6)))
 
 # specify optimization problem symbolically
-FS_online_generation_problem_pos = FrenetSerret_gen_pos(window_len=window_len,w_invars = np.array([5*10**1, 1.0, 1.0]))
-FS_online_generation_problem_rot = FrenetSerret_gen_rot(window_len=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
+FS_online_generation_problem_pos = OCP_gen_pos(N=window_len,w_invars = np.array([5*10**1, 1.0, 1.0]))
+FS_online_generation_problem_rot = OCP_gen_rot(window_len=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
 
 
 current_progress = 0.0
@@ -180,6 +166,10 @@ optim_iter_results.Obj_pos = optim_calc_results.Obj_pos.copy()
 optim_iter_results.Obj_frames = optim_calc_results.Obj_frames.copy()
 optim_iter_results.FSt_frames = optim_calc_results.FSt_frames.copy()
 optim_iter_results.FSr_frames = optim_calc_results.FSr_frames.copy()
+fig = plt.figure(figsize=(14,8))
+ax = fig.add_subplot(111, projection='3d')
+fig_invars = plt.figure(figsize=(10, 6))
+
 while current_progress <= 1.0:
     
     print(f"current progress = {current_progress}")
@@ -210,8 +200,7 @@ while current_progress <= 1.0:
     # Visualization
     clear_output(wait=True)
     
-    fig = plt.figure(figsize=(14,8))
-    ax = fig.add_subplot(111, projection='3d')
+    ax.clear()
     ax.plot(optim_calc_results.Obj_pos[:,0],optim_calc_results.Obj_pos[:,1],optim_calc_results.Obj_pos[:,2],'b')
     ax.plot(optim_iter_results.Obj_pos[:,0],optim_iter_results.Obj_pos[:,1],optim_iter_results.Obj_pos[:,2],'r')
     for i in indx:
@@ -222,9 +211,10 @@ while current_progress <= 1.0:
         pl.plot_3d_frame(optim_iter_results.Obj_pos[i,:],optim_iter_results.Obj_frames[i,:,:],1,0.01,['red','green','blue'],ax)
         pl.plot_stl(opener_location,optim_iter_results.Obj_pos[i,:],optim_iter_results.Obj_frames[i,:,:],colour="r",alpha=0.2,ax=ax)
 
-    pl.plot_invariants(optim_calc_results.invariants,optim_iter_results.invariants,arclength_n,progress_values)
+    pl.plot_invariants(optim_calc_results.invariants,optim_iter_results.invariants,arclength_n,progress_values,fig=fig_invars)
     
-    plt.show()
+    if plt.get_backend() != 'agg':
+        plt.show(block=False)
     
     old_progress = current_progress
     current_progress = old_progress + 1/window_len
