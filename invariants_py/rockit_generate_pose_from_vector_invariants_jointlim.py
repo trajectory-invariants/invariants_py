@@ -146,6 +146,15 @@ class OCP_gen_pose_jointlim:
         if U_init is None:
             U_init = U_demo
 
+        # R_obj_init_packed = np.zeros((3,3*self.window_len))
+        # R_t_init_packed = np.zeros((3,3*self.window_len))
+        # R_r_init_packed = np.zeros((3,3*self.window_len))
+        # for i in range(self.window_len-1):
+        #     R_obj_init_packed[:,3*i:3*(i+1)] = R_obj_init[i]  
+        #     R_t_init_packed[:,3*i:3*(i+1)] = R_t_init[i]
+        #     R_r_init_packed[:,3*i:3*(i+1)] = R_r_init[i]
+        # print(np.size(R_obj_init_packed))
+
         # Initialize states
         self.ocp.set_initial(self.p_obj, p_obj_init[:self.window_len,:].T)
         self.ocp.set_initial(self.R_obj, R_obj_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len))  ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
@@ -167,7 +176,6 @@ class OCP_gen_pose_jointlim:
         self.ocp.set_value(self.R_obj_start,R_obj_start)
         self.ocp.set_value(self.R_obj_end,R_obj_end)
         self.ocp.set_value(self.q_lim,q_lim)
-
 
         # Set values parameters
         self.ocp.set_value(self.h,step_size)
@@ -207,3 +215,56 @@ class OCP_gen_pose_jointlim:
         _,movingframe_rot = sol.sample(self.R_r,grid='control')
         _,joint_val = sol.sample(self.q,grid='control')
         return invariants, new_trajectory_pos, new_trajectory_rot, movingframe_pos, movingframe_rot, tot_time, joint_val
+    
+if __name__ == "__main__":
+    from invariants_py import data_handler
+    # Example data
+    path_to_urdf = data_handler.find_data_path('ur10.urdf')
+    window_len = 100
+    bool_unsigned_invariants = False
+    w_pos = 1
+    w_rot = 1
+    max_iters = 300
+    fatrop_solver = False
+    nb_joints = 6
+    root = 'base_link'
+    tip = 'tool0'
+    
+    # Create an instance of OCP_gen_pose_jointlim
+    ocp_obj = OCP_gen_pose_jointlim(path_to_urdf, window_len, bool_unsigned_invariants, w_pos, w_rot, max_iters, fatrop_solver, nb_joints, root, tip)
+    
+    # Example data for generate_trajectory function
+    U_demo = np.random.rand(window_len, 6)
+    p_obj_init = np.random.rand(window_len, 3)
+    R_obj_init = np.random.rand(window_len, 3, 3)
+    R_t_init = np.random.rand(window_len, 3, 3)
+    R_r_init = np.random.rand(window_len, 3, 3)
+    q_init = np.random.rand(window_len, nb_joints)
+    q_lim = np.random.rand(nb_joints)
+    R_t_start = np.random.rand(3, 3)
+    R_r_start = np.random.rand(3, 3)
+    R_t_end = np.random.rand(3, 3)
+    R_r_end = np.random.rand(3, 3)
+    p_obj_start = np.random.rand(3)
+    R_obj_start = np.random.rand(3, 3)
+    p_obj_end = np.random.rand(3)
+    R_obj_end = np.random.rand(3, 3)
+    step_size = 0.1
+    U_init = None
+    w_invars = (10**-3)*np.ones(6)
+    w_high_start = 1
+    w_high_end = 0
+    w_high_invars = (10**-3)*np.ones(6)
+    w_high_active = 0
+    
+    # Call generate_trajectory function
+    invariants, new_trajectory_pos, new_trajectory_rot, movingframe_pos, movingframe_rot, tot_time, joint_val = ocp_obj.generate_trajectory(U_demo, p_obj_init, R_obj_init, R_t_init, R_r_init, q_init, q_lim, R_t_start, R_r_start, R_t_end, R_r_end, p_obj_start, R_obj_start, p_obj_end, R_obj_end, step_size, U_init, w_invars, w_high_start, w_high_end, w_high_invars, w_high_active)
+    
+    # Print the results
+    print("Invariants:", invariants)
+    print("New Trajectory Position:", new_trajectory_pos)
+    print("New Trajectory Rotation:", new_trajectory_rot)
+    print("Moving Frame Position:", movingframe_pos)
+    print("Moving Frame Rotation:", movingframe_rot)
+    print("Total Time:", tot_time)
+    print("Joint Values:", joint_val)
