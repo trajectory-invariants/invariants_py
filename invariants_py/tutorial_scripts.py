@@ -12,7 +12,7 @@ from invariants_py.rockit_generate_position_from_vector_invariants import OCP_ge
 from invariants_py.rockit_generate_rotation_from_vector_invariants import OCP_gen_rot as FS_gen_rot
 from IPython.display import clear_output
 from scipy.spatial.transform import Rotation as R
-from invariants_py.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
+from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize
 import invariants_py.plotters as pl
 from invariants_py.reparameterization import interpR
 from invariants_py.initialization import FSr_init

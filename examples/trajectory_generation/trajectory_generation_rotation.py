@@ -13,7 +13,7 @@ from IPython.display import clear_output
 from invariants_py.plotters import plot_3d_frame, plot_orientation, plot_stl
 from stl import mesh
 from scipy.spatial.transform import Rotation as R
-from invariants_py.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
+from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize
 #%%
 data_location = dh.find_data_path('beer_1.txt')
 opener_location = dh.find_data_path('opener.stl')

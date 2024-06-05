@@ -4,7 +4,7 @@ from math import pi
 import casadi as cas
 import rockit
 from invariants_py.dynamics_invariants import dyn_vector_invariants_rotation
-from invariants_py import SO3
+import invariants_py.kinematics.orientation_kinematics as SO3
 from invariants_py.initialization import initialize_VI_rot
 from invariants_py.ocp_helper import check_solver, tril_vec
 

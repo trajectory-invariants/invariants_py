@@ -16,7 +16,7 @@ from invariants_py.rockit_generate_rotation_from_vector_invariants import OCP_ge
 from IPython.display import clear_output
 from invariants_py.plotters import plot_3d_frame, plot_orientation, plot_stl
 from scipy.spatial.transform import Rotation as R
-from invariants_py.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
+from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize
 import invariants_py.plotters as pl
 from invariants_py.reparameterization import interpR
 from invariants_py.initialization import FSr_init

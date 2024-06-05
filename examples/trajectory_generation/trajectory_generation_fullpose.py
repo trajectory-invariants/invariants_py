@@ -12,7 +12,7 @@ from invariants_py.opti_generate_rotation_from_vector_invariants import OCP_gen_
 from invariants_py.opti_generate_position_from_vector_invariants import OCP_gen_pos as OCP_gen_pos
 from IPython.display import clear_output
 from scipy.spatial.transform import Rotation as R
-from invariants_py.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
+from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize
 from stl import mesh
 import invariants_py.plotters as pl
 #%%

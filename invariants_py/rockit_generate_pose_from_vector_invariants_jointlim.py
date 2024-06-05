@@ -9,7 +9,7 @@ import numpy as np
 import casadi as cas
 import rockit
 import invariants_py.dynamics_invariants as dynamics
-from invariants_py.forward_kinematics import forward_kinematics
+from invariants_py.kinematics.robot_forward_kinematics import robot_forward_kinematics
 from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag, diffR, diag
 
 class OCP_gen_pose_jointlim:
@@ -96,7 +96,7 @@ class OCP_gen_pose_jointlim:
         ocp.set_next(q,qdot)
 
         # Forward kinematics
-        p_obj_fwkin, R_obj_fwkin = forward_kinematics(q,path_to_urdf,root,tip)
+        p_obj_fwkin, R_obj_fwkin = robot_forward_kinematics(q,path_to_urdf,root,tip)
             
         # Lower bounds on controls
         # if bool_unsigned_invariants:

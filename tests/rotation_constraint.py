@@ -4,11 +4,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from invariants_py.rockit_generate_rotation_from_vector_invariants import OCP_gen_rot as FS_gen_rot
 from scipy.spatial.transform import Rotation as R
-from invariants_py.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
+from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize
 import invariants_py.plotters as pl
 from invariants_py.reparameterization import interpR
 import pickle
-import invariants_py.SO3 as SO3
+import invariants_py.kinematics.orientation_kinematics as SO3
 import os
 from invariants_py import data_handler as dh
 plt.close('all')
