@@ -22,9 +22,12 @@ class OCP_gen_pose_jointlim:
         
         # Define system states X (unknown object pose + moving frame pose at every time step) 
         p_obj = ocp.state(3) # object position
-        R_obj = ocp.state(3,3) # object orientation
-        R_t = ocp.state(3,3) # translational Frenet-Serret frame
-        R_r = ocp.state(3,3) # rotational Frenet-Serret frame
+        R_obj_vec = ocp.state(9,1) # object orientation
+        R_obj = cas.reshape(R_obj_vec,(3,3)) # object orientation
+        R_t_vec = ocp.state(9,1) # translational Frenet-Serret frame
+        R_t = cas.reshape(R_t_vec,(3,3)) # translational Frenet-Serret frame
+        R_r_vec = ocp.state(9,1) # rotational Frenet-Serret frame
+        R_r = cas.reshape(R_r_vec,(3,3)) # rotational Frenet-Serret frame
         q = ocp.state(nb_joints)
 
         # Define system controls (invariants at every time step)
@@ -75,9 +78,9 @@ class OCP_gen_pose_jointlim:
         (R_r_plus1, R_obj_plus1) = dynamics.dyn_vector_invariants_rotation(R_r, R_obj, U[:3], h)
         # Integrate current state to obtain next state (next rotation and position)
         ocp.set_next(p_obj,p_obj_plus1)
-        ocp.set_next(R_obj,R_obj_plus1)
-        ocp.set_next(R_t,R_t_plus1)
-        ocp.set_next(R_r,R_r_plus1)
+        ocp.set_next(R_obj_vec,cas.vec(R_obj_plus1))
+        ocp.set_next(R_t_vec,cas.vec(R_t_plus1))
+        ocp.set_next(R_r_vec,cas.vec(R_r_plus1))
         ocp.set_next(q,qdot)
 
         # Forward kinematics
@@ -116,10 +119,10 @@ class OCP_gen_pose_jointlim:
 
         
         # Save variables
-        self.R_t = R_t
-        self.R_r = R_r
+        self.R_t = R_t_vec
+        self.R_r = R_r_vec
         self.p_obj = p_obj
-        self.R_obj = R_obj
+        self.R_obj = R_obj_vec
         self.q = q
         self.nb_joints = nb_joints
         self.U = U
@@ -157,9 +160,20 @@ class OCP_gen_pose_jointlim:
 
         # Initialize states
         self.ocp.set_initial(self.p_obj, p_obj_init[:self.window_len,:].T)
-        self.ocp.set_initial(self.R_obj, R_obj_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len))  ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
-        self.ocp.set_initial(self.R_t, R_t_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len))   ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
-        self.ocp.set_initial(self.R_r, R_r_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len))   ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
+        # A = R_obj_init[:2]
+        # print(A)
+        # B = R_obj_init[:2].transpose(0,2,1).reshape(-1,9).T
+        # print(B)
+        # C = B.T.reshape(-1, 3, 3).transpose(0, 2, 1)
+        # print(C)
+
+
+        self.ocp.set_initial(self.R_obj, R_obj_init.transpose(0,2,1).reshape(-1,9).T)
+        self.ocp.set_initial(self.R_t, R_t_init.transpose(0,2,1).reshape(-1,9).T)
+        self.ocp.set_initial(self.R_r, R_r_init.transpose(0,2,1).reshape(-1,9).T)
+        # self.ocp.set_initial(self.R_obj, R_obj_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len))  ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
+        # self.ocp.set_initial(self.R_t, R_t_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len))   ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
+        # self.ocp.set_initial(self.R_r, R_r_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len))   ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
         self.ocp.set_initial(self.q,q_init.T)
             
         # Initialize controls
@@ -214,7 +228,8 @@ class OCP_gen_pose_jointlim:
         _,movingframe_pos = sol.sample(self.R_t,grid='control')
         _,movingframe_rot = sol.sample(self.R_r,grid='control')
         _,joint_val = sol.sample(self.q,grid='control')
-        return invariants, new_trajectory_pos, new_trajectory_rot, movingframe_pos, movingframe_rot, tot_time, joint_val
+
+        return invariants, new_trajectory_pos, new_trajectory_rot.T.reshape(-1, 3, 3).transpose(0, 2, 1), movingframe_pos.T.reshape(-1, 3, 3).transpose(0, 2, 1), movingframe_rot.T.reshape(-1, 3, 3).transpose(0, 2, 1), tot_time, joint_val
     
 if __name__ == "__main__":
     from invariants_py import data_handler
