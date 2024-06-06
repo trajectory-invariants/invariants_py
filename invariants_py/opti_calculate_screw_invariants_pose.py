@@ -1,6 +1,6 @@
 import numpy as np
 import casadi as cas
-from invariants_py.dynamics_invariants import dynamics_screw_invariants_pose_traj
+from invariants_py.dynamics_vector_invariants import dynamics_screw_invariants_pose_traj
 from invariants_py import ocp_helper
 
 class OCP_calc_pose:    

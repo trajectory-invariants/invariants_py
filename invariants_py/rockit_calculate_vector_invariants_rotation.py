@@ -3,7 +3,7 @@ import numpy as np
 from math import pi
 import casadi as cas
 import rockit
-from invariants_py.dynamics_invariants import dyn_vector_invariants_rotation
+from invariants_py.dynamics_vector_invariants import integrate_vector_invariants_rotation
 import invariants_py.kinematics.orientation_kinematics as SO3
 from invariants_py.initialization import initialize_VI_rot
 from invariants_py.ocp_helper import check_solver, tril_vec
@@ -42,7 +42,7 @@ class OCP_calc_rot:
         h = ocp.parameter(1) # stepsize
         
         # Define system discrete dynamics (integrate current state + controls to obtain next state)
-        (R_r_plus1, R_obj_plus1) = dyn_vector_invariants_rotation(R_r, R_obj, invars, h)
+        (R_r_plus1, R_obj_plus1) = integrate_vector_invariants_rotation(R_r, R_obj, invars, h)
         ocp.set_next(R_obj,R_obj_plus1)
         ocp.set_next(R_r,R_r_plus1)
             

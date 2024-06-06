@@ -1,7 +1,7 @@
 import numpy as np
 import casadi as cas
 import rockit
-import invariants_py.dynamics_invariants as dynamics
+import invariants_py.dynamics_vector_invariants as dynamics
 import time
 from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag, diffR, diag
 from invariants_py.kinematics.orientation_kinematics import rotate_x
@@ -75,7 +75,7 @@ class OCP_gen_rot:
         #ocp.subject_to(ocp.at_tf(self.diffR(R_obj,R_obj_end)) == 0)
             
         # Dynamic constraints
-        (R_r_plus1, R_obj_plus1) = dynamics.dyn_vector_invariants_rotation(R_r, R_obj, invars, h)
+        (R_r_plus1, R_obj_plus1) = dynamics.integrate_vector_invariants_rotation(R_r, R_obj, invars, h)
         # Integrate current state to obtain next state (next rotation and position)
         ocp.set_next(R_obj_x,R_obj_plus1[:,0])
         ocp.set_next(R_obj_y,R_obj_plus1[:,1])
