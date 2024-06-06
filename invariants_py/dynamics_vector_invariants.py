@@ -6,7 +6,7 @@ These are necessary to reconstruct trajectories from the invariant representatio
 import casadi as cas
 import numpy as np
 
-def integrate_angular_velocity_cas(omega,h):
+def integrate_angular_velocity(omega,h):
     """Return a rotation matrix which is the result of rotating with angular velocity omega over time interval h. 
     Rodrigues' rotation formula is used to calculate the rotation matrix. 
     This implementation is intended for use with CasADi.
@@ -20,7 +20,7 @@ def integrate_angular_velocity_cas(omega,h):
 def skewsym_to_rot(skewer):
     """Return a rotation matrix corresponding to the given skew-symmetric matrix [r] using Rodrigues' rotation formula."""
     omega = cas.vertcat(-skewer[1,2],skewer[0,2],-skewer[0,1])
-    return integrate_angular_velocity_cas(omega,h=1)
+    return integrate_angular_velocity(omega,h=1)
 
 def integrate_vector_invariants_pose_cas(R_t, R_r, R_obj, p_obj, u, h):
     """Integrate invariants over interval h starting from a current state (object pose + moving frames)"""
@@ -39,15 +39,15 @@ def integrate_vector_invariants_pose_cas(R_t, R_r, R_obj, p_obj, u, h):
     omega_o = cas.mtimes(R_r, cas.vertcat(i1,0,0))
 
     #translation
-    deltaR_t = integrate_angular_velocity_cas(omega_t,h)
+    deltaR_t = integrate_angular_velocity(omega_t,h)
     R_t_plus1 = cas.mtimes(R_t,deltaR_t)
     p_obj_plus1 = cas.mtimes(R_t, cas.vertcat(i4,0,0))*h + p_obj
 
     #rotation
-    deltaR_r = integrate_angular_velocity_cas(omega_r,h)
+    deltaR_r = integrate_angular_velocity(omega_r,h)
     R_r_plus1 = cas.mtimes(R_r,deltaR_r)
 
-    deltaR_o = integrate_angular_velocity_cas(omega_o,h)
+    deltaR_o = integrate_angular_velocity(omega_o,h)
     R_obj_plus1 = cas.mtimes(deltaR_o,R_obj)
 
     return (R_t_plus1, R_r_plus1, R_obj_plus1, p_obj_plus1)
@@ -70,15 +70,15 @@ def integrate_vector_invariants_pose(R_t, R_r, R_obj, p_obj, u, h):
     omega_o = cas.mtimes(R_r, np.array([[i1],[0],[0]]))
 
     #translation
-    deltaR_t = integrate_angular_velocity_cas(omega_t,h)
+    deltaR_t = integrate_angular_velocity(omega_t,h)
     R_t_plus1 = cas.mtimes(R_t,deltaR_t)
     p_obj_plus1 = cas.mtimes(R_t, np.array([[i4],[0],[0]]))*h + p_obj
 
     #rotation
-    deltaR_r = integrate_angular_velocity_cas(omega_r,h)
+    deltaR_r = integrate_angular_velocity(omega_r,h)
     R_r_plus1 = cas.mtimes(R_r,deltaR_r)
 
-    deltaR_o = integrate_angular_velocity_cas(omega_o,h)
+    deltaR_o = integrate_angular_velocity(omega_o,h)
     R_obj_plus1 = cas.mtimes(deltaR_o,R_obj)
 
     return (R_t_plus1, R_r_plus1, R_obj_plus1, p_obj_plus1)

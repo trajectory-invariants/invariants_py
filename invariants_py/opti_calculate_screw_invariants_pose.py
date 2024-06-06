@@ -1,6 +1,6 @@
 import numpy as np
 import casadi as cas
-from invariants_py.dynamics_vector_invariants import dynamics_screw_invariants_pose_traj
+from invariants_py.dynamics_screw_invariants import define_integrator_invariants_pose
 from invariants_py import ocp_helper
 
 class OCP_calc_pose:    
@@ -26,7 +26,7 @@ class OCP_calc_pose:
         opti.subject_to(ocp_helper.tril_vec(T_obj[0][0:3,0:3].T @ T_obj[0][0:3,0:3] - np.eye(3)) == 0)
 
         # Dynamics constraints (Multiple shooting)
-        integrator = dynamics_screw_invariants_pose_traj(h)
+        integrator = define_integrator_invariants_pose(h)
         for k in range(N-1):
             # Integrate current state to obtain next state (next rotation and position)
             Xk_end = integrator(X[k],U[:,k],h)
