@@ -9,6 +9,7 @@ import nbconvert
 # Directories containing the examples and tests
 directories = ["examples", "tests", "invariants_py", "notebooks"]
 #directories = ["notebooks"]
+#directories = ["benchmarking"]
 
 # Initialize an empty list to hold examples and tests that fail to execute
 failed_scripts = []

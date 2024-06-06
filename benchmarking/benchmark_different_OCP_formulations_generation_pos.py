@@ -10,15 +10,16 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
-import invariants_py.FS_pos_bench as FS
+import FS_pos_bench as FS
 import list_of_different_formulations_generation_pos as form
+from invariants_py.data_handler import find_data_path
 
 
 #%%
 plt.close('all')
 
 ### data 2D contour
-data_location = Path(__file__).resolve().parent.parent.parent / 'data' / 'contour_coordinates.out'
+data_location = find_data_path('contour_coordinates.out')
 position_data = np.loadtxt(data_location, dtype='float')
 
 plt.figure(figsize=(8,3))

@@ -9,8 +9,8 @@ import numpy as np
 import casadi as cas
 import invariants_py.reparameterization as reparam
 import invariants_py.integrator_functions_bench as integrators
-import invariants_py.robotics_functions.rot2quat as rot2quat
-import invariants_py.robotics_functions.quat2rotm as quat2rotm
+import invariants_py.rot2quat as rot2quat
+import invariants_py.quat2rotm as quat2rotm
 import invariants_py.SO3 as SO3
 import matplotlib.pyplot as plt
 

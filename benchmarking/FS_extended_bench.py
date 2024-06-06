@@ -7,8 +7,8 @@ Created on Sat Feb 24 09:47:35 2024
 
 import numpy as np
 import invariants_py.reparameterization as reparam
-import invariants_py.FS_pos_bench as FS_pos
-import invariants_py.FS_rot_bench as FS_rot
+import FS_pos_bench as FS_pos
+import FS_rot_bench as FS_rot
 
 #%% OCP formulation FS invariants calculation
 

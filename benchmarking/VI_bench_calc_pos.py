@@ -11,13 +11,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import invariants_py.VI_solver_pos as VI
 import invariants_py.VI_settings as VI_settings
+from invariants_py.data_handler import find_data_path
 
 
 #%%
 plt.close('all')
 
 ### data 2D contour
-data_location = Path(__file__).resolve().parent.parent.parent / 'data' / 'contour_coordinates.out'
+data_location = find_data_path('contour_coordinates.out')
 position_data = np.loadtxt(data_location, dtype='float')
 
 plt.figure(figsize=(8,3))

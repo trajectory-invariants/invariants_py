@@ -5,7 +5,7 @@ Created on Mon Feb 19 15:45:36 2024
 @author: Arno Verduyn
 """
 
-import invariants_py.FS_pos_bench as FS
+import FS_pos_bench as FS
 
 def set_formulations():                                         
     formulations = [];

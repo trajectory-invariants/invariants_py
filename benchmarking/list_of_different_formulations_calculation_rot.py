@@ -4,7 +4,7 @@ Created on Fri Feb 16 14:24:18 2024
 
 @author: Arno Verduyn
 """
-import invariants_py.FS_rot_bench as FS
+import FS_rot_bench as FS
 
 def set_formulations():                                         
     formulations = [];

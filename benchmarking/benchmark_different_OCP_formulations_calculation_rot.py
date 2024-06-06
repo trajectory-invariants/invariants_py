@@ -10,15 +10,16 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
-import invariants_py.FS_rot_bench as FS
+import FS_rot_bench as FS
 import list_of_different_formulations_calculation_rot as form
-import invariants_py.robotics_functions.quat2rotm as quat2rotm
+import invariants_py.quat2rotm as quat2rotm
+from invariants_py.data_handler import find_data_path
 
 #%%
 plt.close('all')
 
 #%% retrieve measurements
-data_location = Path(__file__).resolve().parent.parent.parent / 'data' / 'sinus.txt'
+data_location = find_data_path('sine_wave.txt')
 imported_data = np.loadtxt(data_location, dtype='float')
 class input_data:
     pass
