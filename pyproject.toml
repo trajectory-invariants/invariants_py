@@ -1,9 +1,10 @@
 [tool.poetry]
 name = "invariants-py"
-version = "0.3.3"
+version = "0.3.5"
 description = "Trajectory Invariants for trajectory analysis and generation"
 authors = ["Maxim Vochten", "Riccardo Burlizzi", "Arno Verduyn"]
 packages = [{include = "invariants_py"}]
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.6"
