@@ -20,9 +20,9 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install poetry
+        pip install hatch
     - name: Build
       run: |
-        poetry build
+        hatch build
     - name: Publish package distributions to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
