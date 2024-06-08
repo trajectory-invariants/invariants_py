@@ -7,7 +7,6 @@ authors = [
     {name = "Riccardo Burlizzi"},
     {name = "Arno Verduyn"}
 ]
-#packages = [{include = "invariants_py"}]
 readme = "README.md"
 requires-python = ">=3.8"
 keywords = ["trajectory analysis", "trajectory generation", "invariant", "coordinate-invariant", "trajectory representation", "trajectory optimization", "trajectory planning", "robotics", "dynamics", "kinematics", "screw theory", "optimal control", "geometric optimal control", "differential geometry", "optimization", "casadi", "python"]
@@ -51,19 +50,6 @@ Home-page = "https://trajectory-invariants.github.io/"
 Documentation = "https://trajectory-invariants.github.io/docs/python/"
 Repository = "https://github.com/trajectory-invariants/invariants_py"
 Issues = "https://github.com/trajectory-invariants/invariants_py/issues"
-
-# [tool.poetry.dependencies]
-# python = "^3.6"
-# scipy = "^1.5.2"
-# casadi = "^3.5.5, <4.0.0"
-# PyQt5 = "^5.10.1"
-# matplotlib = "^3.3.1, <3.8.0" # open bug in >=3.8.0 https://github.com/matplotlib/matplotlib/issues/26827
-# numpy = "^1.19.0"
-# ipython = "^7.15.0"
-# numpy-stl = "^2.12.0"
-# pandas = "^1.1.0"
-# urdf2casadi = "^1.0.0"
-# jupyter = "^1.0.0"
 
 [build-system]
 requires = ["hatchling"]
