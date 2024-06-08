@@ -9,7 +9,6 @@ authors = [
 ]
 #packages = [{include = "invariants_py"}]
 readme = "README.md"
-license = "MIT"
 requires-python = ">=3.8"
 keywords = ["trajectory analysis", "trajectory generation", "invariant", "coordinate-invariant", "trajectory representation", "trajectory optimization", "trajectory planning", "robotics", "dynamics", "kinematics", "screw theory", "optimal control", "geometric optimal control", "differential geometry", "optimization", "casadi", "python"]
 dependencies = [ # it is possible to have optional dependencies
@@ -24,7 +23,6 @@ dependencies = [ # it is possible to have optional dependencies
     "urdf2casadi",
     "jupyter"
 ]
-
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -47,8 +45,13 @@ classifiers = [
     "Natural Language :: English"
 ]
 
+[project.license]
+text = "MIT License"
+files = ["LICENSE"]
+
 [project.urls]
-Documentation = "https://trajectory-invariants.github.io/"
+Home-page = "https://trajectory-invariants.github.io/"
+Documentation = "https://trajectory-invariants.github.io/docs/python/"
 Repository = "https://github.com/trajectory-invariants/invariants_py"
 Issues = "https://github.com/trajectory-invariants/invariants_py/issues"
 
