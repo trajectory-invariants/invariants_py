@@ -10,10 +10,10 @@ import invariants_py.data_handler as dh
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_py.rockit_calculate_vector_invariants_position import OCP_calc_pos as FS_calc_pos
-from invariants_py.rockit_calculate_vector_invariants_rotation import OCP_calc_rot as FS_calc_rot
-from invariants_py.rockit_generate_position_from_vector_invariants import OCP_gen_pos as FS_gen_pos
-from invariants_py.rockit_generate_rotation_from_vector_invariants import OCP_gen_rot as FS_gen_rot
+from invariants_py.calculate_invariants.rockit_calculate_vector_invariants_position import OCP_calc_pos as FS_calc_pos
+from invariants_py.calculate_invariants.rockit_calculate_vector_invariants_rotation import OCP_calc_rot as FS_calc_rot
+from invariants_py.generate_trajectory.rockit_generate_position_traj_from_vector_invars import OCP_gen_pos as FS_gen_pos
+from invariants_py.generate_trajectory.rockit_generate_orientation_traj_from_vector_invars import OCP_gen_rot as FS_gen_rot
 from IPython.display import clear_output
 from scipy.spatial.transform import Rotation as R
 from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize

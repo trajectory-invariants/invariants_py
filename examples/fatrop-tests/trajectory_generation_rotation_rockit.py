@@ -11,8 +11,8 @@ import invariants_py.data_handler as dh
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_py.rockit_calculate_vector_invariants_rotation import OCP_calc_rot as FS_calc
-from invariants_py.rockit_generate_rotation_from_vector_invariants import OCP_gen_rot as FS_gen
+from invariants_py.calculate_invariants.rockit_calculate_vector_invariants_rotation import OCP_calc_rot as FS_calc
+from invariants_py.generate_trajectory.rockit_generate_orientation_traj_from_vector_invars import OCP_gen_rot as FS_gen
 from IPython.display import clear_output
 from invariants_py.plotters import plot_3d_frame, plot_orientation, plot_stl
 from scipy.spatial.transform import Rotation as R

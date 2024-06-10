@@ -6,9 +6,9 @@ Application involving approach trajectory of a bottle opener towards a bottle
 import time as t
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
-from invariants_py.rockit_calculate_vector_invariants_position import OCP_calc_pos
+from invariants_py.calculate_invariants.rockit_calculate_vector_invariants_position import OCP_calc_pos
 from invariants_py.ocp_helper import solution_check_pos
-from invariants_py.rockit_generate_position_from_vector_invariants import OCP_gen_pos
+from invariants_py.generate_trajectory.rockit_generate_position_traj_from_vector_invars import OCP_gen_pos
 import invariants_py.data_handler as dh
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
