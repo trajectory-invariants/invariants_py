@@ -60,7 +60,51 @@ class OCP_calc_pose:
         # Solver
         opti.minimize(objective)
         opti.solver('ipopt',{"print_time":True,"expand":True},{'gamma_theta':1e-12,'max_iter':200,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
-             
+
+        # Store variables
+        self.opti = opti
+        self.N = N
+        self.T_obj_m = T_obj_m
+        self.h = h
+        self.T_obj = T_obj
+        self.T_isa = T_isa
+        self.U = U
+
+    def calculate_invariants(self, T_obj_m, h):
+
+        # Initial guess
+        T_obj_init = T_obj_m
+        T_isa_init = np.tile(np.eye(4), (100, 1, 1)) # initial guess for moving frame poses
+
+        # Set initial guess
+        for i in range(self.N):
+            self.opti.set_value(self.T_obj_m[i], T_obj_m[i,:3])
+            self.opti.set_initial(self.T_isa[i], T_isa_init[i,:3])
+            self.opti.set_initial(self.T_obj[i], T_obj_init[i,:3])
+        self.opti.set_value(self.h, h)
+            
+        for i in range(self.N-1):
+            self.opti.set_initial(self.U[:,i], np.zeros(6)+0.001*np.random.randn(6))
+
+        # Solve
+        sol = self.opti.solve()
+
+        # Return solution
+        T_isa = [sol.value(self.T_isa[k]) for k in range(self.N)]
+        T_obj = [sol.value(self.T_obj[k]) for k in range(self.N)]
+        U = sol.value(self.U)
+        
+        return U, T_obj, T_isa
+    
+          
 if __name__ == "__main__":
 
     OCP = OCP_calc_pose(N=100, rms_error_traj=10**-3)
+
+    # Example: calculate invariants for a given trajectory
+    T_obj_m = np.tile(np.eye(4), (100, 1, 1)) # example: measured object poses
+    h = 0.01 # step size for integration of dynamic equations
+
+    U, T_obj, T_isa = OCP.calculate_invariants(T_obj_m, h)
+
+    print("Invariants U: ", U)
