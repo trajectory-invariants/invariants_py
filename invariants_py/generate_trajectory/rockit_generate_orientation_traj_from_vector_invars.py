@@ -1,10 +1,10 @@
 import numpy as np
 import casadi as cas
 import rockit
-import invariants_py.dynamics_invariants as dynamics
+import invariants_py.dynamics_vector_invariants as dynamics
 import time
 from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag, diffR, diag
-from invariants_py.SO3 import rotate_x
+from invariants_py.kinematics.orientation_kinematics import rotate_x
 from invariants_py.initialization import generate_initvals_from_bounds_rot
 
 class OCP_gen_rot:
@@ -69,7 +69,7 @@ class OCP_gen_rot:
         #ocp.subject_to(ocp.at_tf(self.diffR(R_obj,R_obj_end)) == 0)
             
         # Dynamic constraints
-        (R_r_plus1, R_obj_plus1) = dynamics.dyn_vector_invariants_rotation(R_r, R_obj, invars, h)
+        (R_r_plus1, R_obj_plus1) = dynamics.integrate_vector_invariants_rotation(R_r, R_obj, invars, h)
         # Integrate current state to obtain next state (next rotation and position)
         ocp.set_next(R_obj,R_obj_plus1)
         ocp.set_next(R_r,R_r_plus1)
@@ -251,9 +251,11 @@ class OCP_gen_rot:
             self.solution = generate_initvals_from_bounds_rot(boundary_constraints, np.size(invariant_model,0))
             self.first_window = False
         elif self.first_window:
-            self.solution = [initial_values["invariants-orientation"][:N-1,:].T, initial_values["moving-frame-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["trajectory-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N)]
+            self.solution = [
+                initial_values["invariants-orientation"][:N-1,:].T, 
+                initial_values["moving-frame-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N), 
+                initial_values["trajectory-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N)]
             self.first_window = False
-
 
         # Call solve function
         self.solution = self.ocp_function(invariant_model.T,w_invars,step_size,*boundary_values_list,*self.solution)
