@@ -3,7 +3,7 @@
 # Import necessary modules
 from invariants_py import data_handler as dh
 import invariants_py.plotters as plotters
-from invariants_py.opti_generate_position_from_vector_invariants import generate_trajectory_translation
+from invariants_py.generate_trajectory.opti_generate_position_traj_from_vector_invars import generate_trajectory_translation
 
 # Find the path to the data file
 path_to_data = dh.find_data_path("sine_wave_invariant_model.csv")

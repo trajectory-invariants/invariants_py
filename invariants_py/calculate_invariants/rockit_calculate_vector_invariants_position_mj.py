@@ -1,7 +1,7 @@
 import rockit
 import numpy as np
 import casadi as cas
-import invariants_py.dynamics_invariants as dynamics
+import invariants_py.dynamics_vector_invariants as dynamics
 import invariants_py.ocp_helper as ocp_helper
 from invariants_py import initialization
 from invariants_py.ocp_helper import check_solver
@@ -44,7 +44,7 @@ class OCP_calc_pos:
         self.ocp.subject_to(self.ocp.at_t0(ocp_helper.tril_vec(R_t.T @ R_t - np.eye(3))==0.))
 
         # Dynamics equations        
-        (R_t_plus1, p_obj_plus1) = dynamics.vector_invariants_position(R_t, self.p_obj, invariants, self.h)
+        (R_t_plus1, p_obj_plus1) = dynamics.integrate_vector_invariants_position(R_t, self.p_obj, invariants, self.h)
         
         self.ocp.set_next(self.R_t_x,R_t_plus1[:,0])
         self.ocp.set_next(self.R_t_y,R_t_plus1[:,1])

@@ -1,5 +1,5 @@
 from invariants_py import data_handler as dh
-import invariants_py.invariant_descriptor_class as invars
+import invariants_py.old.invariant_descriptor_class as invars
 #import numpy as np
 
 # Initialization

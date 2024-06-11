@@ -4,7 +4,7 @@ Simple test to calculate invariants using opti specification
 
 import numpy as np
 import invariants_py.reparameterization as reparam
-import invariants_py.opti_calculate_vector_invariants_position_mj as FS3
+import invariants_py.calculate_invariants.opti_calculate_vector_invariants_position_mj as FS3
 import invariants_py.plotters as plotters
 import os
 import time

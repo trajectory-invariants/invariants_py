@@ -1,5 +1,5 @@
 import numpy as np
-import invariants_py.SO3 as SO3
+import invariants_py.kinematics.orientation_kinematics as SO3
 from invariants_py.reparameterization import interpR
 
 def FSr_init(R_obj_start,R_obj_end,N=100):

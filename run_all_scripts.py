@@ -1,5 +1,5 @@
 """
-Check all examples, tests, modules and notebooks to see if they run successfully
+Run all examples, tests, modules and notebooks to see if they execute without errors.
 """
 
 import os

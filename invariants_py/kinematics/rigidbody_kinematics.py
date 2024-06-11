@@ -20,7 +20,7 @@ from numpy.linalg import norm
 from numpy import trace
 import math
 from math import fabs,copysign,sqrt,atan2,asin
-from invariants_py import SO3
+from invariants_py.kinematics import orientation_kinematics as SO3
 
 def random():
     """
@@ -40,6 +40,24 @@ def inv(T):
     Ti[:3,3]  = - Ti[:3,:3] @ T[:3,3]
     Ti[3,3] = 1
     return Ti
+
+def orthonormalize_rotation( T ):
+    """
+    Find closest rotation matrix to a given 3x3 matrix.
+
+    Parameters
+    ----------
+    T : a (4,4) numpy array describing transformation matrix or a (3,3) numpy array describing a general matrix
+        
+    Returns
+    -------
+    Orthonormalised input matrix T
+    """
+    R = T[:3,:3]
+    Rn = SO3.orthonormalize_rotation(R)
+    T[:3,:3] = Rn
+
+    return T
 
 def frame( rot=None, p=None):
     r"""

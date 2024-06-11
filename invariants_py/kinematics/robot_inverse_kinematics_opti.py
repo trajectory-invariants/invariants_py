@@ -16,7 +16,7 @@ from math import pi
 import invariants_py.data_handler as dh
 import invariants_py.reparameterization as reparam
 import urdf2casadi.urdfparser as u2c
-from invariants_py.SE3 import rotate_z
+from invariants_py.kinematics.rigidbody_kinematics import rotate_z
 
 def inv_kin(q_init, q_joint_lim, des_p_obj, des_R_obj, window_len = 100, fatrop_solver = False):
     
@@ -68,10 +68,10 @@ def inv_kin(q_init, q_joint_lim, des_p_obj, des_R_obj, window_len = 100, fatrop_
     path_to_urdf = dh.find_data_path("ur10.urdf")
     ur10.from_file(path_to_urdf)
     fk_dict = ur10.get_forward_kinematics(root, tip)
-    forward_kinematics = fk_dict["T_fk"]
+    robot_forward_kinematics = fk_dict["T_fk"]
     objective = 0
     for k in range(window_len):
-        T_rob = forward_kinematics(q[:,k].T)
+        T_rob = robot_forward_kinematics(q[:,k].T)
         T_rob = rotate_z(pi) @ T_rob
         p_obj = T_rob[:3,3]
         R_obj = T_rob[:3,:3]

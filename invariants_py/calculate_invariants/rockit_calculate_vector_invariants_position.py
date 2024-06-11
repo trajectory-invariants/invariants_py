@@ -1,7 +1,7 @@
 import numpy as np
 import casadi as cas
 import rockit
-from invariants_py import ocp_helper, dynamics_invariants, initialization
+from invariants_py import ocp_helper, dynamics_vector_invariants, initialization
 from invariants_py.ocp_helper import check_solver
 
 class OCP_calc_pos:
@@ -28,7 +28,7 @@ class OCP_calc_pos:
         h = ocp.parameter(1) # stepsize
         
         # System dynamics (integrate current states + controls to obtain next states)
-        (R_t_plus1, p_obj_plus1) = dynamics_invariants.vector_invariants_position(R_t, p_obj, invars, h)
+        (R_t_plus1, p_obj_plus1) = dynamics_vector_invariants.integrate_vector_invariants_position(R_t, p_obj, invars, h)
         ocp.set_next(p_obj,p_obj_plus1)
         ocp.set_next(R_t,R_t_plus1)
 

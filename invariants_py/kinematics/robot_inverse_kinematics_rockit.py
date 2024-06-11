@@ -15,8 +15,8 @@ import os
 from math import pi
 import invariants_py.data_handler as dh
 import invariants_py.reparameterization as reparam
-from forward_kinematics import forward_kinematics
-from invariants_py.SE3 import rotate_z
+from invariants_py.kinematics.robot_forward_kinematics import robot_forward_kinematics
+from invariants_py.kinematics.rigidbody_kinematics import rotate_z
 
 def inv_kin(q_init, q_joint_lim, des_p_obj, des_R_obj, path_to_urdf, root = 'base_link', tip = 'tool0', window_len = 1, nb_joints = 6, fatrop_solver = False):
 
@@ -46,7 +46,7 @@ def inv_kin(q_init, q_joint_lim, des_p_obj, des_R_obj, path_to_urdf, root = 'bas
     ocp.set_der(q,qdot)
 
     # Forward kinematics
-    p_obj, R_obj = forward_kinematics(q,path_to_urdf,root,tip)
+    p_obj, R_obj = robot_forward_kinematics(q,path_to_urdf,root,tip)
     # Specify the objective
     e_pos = cas.dot(p_obj - p_obj_m,p_obj - p_obj_m)
     e_rot = cas.dot(R_obj_m.T @ R_obj - np.eye(3),R_obj_m.T @ R_obj - np.eye(3))
@@ -105,10 +105,10 @@ if __name__ == "__main__":
 # =======================================
 # Debugging =======================================
 # =======================================
-# p_obj, R_obj = forward_kinematics(q,path_to_urdf,root_link_name,tip_link_name)
+# p_obj, R_obj = robot_forward_kinematics(q,path_to_urdf,root_link_name,tip_link_name)
 
 # for i in range(N):
-#     p_obj, R_obj = forward_kinematics(q[i],path_to_urdf,root_link_name,tip_link_name)
+#     p_obj, R_obj = robot_forward_kinematics(q[i],path_to_urdf,root_link_name,tip_link_name)
 
 #     #e_pos = cas.dot(p_obj - des_p_obj[i],p_obj - des_p_obj[i])
 #     e_rot = cas.dot(des_R_obj[i].T @ R_obj - np.eye(3),des_R_obj[i].T @ R_obj - np.eye(3))
