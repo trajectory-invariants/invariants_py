@@ -1,24 +1,55 @@
-[tool.poetry]
+[project]
 name = "invariants-py"
-version = "0.3.3"
-description = "Trajectory Invariants for trajectory analysis and generation"
-authors = ["Maxim Vochten", "Riccardo Burlizzi", "Arno Verduyn"]
-packages = [{include = "invariants_py"}]
+version = "0.3.7" # note that it is possible for the build backend to manage versions in a dynamic way
+description = "Calculate invariant trajectory representations from trajectory data and generate new trajectories from invariant representations"
+authors = [ {name = "Maxim Vochten"}, 
+    {name = "Riccardo Burlizzi"},
+    {name = "Arno Verduyn"}
+]
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["trajectory analysis", "trajectory generation", "invariant", "coordinate-invariant", "trajectory representation", "trajectory optimization", "trajectory planning", "robotics", "dynamics", "kinematics", "screw theory", "optimal control", "geometric optimal control", "differential geometry", "optimization", "casadi", "python"]
+dependencies = [ # it is possible to have optional dependencies
+    "scipy",
+    "casadi",
+    "PyQt5",
+    "matplotlib",
+    "numpy",
+    "ipython",
+    "numpy-stl",
+    "pandas",
+    "urdf2casadi",
+    "jupyter"
+]
+classifiers = [ # only relevant/used for PyPI
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Operating System :: OS Independent",
+    "Natural Language :: English"
+]
 
-[tool.poetry.dependencies]
-python = "^3.6"
-scipy = "^1.5.2"
-casadi = "^3.5.5, <4.0.0"
-PyQt5 = "^5.10.1"
-matplotlib = "^3.3.1, <3.8.0" # open bug in >=3.8.0 https://github.com/matplotlib/matplotlib/issues/26827
-numpy = "^1.19.0"
-ipython = "^7.15.0"
-numpy-stl = "^2.12.0"
-pandas = "^1.1.0"
-urdf2casadi = "^1.0.0"
-jupyter = "^1.0.0"
-notebook = "^6.4.0"
+[project.license]
+text = "MIT License"
+files = ["LICENSE"]
+
+[project.urls]
+Home-page = "https://trajectory-invariants.github.io/"
+Documentation = "https://trajectory-invariants.github.io/docs/python/"
+Repository = "https://github.com/trajectory-invariants/invariants_py"
+Issues = "https://github.com/trajectory-invariants/invariants_py/issues"
 
 [build-system]
-requires = ["poetry-core>=1.0.8"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
