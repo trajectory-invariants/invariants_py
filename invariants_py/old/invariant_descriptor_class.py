@@ -25,7 +25,7 @@ import pickle
 import math
 
 import casadi as cas
-import invariants_py.dynamics_invariants as helper
+import invariants_py.dynamics_vector_invariants as helper
 
 from collections import OrderedDict
 
@@ -703,7 +703,7 @@ class MotionTrajectory:
         nu = np.shape(u)[0] # number of input states
 
         ## Define a geometric integrator for eFSI, (meaning rigid-body motion is perfectly integrated assuming constant invariants)
-        (R_t_plus1, R_r_plus1, R_obj_plus1, p_obj_plus1) = helper.geo_integrator(R_t, R_r, R_obj, p_obj, u, h)
+        (R_t_plus1, R_r_plus1, R_obj_plus1, p_obj_plus1) = helper.integrate_vector_invariants_pose_cas(R_t, R_r, R_obj, p_obj, u, h)
         out_plus1 = cas.vertcat(R_t_plus1[:], R_r_plus1[:], R_obj_plus1[:],  p_obj_plus1)
         integr2 = cas.Function('phi', [x,u] , [out_plus1])
 
@@ -898,7 +898,7 @@ class MotionTrajectory:
         nu = np.shape(u)[0] # number of input states
 
 
-        (R_t_plus1, R_r_plus1, R_obj_plus1, p_obj_plus1) = helper.geo_integrator(R_t, R_r, R_obj, p_obj, u, h)
+        (R_t_plus1, R_r_plus1, R_obj_plus1, p_obj_plus1) = helper.integrate_vector_invariants_pose_cas(R_t, R_r, R_obj, p_obj, u, h)
         out_plus1 = cas.vertcat(R_t_plus1[:], R_r_plus1[:], R_obj_plus1[:],  p_obj_plus1)
         integr2 = cas.Function('phi', [x,u] , [out_plus1])
 
@@ -1106,7 +1106,7 @@ class MotionTrajectory:
         nu = np.shape(u)[0] # number of input states
 
 
-        (R_t_plus1, R_r_plus1, R_obj_plus1, p_obj_plus1) = helper.geo_integrator(R_t, R_r, R_obj, p_obj, u, h)
+        (R_t_plus1, R_r_plus1, R_obj_plus1, p_obj_plus1) = helper.integrate_vector_invariants_pose_cas(R_t, R_r, R_obj, p_obj, u, h)
         out_plus1 = cas.vertcat(R_t_plus1[:], R_r_plus1[:], R_obj_plus1[:],  p_obj_plus1)
         integr2 = cas.Function('phi', [x,u] , [out_plus1])
 
@@ -1201,7 +1201,7 @@ class MotionTrajectory:
             objective = objective + cas.mtimes(e_weighted.T,e_weighted)
 
          # Constraints on the end $$$!Check multiplication of R_obj_reconstruction!$$$
-        R_obj_reconstruction = cas.mtimes(cas.mtimes(cas.mtimes(R_r[-1],helper.rodrigues2(Theta*R_obj_offset)),R_r[-1].T),R_obj[-1])  # apply offset to reconstructed trajectory
+        R_obj_reconstruction = cas.mtimes(cas.mtimes(cas.mtimes(R_r[-1],helper.skewsym_to_rot(Theta*R_obj_offset)),R_r[-1].T),R_obj[-1])  # apply offset to reconstructed trajectory
         p_obj_reconstruction = cas.mtimes(R_t[-1],L*p_obj_offset) + p_obj[-1]  # apply offset to reconstructed trajectory
 
         R_constraint = cas.mtimes(R_obj_end.T, R_obj_reconstruction)
@@ -1271,7 +1271,7 @@ class MotionTrajectory:
 #            opti.set_value(R_obj_end, invariant_signature['R_obj'][-1])
 #            opti.set_value(p_obj_end, invariant_signature['p_obj'][-1])
 
-        (R_offset, p_offset) = helper.offset_integrator(invariants_demo['U'][:, window_length-1:],h)
+        (R_offset, p_offset) = helper.reconstruct_offset_invariants(invariants_demo['U'][:, window_length-1:],h)
         opti.set_value(R_obj_offset, logm(R_offset)/invariants_demo['U'][0,0])
         opti.set_value(p_obj_offset, p_offset/invariants_demo['U'][3,0])
 
@@ -1520,7 +1520,7 @@ class MotionTrajectory:
             opti.set_value(R_obj_end, R_end)
             opti.set_value(p_obj_end, p_end)
 
-        (R_offset, p_offset) = helper.offset_integrator(invariants_demo['U'][:, n+window_length-1:],h)
+        (R_offset, p_offset) = helper.reconstruct_offset_invariants(invariants_demo['U'][:, n+window_length-1:],h)
         opti.set_value(R_obj_offset, logm(R_offset)/invariants_demo['U'][0,0])
         opti.set_value(p_obj_offset,  p_offset/invariants_demo['U'][3,0])
 

@@ -1,6 +1,6 @@
 
 import numpy as np
-import invariants_py.SO3 as SO3
+import invariants_py.kinematics.orientation_kinematics as SO3
 
 
 def interpR(x_n, x_p, R_p):

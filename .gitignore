@@ -1,5 +1,6 @@
 *.pyc
-*.pkl
+file1.pkl
+file2.pkl
 *.bak
 .vscode/
 .spyproject/

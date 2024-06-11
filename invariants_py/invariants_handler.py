@@ -3,7 +3,7 @@ A function that handles the calculation of the invariants with different paramet
 """
 
 import invariants_py.reparameterization as reparam
-import invariants_py.opti_calculate_vector_invariants_position_mf as FS_calculation
+import invariants_py.calculate_invariants.opti_calculate_vector_invariants_position_mf as FS_calculation
 
 def calculate_invariants_translation(trajectory, progress_definition="arclength"):
 

@@ -2,7 +2,7 @@
 from invariants_py import data_handler
 import invariants_py.data_handler as dh
 import invariants_py.reparameterization as reparam
-from invariants_py.opti_calculate_vector_invariants_position_mf import OCP_calc_pos
+from invariants_py.calculate_invariants.opti_calculate_vector_invariants_position_mf import OCP_calc_pos
 import matplotlib.pyplot as plt
 import numpy as np
 import os
