@@ -131,8 +131,6 @@ def plotPose(pose, figure = '', label = '', c='b', m='.', orientation = False):
 
     return fig, p
 
-
-
 def plotTrajectory(trajectory, figure = None, label = "trajectory", title = '', c = 'b', m ='', mark = False):
     """
     plots the given trajectory, positions and rotations are indicated

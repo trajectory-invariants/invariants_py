@@ -19,5 +19,6 @@ def calculate_invariants_translation(trajectory, progress_definition="arclength"
     result = FS_calculation_problem.calculate_invariants_global(trajectory_geom, stepsize=stepsize)
     invariants = result[0]
     trajectory = result[1]
-    return invariants, arclength, trajectory
+    movingframes = result[2]
+    return invariants, arclength, trajectory, movingframes
 
