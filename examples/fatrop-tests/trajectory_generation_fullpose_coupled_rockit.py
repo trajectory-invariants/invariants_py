@@ -17,7 +17,7 @@ from invariants_py.generate_trajectory.rockit_generate_pose_traj_from_vector_inv
 from invariants_py.generate_trajectory.rockit_generate_pose_traj_from_vector_invars_jointlim import OCP_gen_pose_jointlim
 from scipy.spatial.transform import Rotation as R
 from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize
-import invariants_py.plotters as pl
+import invariants_py.plotting_functions.plotters as pl
 import collision_detection_bottle as cd
 from invariants_py.reparameterization import interpR
 from invariants_py.initialization import FSr_init

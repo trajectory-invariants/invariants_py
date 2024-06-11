@@ -13,7 +13,7 @@ from invariants_py.generate_trajectory.rockit_generate_orientation_traj_from_vec
 from IPython.display import clear_output
 from scipy.spatial.transform import Rotation as R
 from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize
-import invariants_py.plotters as pl
+import invariants_py.plotting_functions.plotters as pl
 from invariants_py.reparameterization import interpR
 from invariants_py.initialization import FSr_init
 

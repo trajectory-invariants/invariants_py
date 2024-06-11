@@ -7,7 +7,7 @@ import invariants_py.reparameterization as reparam
 from invariants_py.calculate_invariants.opti_calculate_vector_invariants_position_mf import OCP_calc_pos
 from invariants_py.generate_trajectory.opti_generate_position_traj_from_vector_invars import OCP_gen_pos
 import invariants_py.spline_handler as spline_handler
-import invariants_py.plotters as plotters
+import invariants_py.plotting_functions.plotters as plotters
 
 """Input data"""
 

@@ -12,7 +12,7 @@ def calculate_invariants_translation(trajectory, progress_definition="arclength"
     trajectory_geom, arclength, arclength_n, nb_samples, stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 
     # Create an instance of the OCP_calc_pos class
-    FS_calculation_problem = FS_calculation.OCP_calc_pos(window_len=nb_samples)
+    FS_calculation_problem = FS_calculation.OCP_calc_pos(window_len=nb_samples, geometric=True)
 
     # Calculate the invariants using the global method
     # TODO make a dictionary of the results from which invariants can be extracted
