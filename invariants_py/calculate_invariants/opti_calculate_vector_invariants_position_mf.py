@@ -73,8 +73,6 @@ class OCP_calc_pos:
                 err_deriv = 0
             err_abs = U[[1,2],k] # absolute value invariants (force arbitrary invariants to zero)
 
-            
-
             ##Check that obj function is correctly typed in !!!
             objective_reg = objective_reg \
                             + cas.dot(w_deriv**(0.5)*err_deriv,w_deriv**(0.5)*err_deriv) \
