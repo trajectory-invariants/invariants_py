@@ -89,7 +89,7 @@ if __name__ == "__main__":
     N = 100
     root_link_name = "base_link"
     tip_link_name = "TCP_frame"
-    path_to_urdf = dh.find_data_path('ur10.urdf')
+    path_to_urdf = dh.find_data_path('robot/ur10.urdf')
     startpos = [0.3056, 0.0635, 0.441]
     des_p_obj = pose[:,:3,3]  + startpos #[0.6818214 , 0.23448511, 0.39779707] * np.ones((N,3)) #
     des_R_obj = pose[:,:3,:3]

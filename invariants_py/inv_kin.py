@@ -65,7 +65,7 @@ def inv_kin(q_init, q_joint_lim, des_p_obj, des_R_obj, window_len = 100, fatrop_
     root = "base_link"
     tip = "TCP_frame"
     ur10 = u2c.URDFparser()
-    path_to_urdf = dh.find_data_path("ur10.urdf")
+    path_to_urdf = dh.find_data_path("robot/ur10.urdf")
     ur10.from_file(path_to_urdf)
     fk_dict = ur10.get_forward_kinematics(root, tip)
     forward_kinematics = fk_dict["T_fk"]
