@@ -88,6 +88,7 @@ class OCP_gen_pos:
         # Solve already once with dummy measurements
         ocp.set_initial(R_t, np.eye(3))
         ocp.set_initial(U, 0.001+np.zeros((3,window_len)))
+        ocp.set_initial(p_obj, np.array([0, 0, 0]))
         ocp.set_value(h,0.1)
         ocp.set_value(U_demo, 0.001+np.zeros((3,window_len)))
         ocp.set_value(w_invars, 0.001+np.zeros((3,window_len)))
