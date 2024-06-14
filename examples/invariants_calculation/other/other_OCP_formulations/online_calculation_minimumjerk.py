@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_py.opti_calculate_vector_invariants_position_mj import OCP_calc_pos
+from invariants_py.calculate_invariants.opti_calculate_vector_invariants_position_mj import OCP_calc_pos
 from IPython.display import clear_output
 import invariants_py.data_handler as dh
 
@@ -126,7 +126,6 @@ while current_progress <= arclength[-1]:
     plt.title('Torsion [rad/-]')
 
     if plt.get_backend() != 'agg':
-        error()
         plt.show()
     
     

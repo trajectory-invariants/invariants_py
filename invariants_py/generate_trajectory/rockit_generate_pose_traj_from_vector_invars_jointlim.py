@@ -8,10 +8,10 @@ Created on Fri Mar  22 2024
 import numpy as np
 import casadi as cas
 import rockit
-import invariants_py.dynamics_invariants as dynamics
-from invariants_py.forward_kinematics import forward_kinematics
+import invariants_py.dynamics_vector_invariants as dynamics
+from invariants_py.kinematics.robot_forward_kinematics import robot_forward_kinematics
 from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag, diffR, diag
-from invariants_py.SO3 import rotate_x
+from invariants_py.kinematics.orientation_kinematics import rotate_x
 from invariants_py.initialization import generate_initvals_from_bounds
 from invariants_py.initialization import generate_initvals_from_bounds_rot
 import invariants_py.data_handler as dh
@@ -39,9 +39,12 @@ class OCP_gen_pose_jointlim:
         
         # Define system states X (unknown object pose + moving frame pose at every time step) 
         p_obj = ocp.state(3) # object position
-        R_obj = ocp.state(3,3) # object orientation
-        R_t = ocp.state(3,3) # translational Frenet-Serret frame
-        R_r = ocp.state(3,3) # rotational Frenet-Serret frame
+        R_obj_vec = ocp.state(9,1) # object orientation
+        R_obj = cas.reshape(R_obj_vec,(3,3)) # object orientation
+        R_t_vec = ocp.state(9,1) # translational Frenet-Serret frame
+        R_t = cas.reshape(R_t_vec,(3,3)) # translational Frenet-Serret frame
+        R_r_vec = ocp.state(9,1) # rotational Frenet-Serret frame
+        R_r = cas.reshape(R_r_vec,(3,3)) # rotational Frenet-Serret frame
         if include_robot_model:
             q = ocp.state(nb_joints)
 
@@ -110,19 +113,19 @@ class OCP_gen_pose_jointlim:
                 ocp.subject_to(q[i] - q_lim[i] <= 0)
 
         # Dynamic constraints
-        (R_t_plus1, p_obj_plus1) = dynamics.vector_invariants_position(R_t, p_obj, invars[3:], h)
-        (R_r_plus1, R_obj_plus1) = dynamics.dyn_vector_invariants_rotation(R_r, R_obj, invars[:3], h)
+        (R_t_plus1, p_obj_plus1) = dynamics.integrate_vector_invariants_position(R_t, p_obj, invars[3:], h)
+        (R_r_plus1, R_obj_plus1) = dynamics.integrate_vector_invariants_rotation(R_r, R_obj, invars[:3], h)
         # Integrate current state to obtain next state (next rotation and position)
         ocp.set_next(p_obj,p_obj_plus1)
-        ocp.set_next(R_obj,R_obj_plus1)
-        ocp.set_next(R_t,R_t_plus1)
-        ocp.set_next(R_r,R_r_plus1)
+        ocp.set_next(R_obj_vec,cas.vec(R_obj_plus1))
+        ocp.set_next(R_t_vec,cas.vec(R_t_plus1))
+        ocp.set_next(R_r_vec,cas.vec(R_r_plus1))
         if include_robot_model:
             ocp.set_next(q,qdot)
 
         if include_robot_model:
             # Forward kinematics
-            p_obj_fwkin, R_obj_fwkin = forward_kinematics(q,path_to_urdf,root,tip)
+            p_obj_fwkin, R_obj_fwkin = robot_forward_kinematics(q,path_to_urdf,root,tip)
             
         # Lower bounds on controls
         if bool_unsigned_invariants:
@@ -263,10 +266,10 @@ class OCP_gen_pose_jointlim:
             )
 
         # Save variables (only needed for old way of trajectory generation)
-        self.R_t = R_t
+        self.R_t = R_t_vec
         self.p_obj = p_obj
-        self.R_r = R_r
-        self.R_obj = R_obj
+        self.R_r = R_r_vec
+        self.R_obj = R_obj_vec
         self.invars = invars
         self.invars_demo = invars_demo
         self.w_invars = w_invars
@@ -295,7 +298,9 @@ class OCP_gen_pose_jointlim:
         self.tot_time = tot_time
         self.include_robot_model = include_robot_model
         if include_robot_model:
+            self.nb_joints = nb_joints
             self.q = q
+            self.qdot = qdot
             self.home = home
             self.q_lim = q_limits
 
@@ -363,11 +368,31 @@ class OCP_gen_pose_jointlim:
         if invars_init is None:
             invars_init = invars_demo
 
+        # R_obj_init_packed = np.zeros((3,3*self.window_len))
+        # R_t_init_packed = np.zeros((3,3*self.window_len))
+        # R_r_init_packed = np.zeros((3,3*self.window_len))
+        # for i in range(self.window_len-1):
+        #     R_obj_init_packed[:,3*i:3*(i+1)] = R_obj_init[i]  
+        #     R_t_init_packed[:,3*i:3*(i+1)] = R_t_init[i]
+        #     R_r_init_packed[:,3*i:3*(i+1)] = R_r_init[i]
+        # print(np.size(R_obj_init_packed))
+
         # Initialize states
         self.ocp.set_initial(self.p_obj, p_obj_init[:self.window_len,:].T)
-        self.ocp.set_initial(self.R_obj, R_obj_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len))  ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
-        self.ocp.set_initial(self.R_t, R_t_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len))   ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
-        self.ocp.set_initial(self.R_r, R_r_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len))   ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
+        # A = R_obj_init[:2]
+        # print(A)
+        # B = R_obj_init[:2].transpose(0,2,1).reshape(-1,9).T
+        # print(B)
+        # C = B.T.reshape(-1, 3, 3).transpose(0, 2, 1)
+        # print(C)
+
+
+        self.ocp.set_initial(self.R_obj, R_obj_init.transpose(0,2,1).reshape(-1,9).T)
+        self.ocp.set_initial(self.R_t, R_t_init.transpose(0,2,1).reshape(-1,9).T)
+        self.ocp.set_initial(self.R_r, R_r_init.transpose(0,2,1).reshape(-1,9).T)
+        # self.ocp.set_initial(self.R_obj, R_obj_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len))  ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
+        # self.ocp.set_initial(self.R_t, R_t_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len))   ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
+        # self.ocp.set_initial(self.R_r, R_r_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len))   ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
         self.ocp.set_initial(self.q,q_init.T)
             
         # Initialize controls
@@ -384,7 +409,6 @@ class OCP_gen_pose_jointlim:
         self.ocp.set_value(self.R_obj_start,R_obj_start)
         self.ocp.set_value(self.R_obj_end,R_obj_end)
         self.ocp.set_value(self.q_lim,q_lim)
-
 
         # Set values parameters
         self.ocp.set_value(self.h,step_size)
@@ -423,4 +447,59 @@ class OCP_gen_pose_jointlim:
         _,movingframe_pos = sol.sample(self.R_t,grid='control')
         _,movingframe_rot = sol.sample(self.R_r,grid='control')
         _,joint_val = sol.sample(self.q,grid='control')
-        return invariants, new_trajectory_pos, new_trajectory_rot, movingframe_pos, movingframe_rot, tot_time, joint_val
+
+        return invariants, new_trajectory_pos, new_trajectory_rot.T.reshape(-1, 3, 3).transpose(0, 2, 1), movingframe_pos.T.reshape(-1, 3, 3).transpose(0, 2, 1), movingframe_rot.T.reshape(-1, 3, 3).transpose(0, 2, 1), tot_time, joint_val
+    
+    ######################################### WORK ON EXAMPLE ######################################
+# if __name__ == "__main__":
+#     from invariants_py import data_handler
+#     # Example data
+#     path_to_urdf = data_handler.find_robot_path('ur10.urdf')
+#     window_len = 100
+#     bool_unsigned_invariants = False
+#     w_pos = 1
+#     w_rot = 1
+#     max_iters = 300
+#     fatrop_solver = False
+#     nb_joints = 6
+#     root = 'base_link'
+#     tip = 'tool0'
+    
+#     # Create an instance of OCP_gen_pose_jointlim
+#     ocp_obj = OCP_gen_pose_jointlim(path_to_urdf, window_len, bool_unsigned_invariants, w_pos, w_rot, max_iters, fatrop_solver, nb_joints, root, tip)
+    
+#     # Example data for generate_trajectory function
+#     U_demo = np.random.rand(window_len, 6)
+#     p_obj_init = np.random.rand(window_len, 3)
+#     R_obj_init = np.tile(np.eye(3, 3), (window_len, 1, 1))
+#     R_t_init = np.tile(np.eye(3, 3), (window_len, 1, 1))
+#     R_r_init = np.tile(np.eye(3, 3), (window_len, 1, 1))
+#     q_init = np.random.rand(window_len, nb_joints)
+#     q_lim = np.random.rand(nb_joints)
+#     R_t_start = np.eye(3, 3)
+#     R_r_start = np.eye(3, 3)
+#     R_t_end = np.eye(3, 3)
+#     R_r_end = np.eye(3, 3)
+#     p_obj_start = np.random.rand(3)
+#     R_obj_start = np.eye(3, 3)
+#     p_obj_end = np.random.rand(3)
+#     R_obj_end = np.eye(3, 3)
+#     step_size = 0.1
+#     U_init = None
+#     w_invars = (10**-3)*np.ones(6)
+#     w_high_start = 1
+#     w_high_end = 0
+#     w_high_invars = (10**-3)*np.ones(6)
+#     w_high_active = 0
+    
+#     # Call generate_trajectory function
+#     invariants, new_trajectory_pos, new_trajectory_rot, movingframe_pos, movingframe_rot, tot_time, joint_val = ocp_obj.generate_trajectory(U_demo, p_obj_init, R_obj_init, R_t_init, R_r_init, q_init, q_lim, R_t_start, R_r_start, R_t_end, R_r_end, p_obj_start, R_obj_start, p_obj_end, R_obj_end, step_size, U_init, w_invars, w_high_start, w_high_end, w_high_invars, w_high_active)
+    
+#     # Print the results
+#     print("Invariants:", invariants)
+#     print("New Trajectory Position:", new_trajectory_pos)
+#     print("New Trajectory Rotation:", new_trajectory_rot)
+#     print("Moving Frame Position:", movingframe_pos)
+#     print("Moving Frame Rotation:", movingframe_rot)
+#     print("Total Time:", tot_time)
+#     print("Joint Values:", joint_val)

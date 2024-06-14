@@ -1,10 +1,9 @@
 """
-Check all examples, tests, modules and notebooks to see if they run successfully
+Run all examples, tests, modules and notebooks to see if they execute without errors.
 """
 
 import os
 import subprocess
-import nbconvert
 
 # Directories containing the examples and tests
 directories = ["examples", "tests", "invariants_py", "notebooks"]
@@ -17,10 +16,14 @@ failed_scripts = []
 my_env = os.environ.copy()
 my_env["MPLBACKEND"] = "agg"
 
+# Get the directory containing this script
+script_dir = os.path.dirname(os.path.realpath(__file__))
+
 # Function to run scripts in a directory
 def run_scripts(directory):
     failed_scripts_local = []
-    for root, dirs, files in os.walk(directory):
+    directory_path = os.path.join(script_dir, directory)
+    for root, dirs, files in os.walk(directory_path):
         # Get a list of all Python scripts in the current directory
         scripts = [f for f in files if f.endswith('.py') or f.endswith('.ipynb')]
 

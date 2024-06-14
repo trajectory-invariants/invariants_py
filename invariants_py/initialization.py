@@ -1,5 +1,5 @@
 import numpy as np
-import invariants_py.SO3 as SO3
+import invariants_py.kinematics.orientation_kinematics as SO3
 from invariants_py.reparameterization import interpR
 
 def FSr_init(R_obj_start,R_obj_end,N=100):
@@ -69,6 +69,23 @@ def generate_initvals_from_bounds_rot(boundary_constraints,N):
         R_obj_sol[:,3*i:3*(i+1)] = np.array([initial_trajectory[i,0],initial_trajectory[i,1],initial_trajectory[i,2]]) 
 
     return [initial_invariants.T, R_r_sol, R_obj_sol]
+
+# def generate_initvals_from_bounds_rot(boundary_constraints,N):
+#     R0 = boundary_constraints["orientation"]["initial"]
+#     R1 = boundary_constraints["orientation"]["final"]
+#     # Linear initialization
+#     initial_trajectory = interpR(np.linspace(0, 1, N), [0,1], np.array([R0, R1]))
+
+#     _, R_r_sol, initial_invariants = FSr_init(R0, R1)
+#     R_r_sol_x = R_r_sol[:,:,0].T
+#     R_r_sol_y = R_r_sol[:,:,1].T
+#     R_r_sol_z = R_r_sol[:,:,2].T
+
+#     R_obj_sol_x = initial_trajectory[:,:,0].T
+#     R_obj_sol_y = initial_trajectory[:,:,1].T
+#     R_obj_sol_z = initial_trajectory[:,:,2].T
+
+#     return [initial_invariants.T, R_r_sol_x, R_r_sol_y, R_r_sol_z, R_obj_sol_x, R_obj_sol_y, R_obj_sol_z]
 
 def calculate_velocity_from_discrete_rotations(R, timestamps):
     """

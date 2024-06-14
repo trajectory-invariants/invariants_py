@@ -7,13 +7,13 @@ import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-from invariants_py.opti_calculate_vector_invariants_rotation import OCP_calc_rot
-from invariants_py.opti_generate_rotation_from_vector_invariants import OCP_gen_rot
+from invariants_py.calculate_invariants.opti_calculate_vector_invariants_rotation import OCP_calc_rot
+from invariants_py.generate_trajectory.opti_generate_orientation_traj_from_vector_invars import OCP_gen_rot
 from IPython.display import clear_output
 from invariants_py.plotters import plot_3d_frame, plot_orientation, plot_stl
 from stl import mesh
 from scipy.spatial.transform import Rotation as R
-from invariants_py.orthonormalize_rotation import orthonormalize_rotation as orthonormalize
+from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize
 #%%
 data_location = dh.find_data_path('beer_1.txt')
 opener_location = dh.find_data_path('opener.stl')

@@ -4,7 +4,7 @@
 import numpy as np
 from mpl_toolkits import mplot3d
 from stl import mesh
-from invariants_py.rot2quat import rot2quat
+from invariants_py.kinematics.orientation_kinematics import rot2quat
 from scipy import interpolate as ip
 #import PyQt5
 #sys.modules.get("PyQt5")

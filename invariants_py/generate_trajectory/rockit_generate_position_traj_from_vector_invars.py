@@ -1,7 +1,7 @@
 import numpy as np
 import casadi as cas
 import rockit
-import invariants_py.dynamics_invariants as dynamics
+import invariants_py.dynamics_vector_invariants as dynamics
 import time
 from invariants_py.initialization import generate_initvals_from_bounds
 from invariants_py.ocp_helper import tril_vec, tril_vec_no_diag, check_solver
@@ -57,7 +57,7 @@ class OCP_gen_pos:
 
 
         # Dynamic constraints
-        (R_t_plus1, p_obj_plus1) = dynamics.vector_invariants_position(R_t, p_obj, U, h)
+        (R_t_plus1, p_obj_plus1) = dynamics.integrate_vector_invariants_position(R_t, p_obj, U, h)
 
         # Integrate current state to obtain next state (next rotation and position)
         ocp.set_next(p_obj,p_obj_plus1)
