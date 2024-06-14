@@ -19,19 +19,14 @@ class OCP_calc_rot:
         #%% Create decision variables and parameters for the optimization problem
         
         # Define system states X (unknown object orientation + moving frame orientation at every time step) 
-        R_obj_x = ocp.state(3,1) # object orientation, first axis
-        R_obj_y = ocp.state(3,1) # object orientation, second axis
-        R_obj_z = ocp.state(3,1) # object orientation, third axis
-        R_obj = cas.horzcat(R_obj_x,R_obj_y,R_obj_z)
-        R_r_x  = ocp.state(3,1) # rotational Frenet-Serret frame, first axis
-        R_r_y  = ocp.state(3,1) # rotational Frenet-Serret frame, second axis
-        R_r_z  = ocp.state(3,1) # rotational Frenet-Serret frame, third axis
-        R_r = cas.horzcat(R_r_x,R_r_y,R_r_z)
+        R_obj = ocp.state(3,3) # object orientation
+        R_r  = ocp.state(3,3) # rotational Frenet-Serret frame
         
         # Define system controls (invariants at every time step)
         invars = ocp.control(3) # three invariants [angular velocity | curvature rate | torsion rate]
 
         # Define system parameters P (known values in optimization that need to be set right before solving)
+        # R_obj_m = ocp.parameter(3,3,grid='control+') # measured object orientation
         R_obj_m_x = ocp.parameter(3,1,grid='control+') # measured object orientation, first axis
         R_obj_m_y = ocp.parameter(3,1,grid='control+') # measured object orientation, second axis
         R_obj_m_z = ocp.parameter(3,1,grid='control+') # measured object orientation, third axis
@@ -94,16 +89,16 @@ class OCP_calc_rot:
             # ocp.solver('ipopt',{"print_time":True,"expand":True},{'gamma_theta':1e-12,'max_iter':200,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
         
         # Solve already once with dummy values for code generation (TODO: can this step be avoided somehow?)
-        ocp.set_initial(R_r_x, np.array([1,0,0]))
-        ocp.set_initial(R_r_y, np.array([0,1,0]))
-        ocp.set_initial(R_r_z, np.array([0,0,1]))
+        ocp.set_initial(R_r, np.eye(3))
         ocp.set_initial(invars, np.array([1,0.01,0.01]))
-        ocp.set_initial(R_obj_x, np.array([1,0,0]))
-        ocp.set_initial(R_obj_y, np.array([0,1,0]))
-        ocp.set_initial(R_obj_z, np.array([0,0,1]))
+        ocp.set_initial(R_obj, np.eye(3))
         ocp.set_value(R_obj_m_x, np.tile(np.array([1,0,0]), (N,1)).T)
         ocp.set_value(R_obj_m_y, np.tile(np.array([0,1,0]), (N,1)).T)
         ocp.set_value(R_obj_m_z, np.tile(np.array([0,0,1]), (N,1)).T)
+        # eye = np.zeros((3,3*N))
+        # for i in range(N-1):
+        #     eye[:,3*i:3*(i+1)] = np.array([np.array([1,0,0]),np.array([0,1,0]),np.array([0,0,1])]) 
+        # ocp.set_value(R_obj_m, eye)
         ocp.set_value(h, 0.01)
         ocp.solve_limited() # code generation
 
@@ -114,24 +109,21 @@ class OCP_calc_rot:
         self.first_time = True
         
         # Encapsulate whole rockit specification in a casadi function
+        # R_obj_m_sampled = ocp.sample(R_obj_m, grid='control')[1] # sampled measured object orientation (first axis)
         R_obj_m_x_sampled = ocp.sample(R_obj_m_x, grid='control')[1] # sampled measured object orientation (first axis)
         R_obj_m_y_sampled = ocp.sample(R_obj_m_y, grid='control')[1] # sampled measured object orientation (second axis)
         R_obj_m_z_sampled = ocp.sample(R_obj_m_z, grid='control')[1] # sampled measured object orientation (third axis)
         h_value = ocp.value(h) # value of stepsize
         solution = [ocp.sample(invars, grid='control-')[1],
-            ocp.sample(R_obj_x, grid='control')[1], # sampled object orientation (first axis)
-            ocp.sample(R_obj_y, grid='control')[1], # sampled object orientation (second axis)
-            ocp.sample(R_obj_z, grid='control')[1], # sampled object orientation (third axis)
-            ocp.sample(R_r_x, grid='control')[1], # sampled FS frame (first axis)
-            ocp.sample(R_r_y, grid='control')[1], # sampled FS frame (second axis)
-            ocp.sample(R_r_z, grid='control')[1]] # sampled FS frame (third axis)
+            ocp.sample(R_obj, grid='control')[1], # sampled object orientation
+            ocp.sample(R_r, grid='control')[1]] # sampled FS frame
         
         self.ocp = ocp # save the optimization problem locally, avoids problems when multiple rockit ocp's are created
         self.ocp_function = self.ocp.to_function('ocp_function', 
             [R_obj_m_x_sampled,R_obj_m_y_sampled,R_obj_m_z_sampled,h_value,*solution], # inputs
             [*solution], # outputs
-            ["R_obj_m_x","R_obj_m_y","R_obj_m_z","h","invars1","R_obj_x","R_obj_y","R_obj_z","R_r_x1","R_r_y1","R_r_z1"], # input labels for debugging
-            ["invars2","R_obj_x2","R_obj_y2","R_obj_z2","R_r_x2","R_r_y2","R_r_z2"], # output labels for debugging
+            ["R_obj_m_x","R_obj_m_y","R_obj_m_z","h","invars1","R_obj1","R_r1"], # input labels for debugging
+            ["invars2","R_obj2","R_r2"], # output labels for debugging
         )
 
     def calculate_invariants(self,measured_rotations,stepsize): 
@@ -148,11 +140,11 @@ class OCP_calc_rot:
         self.solution = self.ocp_function(*measured_orientations, stepsize, *self.solution)
 
         # Return the results    
-        invars, R_obj_x_sol, R_obj_y_sol, R_obj_z_sol, R_r_x_sol, R_r_y_sol, R_r_z_sol,  = self.solution # unpack the results            
+        invars, R_obj_sol, R_r_sol  = self.solution # unpack the results            
         invariants = np.array(invars).T # make a N-1 x 3 array
         invariants = np.vstack((invariants, invariants[-1,:])) # make a N x 3 array by repeating last row
-        calculated_trajectory = np.reshape(np.hstack((R_obj_x_sol[:], R_obj_y_sol[:], R_obj_z_sol[:])), (-1,3,3)) # make a N x 3 x 3 array
-        calculated_movingframe = np.reshape(np.hstack((R_r_x_sol[:], R_r_y_sol[:], R_r_z_sol[:])), (-1,3,3)) # make a N x 3 x 3 array
+        calculated_trajectory = np.transpose(np.reshape(R_obj_sol.T, (-1, 3, 3)), (0, 2, 1)) 
+        calculated_movingframe = np.transpose(np.reshape(R_r_sol.T, (-1, 3, 3)), (0, 2, 1)) 
         
         return invariants, calculated_trajectory, calculated_movingframe
 
@@ -169,4 +161,3 @@ if __name__ == "__main__":
     # Solve the OCP using the specified data
     calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_orientations, timestep)
     print(calc_invariants)
-

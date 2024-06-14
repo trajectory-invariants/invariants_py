@@ -19,14 +19,8 @@ class OCP_gen_rot:
         ocp = rockit.Ocp(T=1.0)
 
         # Define system states X (unknown object pose + moving frame pose at every time step) 
-        R_obj_x = ocp.state(3,1) # object orientation
-        R_obj_y = ocp.state(3,1) # object orientation
-        R_obj_z = ocp.state(3,1) # object orientation
-        R_obj = cas.horzcat(R_obj_x,R_obj_y,R_obj_z)
-        R_r_x = ocp.state(3,1) # rotational Frenet-Serret frame
-        R_r_y = ocp.state(3,1) # rotational Frenet-Serret frame
-        R_r_z = ocp.state(3,1) # rotational Frenet-Serret frame
-        R_r = cas.horzcat(R_r_x,R_r_y,R_r_z)
+        R_obj = ocp.state(3,3) # object orientation
+        R_r = ocp.state(3,3) # rotational Frenet-Serret frame
 
         # Define system controls (invariants at every time step)
         invars = ocp.control(3)
@@ -61,7 +55,7 @@ class OCP_gen_rot:
             ocp.subject_to(ocp.at_tf(tril_vec_no_diag(R_r.T @ R_r_end - np.eye(3)) == 0.))
         if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
             ocp.subject_to(ocp.at_t0(tril_vec_no_diag(R_obj.T @ R_obj_start - np.eye(3)) == 0.))
-        if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
+        if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
             ocp.subject_to(ocp.at_tf(tril_vec_no_diag(R_obj.T @ R_obj_end - np.eye(3)) == 0.))
 
         #ocp.subject_to(ocp.at_t0(R_r == R_r_start))
@@ -77,12 +71,8 @@ class OCP_gen_rot:
         # Dynamic constraints
         (R_r_plus1, R_obj_plus1) = dynamics.integrate_vector_invariants_rotation(R_r, R_obj, invars, h)
         # Integrate current state to obtain next state (next rotation and position)
-        ocp.set_next(R_obj_x,R_obj_plus1[:,0])
-        ocp.set_next(R_obj_y,R_obj_plus1[:,1])
-        ocp.set_next(R_obj_z,R_obj_plus1[:,2])
-        ocp.set_next(R_r_x,R_r_plus1[:,0])
-        ocp.set_next(R_r_y,R_r_plus1[:,1])
-        ocp.set_next(R_r_z,R_r_plus1[:,2])
+        ocp.set_next(R_obj,R_obj_plus1)
+        ocp.set_next(R_r,R_r_plus1)
             
         #%% Specifying the objective
 
@@ -101,13 +91,9 @@ class OCP_gen_rot:
             # ocp.solver('ipopt',{"print_time":True,"expand":True},{'tol':1e-4,'print_level':0,'ma57_automatic_scaling':'no','linear_solver':'mumps','max_iter':100})
         
         # Solve already once with dummy values for code generation (TODO: can this step be avoided somehow?)
-        ocp.set_initial(R_r_x, np.array([1,0,0]))
-        ocp.set_initial(R_r_y, np.array([0,1,0]))
-        ocp.set_initial(R_r_z, np.array([0,0,1]))
+        ocp.set_initial(R_r, np.eye(3))
         ocp.set_initial(invars, np.array([1,0.01,0.01]))
-        ocp.set_initial(R_obj_x, np.array([1,0,0]))
-        ocp.set_initial(R_obj_y, np.array([0,1,0]))
-        ocp.set_initial(R_obj_z, np.array([0,0,1]))
+        ocp.set_initial(R_obj, np.eye(3))
         ocp.set_value(invars_demo, 0.001+np.zeros((3,window_len)))
         ocp.set_value(w_invars, 0.001+np.zeros((3,window_len)))
         ocp.set_value(h, 0.01)
@@ -148,30 +134,20 @@ class OCP_gen_rot:
             bounds_labels.append("R_r_end")
         
         solution = [ocp.sample(invars, grid='control-')[1],
-            ocp.sample(R_r_x, grid='control')[1], # sampled FS frame (first axis)
-            ocp.sample(R_r_y, grid='control')[1], # sampled FS frame (second axis)
-            ocp.sample(R_r_z, grid='control')[1], # sampled FS frame (third axis)
-            ocp.sample(R_obj_x, grid='control')[1], # sampled object orientation (first axis)
-            ocp.sample(R_obj_y, grid='control')[1], # sampled object orientation (second axis)
-            ocp.sample(R_obj_z, grid='control')[1]] # sampled object orientation (third axis)
+            ocp.sample(R_r, grid='control')[1], # sampled FS frame
+            ocp.sample(R_obj, grid='control')[1]] # sampled object orientation
 
         self.ocp = ocp # save the optimization problem locally, avoids problems when multiple rockit ocp's are created
 
         self.ocp_function = self.ocp.to_function('ocp_function', 
             [invars_sampled,w_sampled,h_value,*bounds,*solution], # inputs
             [*solution], # outputs
-            ["invars","w_invars","stepsize",*bounds_labels,"invars1","R_r_x1","R_r_y1","R_r_z1","R_obj_x1","R_obj_y1","R_obj_z1"], # input labels for debugging
-            ["invars2","R_r_x2","R_r_y2","R_r_z2","R_obj_x2","R_obj_y2","R_obj_z2"], # output labels for debugging
+            ["invars","w_invars","stepsize",*bounds_labels,"invars1","R_r1","R_obj1"], # input labels for debugging
+            ["invars2","R_r2","R_obj2"], # output labels for debugging
         )
 
         # Save variables
-        self.R_r_x = R_r_x
-        self.R_r_y = R_r_y
-        self.R_r_z = R_r_z
         self.R_r = R_r
-        self.R_obj_x = R_obj_x
-        self.R_obj_y = R_obj_y
-        self.R_obj_z = R_obj_z
         self.R_obj = R_obj
         self.invars = invars
         self.invars_demo = invars_demo
@@ -220,12 +196,8 @@ class OCP_gen_rot:
         self.ocp.set_value(self.w_invars, weights.T) 
 
         # Initialize states
-        self.ocp.set_initial(self.R_obj_x, R_obj_init[:self.window_len,:,0].T) 
-        self.ocp.set_initial(self.R_obj_y, R_obj_init[:self.window_len,:,1].T) 
-        self.ocp.set_initial(self.R_obj_z, R_obj_init[:self.window_len,:,2].T) 
-        self.ocp.set_initial(self.R_r_x, R_r_init[:self.window_len,:,0].T) 
-        self.ocp.set_initial(self.R_r_y, R_r_init[:self.window_len,:,1].T) 
-        self.ocp.set_initial(self.R_r_z, R_r_init[:self.window_len,:,2].T) 
+        self.ocp.set_initial(self.R_obj, R_obj_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len)) ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
+        self.ocp.set_initial(self.R_r, R_r_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len)) ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
             
         # Initialize controls
         self.ocp.set_initial(self.invars,invars_init.T)
@@ -279,19 +251,21 @@ class OCP_gen_rot:
             self.solution = generate_initvals_from_bounds_rot(boundary_constraints, np.size(invariant_model,0))
             self.first_window = False
         elif self.first_window:
-            self.solution = [initial_values["invariants-orientation"][:N-1,:].T, initial_values["moving-frame-orientation"][:N,:,0].T, initial_values["moving-frame-orientation"][:N,:,1].T, initial_values["moving-frame-orientation"][:N,:,2].T, initial_values["trajectory-orientation"][:N,:,0].T, initial_values["trajectory-orientation"][:N,:,1].T, initial_values["trajectory-orientation"][:N,:,2].T]
+            self.solution = [
+                initial_values["invariants-orientation"][:N-1,:].T, 
+                initial_values["moving-frame-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N), 
+                initial_values["trajectory-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N)]
             self.first_window = False
-
 
         # Call solve function
         self.solution = self.ocp_function(invariant_model.T,w_invars,step_size,*boundary_values_list,*self.solution)
 
         #Return the results
-        invars_sol, R_r_x_sol, R_r_y_sol, R_r_z_sol, R_obj_x_sol, R_obj_y_sol, R_obj_z_sol = self.solution # unpack the results            
+        invars_sol, R_r_sol, R_obj_sol = self.solution # unpack the results            
         invariants = np.array(invars_sol).T
         invariants = np.vstack((invariants, invariants[-1,:])) # make a N x 3 array by repeating last row
-        calculated_trajectory = np.reshape(np.hstack((R_obj_x_sol[:], R_obj_y_sol[:], R_obj_z_sol[:])), (-1,3,3)) # make a N x 3 x 3 array
-        calculated_movingframe = np.reshape(np.hstack((R_r_x_sol[:], R_r_y_sol[:], R_r_z_sol[:])), (-1,3,3)) # make a N x 3 x 3 array
+        calculated_trajectory = np.transpose(np.reshape(R_obj_sol.T, (-1, 3, 3)), (0, 2, 1)) 
+        calculated_movingframe = np.transpose(np.reshape(R_r_sol.T, (-1, 3, 3)), (0, 2, 1)) 
 
         return invariants, calculated_trajectory, calculated_movingframe, self.tot_time
     
