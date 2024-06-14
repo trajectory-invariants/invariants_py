@@ -154,7 +154,7 @@ boundary_constraints = {
 }
 
 # Define robot parameters
-urdf_file_name = None # use None if do not want to include robot model
+urdf_file_name = 'ur10.urdf' # use None if do not want to include robot model
 robot_params = {
     "urdf_file_name": urdf_file_name,
     "joint_number": 6, # Number of joints
@@ -187,10 +187,9 @@ weights_params = {
     "w_high_active": 0
 }
 
-
 # Solve
 # optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, tot_time, joint_values = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = optim_calc_results.Obj_pos, R_obj_init = R_obj_init, R_t_init = optim_calc_results.FSt_frames, R_r_init = R_r_init_array, q_init = q_init, q_lim = q_joint_lim, R_t_start = FSt_start, R_r_start = R_r_init, R_t_end = FSt_end, R_r_end = R_r_init, p_obj_start = p_obj_start, R_obj_start = R_obj_start, p_obj_end = p_obj_end, R_obj_end = R_obj_end, step_size = new_stepsize, weights_params = weights_params)
-optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, tot_time, joint_values = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values,robot_params)
+optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, tot_time, joint_values = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values)
 
 if use_fatrop_solver:
     print('')

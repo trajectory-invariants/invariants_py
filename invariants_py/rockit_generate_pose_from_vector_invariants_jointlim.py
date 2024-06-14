@@ -200,6 +200,7 @@ class OCP_gen_pose_jointlim:
         invars_sampled = ocp.sample(invars_demo, grid='control')[1] # sampled demonstration invariants
         w_sampled = ocp.sample(w_invars, grid='control')[1] # sampled invariants weights 
         h_value = ocp.value(h) # value of stepsize
+        q_lim_value = ocp.value(q_lim) # value of joint limits
 
         bounds = []
         bounds_labels = []
@@ -247,9 +248,9 @@ class OCP_gen_pose_jointlim:
 
         if include_robot_model:
             self.ocp_function = self.ocp.to_function('ocp_function', 
-                [invars_sampled,w_sampled,h_value,*bounds,*solution], # inputs
+                [invars_sampled,w_sampled,h_value,q_lim_value,*bounds,*solution], # inputs
                 [*solution], # outputs
-                ["invars","w_invars","stepsize",*bounds_labels,"invars1","p_obj1","R_t1","R_r1","R_obj1","q1"], # input labels for debugging
+                ["invars","w_invars","stepsize","q_lim",*bounds_labels,"invars1","p_obj1","R_t1","R_r1","R_obj1","q1"], # input labels for debugging
                 ["invars2","p_obj2","R_t2","R_r2","R_obj2","q2"], # output labels for debugging
             )
         else:
@@ -284,20 +285,20 @@ class OCP_gen_pose_jointlim:
             self.R_obj_start = R_obj_start
         if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
             self.R_obj_end = R_obj_end
-        if include_robot_model:
-            self.q = q
-            self.qdot = qdot
-            self.q_lim = q_lim
         self.h = h
         self.window_len = window_len
         self.ocp = ocp
         self.sol = None
         self.first_window = True
         self.fatrop = fatrop_solver
-        self.include_robot_model = include_robot_model
         self.tot_time = tot_time
+        self.include_robot_model = include_robot_model
+        if include_robot_model:
+            self.q = q
+            self.home = home
+            self.q_lim = q_limits
 
-    def generate_trajectory(self, invariant_model, boundary_constraints, step_size, weights_params = {}, initial_values = {}, robot_params = {}):
+    def generate_trajectory(self, invariant_model, boundary_constraints, step_size, weights_params = {}, initial_values = {}):
 
         N = invariant_model.shape[0]
 
@@ -307,11 +308,6 @@ class OCP_gen_pose_jointlim:
         w_high_end = weights_params.get('w_high_end', N)
         w_high_invars = weights_params.get('w_high_invars', (10**-3)*np.ones(6))
         w_high_active = weights_params.get('w_high_active', 0)
-
-        if self.include_robot_model:
-            # Get the robot parameters or set default value
-            nb_joints = robot_params.get('join_number', 6)
-            home = robot_params.get('home', np.zeros(nb_joints))
 
         # Set the weights for the invariants
         w_invars = np.tile(w_invars, (len(invariant_model),1)).T
@@ -324,7 +320,7 @@ class OCP_gen_pose_jointlim:
             solution_pos,initvals_dict = generate_initvals_from_bounds(boundary_constraints, np.size(invariant_model,0))
             solution_rot = generate_initvals_from_bounds_rot(boundary_constraints, np.size(invariant_model,0))
             if self.include_robot_model:
-                default_q_init = home
+                default_q_init = self.home
                 self.solution = np.hstack([solution_pos,solution_rot,default_q_init])
             else:
                 self.solution = np.hstack([solution_pos,solution_rot])
@@ -337,7 +333,7 @@ class OCP_gen_pose_jointlim:
             self.first_window = False
 
         # Call solve function
-        self.solution = self.ocp_function(invariant_model.T,w_invars,step_size,*boundary_values_list,*self.solution)
+        self.solution = self.ocp_function(invariant_model.T,w_invars,step_size,self.q_lim,*boundary_values_list,*self.solution)
 
         #Return the results
         if self.include_robot_model:

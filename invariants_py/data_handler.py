@@ -24,6 +24,7 @@ def find_robot_path(file_name):
         robot_dir = module_dir + '/robot'
         data_path = os.path.join(robot_dir,file_name)
         if not os.path.isfile(data_path): np.load(data_path)
+        print(f"\n Included robot model from urdf file: {file_name} \n")
     except:
         if file_name == None:
             print(f"\n Robot model not included \n")
