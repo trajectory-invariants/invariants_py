@@ -13,7 +13,7 @@ import invariants_py.data_handler as dh
 import matplotlib.pyplot as plt
 import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
-import invariants_py.plotters as pl
+import invariants_py.plotting_functions.plotters as pl
 
 t0 = t.time()
 show_plots = False

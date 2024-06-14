@@ -17,6 +17,9 @@ import matplotlib.pyplot as plt
 #import seaborn as sns
 #sns.set(style='whitegrid',context='paper')
 #from IPython import get_ipython
+import matplotlib.animation as animation
+
+
 
 def plot_trajectory_and_bounds(boundary_constraints, trajectory):
     # Extract x, y, and z coordinates from the trajectory
@@ -130,8 +133,6 @@ def plotPose(pose, figure = '', label = '', c='b', m='.', orientation = False):
         plt.show()
 
     return fig, p
-
-
 
 def plotTrajectory(trajectory, figure = None, label = "trajectory", title = '', c = 'b', m ='', mark = False):
     """
@@ -531,9 +532,9 @@ def plot_invariants_new(invariants,arclength):
         plt.show()
     #plt.close()
 
-def plot_invariants_new(invariants, arclength):
+def plot_invariants_new2(invariants, arclength):
     
-    fig = plt.figure()
+    fig = plt.figure(figsize=(14,6))
     plt.subplot(1,3,1)
     plt.plot(arclength,invariants[:,0],'b')
     plt.plot(0,0)
@@ -592,9 +593,64 @@ def plot_3d_frame(p,R,scale_arrow,length_arrow,my_color,ax3d):
     ax3d.set_ylabel('y [m]')
     ax3d.set_zlabel('z [m]')
 
+# Plot the moving frames as Cartesian frames in a 3D plot
+def plot_moving_frames(calc_trajectory, movingframes, length=0.075, skip_frames=5):
+    """
+    Plots the trajectory and moving frames in a 3D plot.
 
-import numpy as np
-import math as math
-from mpl_toolkits import mplot3d
-from stl import mesh
+    Parameters:
+    - calc_trajectory (numpy.ndarray): The trajectory points as a 2D array of shape (N, 3).
+    - movingframes (numpy.ndarray): The moving frames as a 3D array of shape (N, 3, 3).
+    - length (float, optional): The length of the quiver arrows representing the moving frames. Default is 0.075.
+    - skip_frames (int, optional): The number of frames to skip when plotting the moving frames. Default is 5.
 
+    Returns:
+    None
+    """
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(calc_trajectory[:,0], calc_trajectory[:,1], calc_trajectory[:,2], '-', color='blue')
+    for i, (R, p) in enumerate(zip(movingframes[::skip_frames], calc_trajectory[::skip_frames])):
+        ax.quiver(p[0], p[1], p[2], R[0,0], R[1,0], R[2,0], color='r', length = length)
+        ax.quiver(p[0], p[1], p[2], R[0,1], R[1,1], R[2,1], color='g', length = length)
+        ax.quiver(p[0], p[1], p[2], R[0,2], R[1,2], R[2,2], color='b', length = length)
+    ax.set_xlabel('X [m]')
+    ax.set_ylabel('Y [m]')
+    ax.set_zlabel('Z [m]')
+    plt.title('Trajectory and moving frames')
+    plt.show()
+
+# Animate the moving frames
+def animate_moving_frames(calc_trajectory, movingframes, length=0.075, skip_frames=5, save_animation=False, filename='animation.gif'):
+    """
+    Animates the trajectory and moving frames in a 3D plot.
+
+    Parameters:
+    - calc_trajectory (numpy.ndarray): The trajectory points as a 2D array of shape (N, 3).
+    - movingframes (numpy.ndarray): The moving frames as a 3D array of shape (N, 3, 3).
+    - length (float, optional): The length of the quiver arrows representing the moving frames. Default is 0.075.
+    - skip_frames (int, optional): The number of frames to skip when plotting the moving frames. Default is 5.
+
+    Returns:
+    None
+    """
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set_xlabel('X [m]')
+    ax.set_ylabel('Y [m]')
+    ax.set_zlabel('Z [m]')
+    plt.title('Trajectory and moving frames')
+
+    def update_frame(frame):
+        ax.clear()
+        ax.plot(calc_trajectory[:,0], calc_trajectory[:,1], calc_trajectory[:,2], '-', color='blue')
+        R = movingframes[frame]
+        p = calc_trajectory[frame]
+        ax.quiver(p[0], p[1], p[2], R[0,0], R[1,0], R[2,0], color='r', length = length)
+        ax.quiver(p[0], p[1], p[2], R[0,1], R[1,1], R[2,1], color='g', length = length)
+        ax.quiver(p[0], p[1], p[2], R[0,2], R[1,2], R[2,2], color='b', length = length)
+
+    ani = animation.FuncAnimation(fig, update_frame, frames=len(calc_trajectory), interval=100, repeat=True)
+    if save_animation:
+        ani.save(filename, writer='imagemagick', fps=60)
+    plt.show()

@@ -2,7 +2,7 @@
 
 # Import necessary modules
 from invariants_py import data_handler as dh
-import invariants_py.plotters as plotters
+import invariants_py.plotting_functions.plotters as plotters
 from invariants_py.generate_trajectory.opti_generate_position_traj_from_vector_invars import generate_trajectory_translation
 
 # Find the path to the data file

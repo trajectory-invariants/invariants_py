@@ -5,7 +5,7 @@ import invariants_py.ocp_helper as ocp_helper
 
 class OCP_calc_pos:
 
-    def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, w_deriv = (10**-6)*np.array([1.0, 1.0, 1.0]), w_abs = (10**-10)*np.array([1.0, 1.0]), planar_task = False):
+    def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, w_deriv = (10**-6)*np.array([1.0, 1.0, 1.0]), w_abs = (10**-10)*np.array([1.0, 1.0]), planar_task = False, geometric = False):
        
         #%% Create decision variables and parameters for the optimization problem
         
@@ -55,7 +55,11 @@ class OCP_calc_pos:
             for k in range(window_len):
                 opti.subject_to( cas.dot(R_t[k][:,1],np.array([0,0,1])) > 0)
             
-            
+        # Additional constraint: First invariant remains constant throughout the window
+        if geometric:
+            for k in range(window_len-2):
+                opti.subject_to(U[0,k+1] == U[0,k])
+    
         #%% Specifying the objective
 
         # Fitting constraint to remain close to measurements

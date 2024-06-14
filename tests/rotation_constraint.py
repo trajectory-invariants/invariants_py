@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from invariants_py.generate_trajectory.rockit_generate_orientation_traj_from_vector_invars import OCP_gen_rot as FS_gen_rot
 from scipy.spatial.transform import Rotation as R
 from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize
-import invariants_py.plotters as pl
+import invariants_py.plotting_functions.plotters as pl
 from invariants_py.reparameterization import interpR
 import pickle
 import invariants_py.kinematics.orientation_kinematics as SO3

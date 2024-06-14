@@ -16,7 +16,7 @@ from invariants_py.calculate_invariants.rockit_calculate_vector_invariants_rotat
 from invariants_py.generate_trajectory.rockit_generate_pose_traj_from_vector_invars import OCP_gen_pose
 from scipy.spatial.transform import Rotation as R
 from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize
-import invariants_py.plotters as pl
+import invariants_py.plotting_functions.plotters as pl
 import invariants_py.collision_detection_bottle as cd
 from invariants_py.reparameterization import interpR
 from invariants_py.initialization import FSr_init

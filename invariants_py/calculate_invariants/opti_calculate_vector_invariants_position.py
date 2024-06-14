@@ -1,9 +1,7 @@
 import numpy as np
 import casadi as cas
 import invariants_py.dynamics_vector_invariants as dynamics
-import time
 from invariants_py import ocp_helper
-import numpy as np
 
 class OCP_calc_pos:
 
@@ -236,9 +234,9 @@ if __name__ == "__main__":
     OCP = OCP_calc_pos(window_len=np.size(measured_positions,0), rms_error_traj=10**-3)
 
     # Call the calculate_invariants_global function and measure the elapsed time
-    start_time = time.time()
+    #start_time = time.time()
     calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants_global(measured_positions, stepsize)
-    elapsed_time = time.time() - start_time
+    #elapsed_time = time.time() - start_time
 
     # # Print the results and elapsed time
     # print("Calculated invariants:")
