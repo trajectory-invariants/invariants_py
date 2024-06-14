@@ -55,7 +55,7 @@ class OCP_gen_rot:
             ocp.subject_to(ocp.at_tf(tril_vec_no_diag(R_r.T @ R_r_end - np.eye(3)) == 0.))
         if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
             ocp.subject_to(ocp.at_t0(tril_vec_no_diag(R_obj.T @ R_obj_start - np.eye(3)) == 0.))
-        if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
+        if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
             ocp.subject_to(ocp.at_tf(tril_vec_no_diag(R_obj.T @ R_obj_end - np.eye(3)) == 0.))
 
         #ocp.subject_to(ocp.at_t0(R_r == R_r_start))
