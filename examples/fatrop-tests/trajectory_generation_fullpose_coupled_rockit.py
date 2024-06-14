@@ -13,7 +13,7 @@ import scipy.interpolate as ip
 
 from invariants_py.calculate_invariants.rockit_calculate_vector_invariants_position import OCP_calc_pos
 from invariants_py.calculate_invariants.rockit_calculate_vector_invariants_rotation import OCP_calc_rot
-from invariants_py.generate_trajectory.rockit_generate_pose_traj_from_vector_invars_jointlim import OCP_gen_pose_jointlim
+from invariants_py.generate_trajectory.rockit_generate_pose_traj_from_vector_invars import OCP_gen_pose
 from scipy.spatial.transform import Rotation as R
 from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize
 import invariants_py.plotters as pl
@@ -164,7 +164,7 @@ robot_params = {
 }
 
 # specify optimization problem symbolically
-FS_online_generation_problem = OCP_gen_pose_jointlim(boundary_constraints, number_samples, use_fatrop_solver, robot_params)
+FS_online_generation_problem = OCP_gen_pose(boundary_constraints, number_samples, use_fatrop_solver, robot_params)
 
 initial_values = {
     "trajectory": optim_calc_results.Obj_pos,
