@@ -22,17 +22,10 @@ def find_robot_path(file_name):
     try:
         module_dir = os.path.dirname(data_folder.__file__)
         robot_dir = module_dir + '/robot'
-        if file_name is None:
-            data_path = None
-        else:
-            if file_name == '*.urdf':
-                files = os.listdir(robot_dir)
-                for i in files:
-                    file_name = i if i.endswith('.urdf') else None
-            data_path = os.path.join(robot_dir,file_name)
-            np.load(data_path) if not os.path.isfile(data_path) else print(f"\n Included robot model from urdf file: {file_name} \n")
-    except FileNotFoundError:
-        if file_name == '*.urdf' or 'no_robot':
+        data_path = os.path.join(robot_dir,file_name)
+        if not os.path.isfile(data_path): np.load(data_path)
+    except:
+        if file_name == None:
             print(f"\n Robot model not included \n")
             return
         else:

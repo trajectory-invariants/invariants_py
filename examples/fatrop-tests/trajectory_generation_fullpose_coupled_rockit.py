@@ -154,7 +154,7 @@ boundary_constraints = {
 }
 
 # Define robot parameters
-urdf_file_name = 'no_robot' # use 'no_robot' if do not want to include robot model
+urdf_file_name = None # use None if do not want to include robot model
 robot_params = {
     "urdf_file_name": urdf_file_name,
     "joint_number": 6, # Number of joints
@@ -175,7 +175,7 @@ initial_values = {
     "invariants-orientation": invars_init,
     "trajectory-orientation": R_obj_init,
     "moving-frame-orientation": R_r_init_array,
-    "joint-values": robot_params["home"] if urdf_file_name is not 'no_robot' else {}
+    "joint-values": robot_params["home"] if urdf_file_name is not None else {}
 }
 
 # Define OCP weights

@@ -23,7 +23,7 @@ class OCP_gen_pose_jointlim:
         fatrop_solver = check_solver(fatrop_solver)  
 
         # Robot urdf location
-        urdf_file_name = robot_params.get('urdf_file_name', '*.urdf')
+        urdf_file_name = robot_params.get('urdf_file_name', None)
         path_to_urdf = dh.find_robot_path(urdf_file_name) 
         include_robot_model = True if path_to_urdf is not None else False
         if include_robot_model:
