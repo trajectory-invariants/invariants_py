@@ -32,8 +32,8 @@ def find_robot_path(file_name):
             data_path = os.path.join(robot_dir,file_name)
             np.load(data_path) if not os.path.isfile(data_path) else print(f"\n Included robot model from urdf file: {file_name} \n")
     except FileNotFoundError:
-        if file_name == '*.urdf' or None:
-            print(f"Robot model not included")
+        if file_name == '*.urdf' or 'no_robot':
+            print(f"\n Robot model not included \n")
             return
         else:
             print(f"\n Robot model not found! A urdf file needs to be included in the '/data/robot' directory \n")

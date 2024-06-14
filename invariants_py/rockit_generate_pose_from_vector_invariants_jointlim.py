@@ -18,13 +18,21 @@ import invariants_py.data_handler as dh
 
 class OCP_gen_pose_jointlim:
 
-    def __init__(self, boundary_constraints, window_len = 100, fatrop_solver = False, nb_joints = 6, bool_unsigned_invariants = False, max_iters = 300, urdf_file_name = '*.urdf', root = 'base_link', tip = 'tool0'):
+    def __init__(self, boundary_constraints, window_len = 100, fatrop_solver = False, robot_params = {}, bool_unsigned_invariants = False, max_iters = 300):
         
         fatrop_solver = check_solver(fatrop_solver)  
 
         # Robot urdf location
+        urdf_file_name = robot_params.get('urdf_file_name', '*.urdf')
         path_to_urdf = dh.find_robot_path(urdf_file_name) 
         include_robot_model = True if path_to_urdf is not None else False
+        if include_robot_model:
+            nb_joints = robot_params.get('join_number', 6)
+            home = robot_params.get('home', np.zeros(nb_joints))
+            q_limits = robot_params.get('q_lim', 2*np.pi*np.ones(nb_joints))
+            root = robot_params.get('root', 'base_link')
+            tip = robot_params.get('tip', 'tool0')
+
         #%% Create decision variables and parameters for the optimization problem
         
         ocp = rockit.Ocp(T=1.0)
@@ -130,7 +138,6 @@ class OCP_gen_pose_jointlim:
             e_pos = cas.dot(p_obj_fwkin - p_obj,p_obj_fwkin - p_obj)
             e_rot = cas.dot(R_obj.T @ R_obj_fwkin - np.eye(3),R_obj.T @ R_obj_fwkin - np.eye(3))
             objective_jointlim = ocp.sum(e_pos + e_rot + 0.001*cas.dot(qdot,qdot),include_last = True)
-
             objective = ocp.sum(objective_inv + objective_jointlim, include_last = True)
         else:
             objective = ocp.sum(1/window_len*cas.dot(w_invars*(invars - invars_demo),w_invars*(invars - invars_demo)),include_last=True)
@@ -160,9 +167,9 @@ class OCP_gen_pose_jointlim:
         ocp.set_value(w_invars, 0.001+np.zeros((6,window_len)))
         ocp.set_value(h, 0.01)
         if include_robot_model:
-            ocp.set_initial(q,np.zeros(nb_joints)) 
+            ocp.set_initial(q,home) 
             ocp.set_initial(qdot, 0.001*np.ones((nb_joints,window_len-1)))
-            ocp.set_value(q_lim,2*np.pi*np.ones(nb_joints))
+            ocp.set_value(q_lim,q_limits)
         # Boundary constraints
         if "moving-frame" in boundary_constraints and "initial" in boundary_constraints["moving-frame"]:
             ocp.set_value(R_t_start, np.eye(3))
@@ -222,21 +229,36 @@ class OCP_gen_pose_jointlim:
             bounds.append(ocp.value(R_r_end))
             bounds_labels.append("R_r_end")
 
-        solution = [ocp.sample(invars, grid='control-')[1],
-            ocp.sample(p_obj, grid='control')[1], # sampled object positions
-            ocp.sample(R_t, grid='control')[1], # sampled translational FS frame
-            ocp.sample(R_r, grid='control')[1], # sampled rotational FS frame
-            ocp.sample(R_obj, grid='control')[1]] # sampled object orientation
+        if include_robot_model:
+            solution = [ocp.sample(invars, grid='control-')[1],
+                ocp.sample(p_obj, grid='control')[1], # sampled object positions
+                ocp.sample(R_t, grid='control')[1], # sampled translational FS frame
+                ocp.sample(R_r, grid='control')[1], # sampled rotational FS frame
+                ocp.sample(R_obj, grid='control')[1], # sampled object orientation
+                ocp.sample(q, grid='control')[1]] # sampled joint value
+        else:
+            solution = [ocp.sample(invars, grid='control-')[1],
+                ocp.sample(p_obj, grid='control')[1], # sampled object positions
+                ocp.sample(R_t, grid='control')[1], # sampled translational FS frame
+                ocp.sample(R_r, grid='control')[1], # sampled rotational FS frame
+                ocp.sample(R_obj, grid='control')[1]] # sampled object orientation
         
         self.ocp = ocp # save the optimization problem locally, avoids problems when multiple rockit ocp's are created
 
-        ######################################################################   I FORGOT TO INCLUDE THE q VARIABLES AS INPUT/OUTPUTS" ########################################################
-        self.ocp_function = self.ocp.to_function('ocp_function', 
-            [invars_sampled,w_sampled,h_value,*bounds,*solution], # inputs
-            [*solution], # outputs
-            ["invars","w_invars","stepsize",*bounds_labels,"invars1","p_obj1","R_t1","R_r1","R_obj1"], # input labels for debugging
-            ["invars2","p_obj2","R_t2","R_r2","R_obj2"], # output labels for debugging
-        )
+        if include_robot_model:
+            self.ocp_function = self.ocp.to_function('ocp_function', 
+                [invars_sampled,w_sampled,h_value,*bounds,*solution], # inputs
+                [*solution], # outputs
+                ["invars","w_invars","stepsize",*bounds_labels,"invars1","p_obj1","R_t1","R_r1","R_obj1","q1"], # input labels for debugging
+                ["invars2","p_obj2","R_t2","R_r2","R_obj2","q2"], # output labels for debugging
+            )
+        else:
+            self.ocp_function = self.ocp.to_function('ocp_function', 
+                [invars_sampled,w_sampled,h_value,*bounds,*solution], # inputs
+                [*solution], # outputs
+                ["invars","w_invars","stepsize",*bounds_labels,"invars1","p_obj1","R_t1","R_r1","R_obj1"], # input labels for debugging
+                ["invars2","p_obj2","R_t2","R_r2","R_obj2"], # output labels for debugging
+            )
 
         # Save variables (only needed for old way of trajectory generation)
         self.R_t = R_t
@@ -275,7 +297,7 @@ class OCP_gen_pose_jointlim:
         self.include_robot_model = include_robot_model
         self.tot_time = tot_time
 
-    def generate_trajectory(self, invariant_model, boundary_constraints, step_size, weights_params = {}, initial_values = {}):
+    def generate_trajectory(self, invariant_model, boundary_constraints, step_size, weights_params = {}, initial_values = {}, robot_params = {}):
 
         N = invariant_model.shape[0]
 
@@ -285,6 +307,11 @@ class OCP_gen_pose_jointlim:
         w_high_end = weights_params.get('w_high_end', N)
         w_high_invars = weights_params.get('w_high_invars', (10**-3)*np.ones(6))
         w_high_active = weights_params.get('w_high_active', 0)
+
+        if self.include_robot_model:
+            # Get the robot parameters or set default value
+            nb_joints = robot_params.get('join_number', 6)
+            home = robot_params.get('home', np.zeros(nb_joints))
 
         # Set the weights for the invariants
         w_invars = np.tile(w_invars, (len(invariant_model),1)).T
@@ -296,17 +323,27 @@ class OCP_gen_pose_jointlim:
         if self.first_window and not initial_values:
             solution_pos,initvals_dict = generate_initvals_from_bounds(boundary_constraints, np.size(invariant_model,0))
             solution_rot = generate_initvals_from_bounds_rot(boundary_constraints, np.size(invariant_model,0))
-            self.solution = np.hstack([solution_pos,solution_rot])
+            if self.include_robot_model:
+                default_q_init = home
+                self.solution = np.hstack([solution_pos,solution_rot,default_q_init])
+            else:
+                self.solution = np.hstack([solution_pos,solution_rot])
             self.first_window = False
         elif self.first_window:
-            self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["trajectory"][:N,:].T, initial_values["moving-frames"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["moving-frame-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["trajectory-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N)]
+            if self.include_robot_model:
+                self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["trajectory"][:N,:].T, initial_values["moving-frames"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["moving-frame-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["trajectory-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N),initial_values["joint-values"].T]
+            else:
+                self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["trajectory"][:N,:].T, initial_values["moving-frames"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["moving-frame-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["trajectory-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N)]
             self.first_window = False
 
         # Call solve function
         self.solution = self.ocp_function(invariant_model.T,w_invars,step_size,*boundary_values_list,*self.solution)
 
         #Return the results
-        invars_sol, p_obj_sol, R_t_sol, R_r_sol, R_obj_sol = self.solution # unpack the results            
+        if self.include_robot_model:
+            invars_sol, p_obj_sol, R_t_sol, R_r_sol, R_obj_sol, q = self.solution # unpack the results            
+        else:
+            invars_sol, p_obj_sol, R_t_sol, R_r_sol, R_obj_sol = self.solution # unpack the results            
         invariants = np.array(invars_sol).T
         invariants = np.vstack((invariants, invariants[-1,:])) # make a N x 3 array by repeating last row
         new_trajectory_pos = np.array(p_obj_sol).T # make a N x 3 array
@@ -314,7 +351,7 @@ class OCP_gen_pose_jointlim:
         new_trajectory_rot = np.transpose(np.reshape(R_obj_sol.T, (-1, 3, 3)), (0, 2, 1)) 
         movingframe_rot = np.transpose(np.reshape(R_r_sol.T, (-1, 3, 3)), (0, 2, 1)) 
         if self.include_robot_model:
-            joint_val = np.array(self.q).T
+            joint_val = np.array(q).T
         else:
             joint_val = []
 
