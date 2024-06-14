@@ -16,7 +16,7 @@ from invariants_py.initialization import generate_initvals_from_bounds
 from invariants_py.initialization import generate_initvals_from_bounds_rot
 import invariants_py.data_handler as dh
 
-class OCP_gen_pose_jointlim:
+class OCP_gen_pose:
 
     def __init__(self, boundary_constraints, window_len = 100, fatrop_solver = False, robot_params = {}, bool_unsigned_invariants = False, max_iters = 300):
         
