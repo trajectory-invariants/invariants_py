@@ -81,7 +81,7 @@ boundary_constraints = {
         "initial": calculate_trajectory[current_index],
         "final": calculate_trajectory[-1] + np.array([0.1, 0.05, 0.05])
     },
-    "moving-frame": {
+    "moving-frame-position": {
         "initial": movingframes[current_index],
         "final": movingframes[-1]
     },
@@ -153,7 +153,7 @@ while current_progress <= 1.0:
             "initial": calculate_trajectory[current_index],
             "final": trajectory[-1] - current_progress * np.array([-0.2, 0.0, 0.0])
         },
-        "moving-frame": {
+        "moving-frame-position": {
             "initial": movingframes[current_index],
             "final": movingframes[-1]
         },

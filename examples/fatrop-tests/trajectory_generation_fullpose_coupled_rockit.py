@@ -138,7 +138,7 @@ boundary_constraints = {
         "initial": p_obj_start,
         "final": p_obj_end
     },
-    "moving-frame": {
+    "moving-frame-position": {
         "initial": FSt_start,
         "final": FSt_end
     },
