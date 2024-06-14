@@ -165,7 +165,6 @@ robot_params = {
 }
 
 # specify optimization problem symbolically
-# FS_online_generation_problem = OCP_gen_pose(window_len=number_samples, fatrop_solver = use_fatrop_solver)
 FS_online_generation_problem = OCP_gen_pose_jointlim(boundary_constraints, number_samples, use_fatrop_solver, robot_params)
 
 initial_values = {
@@ -188,7 +187,6 @@ weights_params = {
 }
 
 # Solve
-# optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, tot_time, joint_values = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = optim_calc_results.Obj_pos, R_obj_init = R_obj_init, R_t_init = optim_calc_results.FSt_frames, R_r_init = R_r_init_array, q_init = q_init, q_lim = q_joint_lim, R_t_start = FSt_start, R_r_start = R_r_init, R_t_end = FSt_end, R_r_end = R_r_init, p_obj_start = p_obj_start, R_obj_start = R_obj_start, p_obj_end = p_obj_end, R_obj_end = R_obj_end, step_size = new_stepsize, weights_params = weights_params)
 optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, tot_time, joint_values = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values)
 
 if use_fatrop_solver:

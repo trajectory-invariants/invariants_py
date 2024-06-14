@@ -200,7 +200,8 @@ class OCP_gen_pose_jointlim:
         invars_sampled = ocp.sample(invars_demo, grid='control')[1] # sampled demonstration invariants
         w_sampled = ocp.sample(w_invars, grid='control')[1] # sampled invariants weights 
         h_value = ocp.value(h) # value of stepsize
-        q_lim_value = ocp.value(q_lim) # value of joint limits
+        if include_robot_model:
+            q_lim_value = ocp.value(q_lim) # value of joint limits
 
         bounds = []
         bounds_labels = []
@@ -333,7 +334,10 @@ class OCP_gen_pose_jointlim:
             self.first_window = False
 
         # Call solve function
-        self.solution = self.ocp_function(invariant_model.T,w_invars,step_size,self.q_lim,*boundary_values_list,*self.solution)
+        if self.include_robot_model:
+            self.solution = self.ocp_function(invariant_model.T,w_invars,step_size,self.q_lim,*boundary_values_list,*self.solution)
+        else:
+            self.solution = self.ocp_function(invariant_model.T,w_invars,step_size,*boundary_values_list,*self.solution)
 
         #Return the results
         if self.include_robot_model:
