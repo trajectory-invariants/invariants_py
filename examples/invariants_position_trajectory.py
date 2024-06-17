@@ -15,11 +15,11 @@ trajectory, time = dh.read_pose_trajectory_from_txt(path_data)
 # Calculate the invariants of the translation trajectory
 invariants, progress, calc_trajectory, movingframes = invariants_handler.calculate_invariants_translation(trajectory)
 
-# Plot the calculated invariants and corresponding trajectory
-plotters.plot_invariants_new2(invariants, progress)
-plotters.plot_trajectory(calc_trajectory)
-plotters.plot_moving_frames(calc_trajectory, movingframes)
-plotters.animate_moving_frames(calc_trajectory, movingframes)
+# Plotting the results
+plotters.plot_invariants_new2(invariants, progress) # calculated invariants
+plotters.plot_trajectory(calc_trajectory) # calculated trajectory corresponding to invariants
+plotters.plot_moving_frames(calc_trajectory, movingframes) # calculated moving frames along trajectory
+plotters.animate_moving_frames(calc_trajectory, movingframes) # animated moving frames along trajectory
 
 # Save invariant model to a file
 dh.save_invariants_to_csv(progress, invariants, "sine_wave_invariants.csv")
