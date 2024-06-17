@@ -158,9 +158,9 @@ FS_online_generation_problem_rot = FS_gen_rot(boundary_constraints_rot, number_s
 initial_values = {}
 
 initial_values = {
-    "trajectory": optim_calc_results.Obj_pos,
-    "moving-frames": optim_calc_results.FSt_frames,
-    "invariants": model_invariants[:,3:],
+    "trajectory-position": optim_calc_results.Obj_pos,
+    "moving-frame-position": optim_calc_results.FSt_frames,
+    "invariants-position": model_invariants[:,3:],
     "invariants-orientation": invars_init,
     "trajectory-orientation": R_obj_init,
     "moving-frame-orientation": R_r_init_array
@@ -319,9 +319,9 @@ while current_progress <= 1.0:
         }
     }
     initial_values = {
-        "trajectory": optim_calc_results.Obj_pos,
-        "moving-frames": optim_calc_results.FSt_frames,
-        "invariants": model_invariants[:,3:],
+        "trajectory-position": optim_calc_results.Obj_pos,
+        "moving-frame-position": optim_calc_results.FSt_frames,
+        "invariants-position": model_invariants[:,3:],
         "invariants-orientation": invars_init,
         "trajectory-orientation": R_obj_init,
         "moving-frame-orientation": R_r_init_array
@@ -403,9 +403,9 @@ boundary_constraints_rot = {
     }
 }
 initial_values = {
-    "trajectory": optim_calc_results.Obj_pos,
-    "moving-frames": optim_calc_results.FSt_frames,
-    "invariants": model_invariants[:,3:],
+    "trajectory-position": optim_calc_results.Obj_pos,
+    "moving-frame-position": optim_calc_results.FSt_frames,
+    "invariants-position": model_invariants[:,3:],
     "trajectory-orientation": [],
     "moving-frames-orientation": [],
     "invariants-orientation": [],

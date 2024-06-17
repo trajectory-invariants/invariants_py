@@ -87,9 +87,9 @@ boundary_constraints = {
     },
 }
 initial_values = {
-    "trajectory": calculate_trajectory,
-    "moving-frames": movingframes,
-    "invariants": model_invariants,
+    "trajectory-position": calculate_trajectory,
+    "moving-frame-position": movingframes,
+    "invariants-position": model_invariants,
 }
 
 # Generate new trajectory
@@ -160,9 +160,9 @@ while current_progress <= 1.0:
         #  speed/acceleration values - velocity/(acceleration vectors) - moving frame
     }
     initial_values = {
-        "trajectory": calculate_trajectory,
-        "moving-frames": movingframes,
-        "invariants": model_invariants,
+        "trajectory-position": calculate_trajectory,
+        "moving-frame-position": movingframes,
+        "invariants-position": model_invariants,
     }
 
     # Calculate remaining trajectory

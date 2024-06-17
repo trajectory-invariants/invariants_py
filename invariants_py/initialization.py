@@ -43,9 +43,9 @@ def generate_initvals_from_bounds(boundary_constraints,N):
     initial_movingframes = np.tile(R_mf, (N,1,1))
 
     initial_values = {
-         "trajectory": initial_trajectory.T,
-         "moving-frames": initial_movingframes,
-         "invariants": initial_invariants
+         "trajectory-position": initial_trajectory.T,
+         "moving-frame-position": initial_movingframes,
+         "invariants-position": initial_invariants
     }
 
     R_t_sol = np.zeros((3,3*N))

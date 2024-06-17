@@ -195,7 +195,7 @@ class OCP_gen_pos:
             self.solution,initvals_dict = generate_initvals_from_bounds(boundary_constraints, np.size(invariant_model,0))
             self.first_window = False
         elif self.first_window:
-            self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["trajectory"][:N,:].T, initial_values["moving-frames"][:N].T.transpose(1,2,0).reshape(3,3*N)]
+            self.solution = [initial_values["invariants-position"][:N-1,:].T, initial_values["trajectory-position"][:N,:].T, initial_values["moving-frame-position"][:N].T.transpose(1,2,0).reshape(3,3*N)]
             self.first_window = False
 
         #print(self.solution)

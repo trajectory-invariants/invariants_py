@@ -149,9 +149,9 @@ def generate_trajectory(data_location, optim_calc_results, p_obj_end, rotate, us
     },
     }
     initial_values = {
-        "trajectory": optim_calc_results.Obj_pos,
-        "moving-frames": optim_calc_results.FSt_frames,
-        "invariants": model_invariants[:,3:],
+        "trajectory-position": optim_calc_results.Obj_pos,
+        "moving-frame-position": optim_calc_results.FSt_frames,
+        "invariants-position": model_invariants[:,3:],
         "invariants-orientation": invars_init,
         "trajectory-orientation": R_obj_init,
         "moving-frame-orientation": R_r_init_array

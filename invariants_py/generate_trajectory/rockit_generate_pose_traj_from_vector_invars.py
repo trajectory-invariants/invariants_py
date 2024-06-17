@@ -333,9 +333,9 @@ class OCP_gen_pose:
             self.first_window = False
         elif self.first_window:
             if self.include_robot_model:
-                self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["trajectory"][:N,:].T, initial_values["moving-frames"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["moving-frame-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["trajectory-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N),initial_values["joint-values"].T]
+                self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["trajectory-position"][:N,:].T, initial_values["moving-frame-position"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["moving-frame-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["trajectory-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N),initial_values["joint-values"].T]
             else:
-                self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["trajectory"][:N,:].T, initial_values["moving-frames"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["moving-frame-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["trajectory-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N)]
+                self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["trajectory-position"][:N,:].T, initial_values["moving-frame-position"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["moving-frame-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["trajectory-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N)]
             self.first_window = False
 
         # Call solve function
@@ -450,56 +450,88 @@ class OCP_gen_pose:
 
         return invariants, new_trajectory_pos, new_trajectory_rot.T.reshape(-1, 3, 3).transpose(0, 2, 1), movingframe_pos.T.reshape(-1, 3, 3).transpose(0, 2, 1), movingframe_rot.T.reshape(-1, 3, 3).transpose(0, 2, 1), tot_time, joint_val
     
-    ######################################### WORK ON EXAMPLE ######################################
-# if __name__ == "__main__":
-#     from invariants_py import data_handler
-#     # Example data
-#     path_to_urdf = data_handler.find_robot_path('ur10.urdf')
-#     window_len = 100
-#     bool_unsigned_invariants = False
-#     w_pos = 1
-#     w_rot = 1
-#     max_iters = 300
-#     fatrop_solver = False
-#     nb_joints = 6
-#     root = 'base_link'
-#     tip = 'tool0'
+if __name__ == "__main__":
+    from invariants_py import data_handler
+    # Example data
+    window_len = 100
+    use_fatrop_solver = False
+    p_obj_start = np.random.rand(3)
+    R_obj_start = np.eye(3, 3)
+    p_obj_end = np.random.rand(3)
+    R_obj_end = np.eye(3, 3)
+    invars_demo = np.random.rand(window_len, 6)
+    p_obj_init = np.random.rand(window_len, 3)
+    R_obj_init = np.tile(np.eye(3, 3), (window_len, 1, 1))
+    R_t_init = np.tile(np.eye(3, 3), (window_len, 1, 1))
+    R_r_init = np.tile(np.eye(3, 3), (window_len, 1, 1))
+    R_t_start = np.eye(3, 3)
+    R_r_start = np.eye(3, 3)
+    R_t_end = np.eye(3, 3)
+    R_r_end = np.eye(3, 3)
+    boundary_constraints = {
+        "position": {
+            "initial": p_obj_start,
+            "final": p_obj_end
+        },
+        "moving-frame-position": {
+            "initial": R_t_start,
+            "final": R_t_end
+        },
+        "orientation": {
+            "initial": R_obj_start,
+            "final": R_obj_end
+        },
+        "moving-frame-orientation": {
+            "initial": R_r_start,
+            "final": R_r_end
+        }
+    }
+    urdf_file_name = 'ur10.urdf' # use None if do not want to include robot model
+    robot_params = {
+        "urdf_file_name": urdf_file_name,
+        "joint_number": 6, # Number of joints
+    }
+    q_init = np.random.rand(window_len, robot_params["joint_number"])
+    q_lim = np.random.rand(robot_params["joint_number"])
+
+    # Create OCP WITHOUT robot kinematic model
+    ocp_obj = OCP_gen_pose(boundary_constraints, window_len, use_fatrop_solver)
+    # Create OCP WITH robot kinematic model
+    # ocp_obj_jointlim = OCP_gen_pose(boundary_constraints, window_len, use_fatrop_solver,robot_params)
+
+    initial_values = {
+        "trajectory-position": p_obj_init,
+        "moving-frame-position": R_t_init,
+        "invariants": invars_demo,
+        "trajectory-orientation": R_obj_init,
+        "moving-frame-orientation": R_r_init,
+    }
+
+    weights_params = {
+        "w_invars": (10**-3)*np.ones(6),
+    }
+
+    step_size = 0.1
+
     
-#     # Create an instance of OCP_gen_pose_jointlim
-#     ocp_obj = OCP_gen_pose_jointlim(path_to_urdf, window_len, bool_unsigned_invariants, w_pos, w_rot, max_iters, fatrop_solver, nb_joints, root, tip)
+    # Call generate_trajectory function (WITHOUT robot model)
+    invariants, new_trajectory_pos, new_trajectory_rot, movingframe_pos, movingframe_rot, tot_time, [] = ocp_obj.generate_trajectory(invars_demo,boundary_constraints,step_size,weights_params,initial_values)
+    # Call generate_trajectory function (WITH robot model)
+    # invariants_rob, new_trajectory_pos_rob, new_trajectory_rot_rob, movingframe_pos_rob, movingframe_rot_rob, tot_time_rob, joint_values_rob = ocp_obj_jointlim.generate_trajectory(invars_demo,boundary_constraints,step_size,weights_params,initial_values)
     
-#     # Example data for generate_trajectory function
-#     U_demo = np.random.rand(window_len, 6)
-#     p_obj_init = np.random.rand(window_len, 3)
-#     R_obj_init = np.tile(np.eye(3, 3), (window_len, 1, 1))
-#     R_t_init = np.tile(np.eye(3, 3), (window_len, 1, 1))
-#     R_r_init = np.tile(np.eye(3, 3), (window_len, 1, 1))
-#     q_init = np.random.rand(window_len, nb_joints)
-#     q_lim = np.random.rand(nb_joints)
-#     R_t_start = np.eye(3, 3)
-#     R_r_start = np.eye(3, 3)
-#     R_t_end = np.eye(3, 3)
-#     R_r_end = np.eye(3, 3)
-#     p_obj_start = np.random.rand(3)
-#     R_obj_start = np.eye(3, 3)
-#     p_obj_end = np.random.rand(3)
-#     R_obj_end = np.eye(3, 3)
-#     step_size = 0.1
-#     U_init = None
-#     w_invars = (10**-3)*np.ones(6)
-#     w_high_start = 1
-#     w_high_end = 0
-#     w_high_invars = (10**-3)*np.ones(6)
-#     w_high_active = 0
-    
-#     # Call generate_trajectory function
-#     invariants, new_trajectory_pos, new_trajectory_rot, movingframe_pos, movingframe_rot, tot_time, joint_val = ocp_obj.generate_trajectory(U_demo, p_obj_init, R_obj_init, R_t_init, R_r_init, q_init, q_lim, R_t_start, R_r_start, R_t_end, R_r_end, p_obj_start, R_obj_start, p_obj_end, R_obj_end, step_size, U_init, w_invars, w_high_start, w_high_end, w_high_invars, w_high_active)
-    
-#     # Print the results
-#     print("Invariants:", invariants)
-#     print("New Trajectory Position:", new_trajectory_pos)
-#     print("New Trajectory Rotation:", new_trajectory_rot)
-#     print("Moving Frame Position:", movingframe_pos)
-#     print("Moving Frame Rotation:", movingframe_rot)
-#     print("Total Time:", tot_time)
-#     print("Joint Values:", joint_val)
+    # Print the results
+    # WITHOUT robot model
+    print("Invariants:", invariants)
+    print("New Trajectory Position:", new_trajectory_pos)
+    print("New Trajectory Rotation:", new_trajectory_rot)
+    print("Moving Frame Position:", movingframe_pos)
+    print("Moving Frame Rotation:", movingframe_rot)
+    print("Total Time:", tot_time)
+    # WITH robot model
+    # print("Invariants:", invariants_rob)
+    # print("New Trajectory Position:", new_trajectory_pos_rob)
+    # print("New Trajectory Rotation:", new_trajectory_rot_rob)
+    # print("Moving Frame Position:", movingframe_pos_rob)
+    # print("Moving Frame Rotation:", movingframe_rot_rob)
+    # print("Total Time:", tot_time_rob)
+    # print("Joint Values:", joint_values_rob)

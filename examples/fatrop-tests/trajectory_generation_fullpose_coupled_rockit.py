@@ -133,6 +133,8 @@ R_obj_init = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1
 
 R_r_init, R_r_init_array, invars_init = FSr_init(R_obj_start, R_obj_end)
 
+model_invariants[:-1,:3] = invars_init
+
 boundary_constraints = {
     "position": {
         "initial": p_obj_start,
@@ -167,10 +169,9 @@ robot_params = {
 FS_online_generation_problem = OCP_gen_pose(boundary_constraints, number_samples, use_fatrop_solver, robot_params)
 
 initial_values = {
-    "trajectory": optim_calc_results.Obj_pos,
-    "moving-frames": optim_calc_results.FSt_frames,
+    "trajectory-position": optim_calc_results.Obj_pos,
+    "moving-frame-position": optim_calc_results.FSt_frames,
     "invariants": model_invariants,
-    "invariants-orientation": invars_init,
     "trajectory-orientation": R_obj_init,
     "moving-frame-orientation": R_r_init_array,
     "joint-values": robot_params["home"] if urdf_file_name is not None else {}
