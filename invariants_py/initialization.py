@@ -48,11 +48,11 @@ def generate_initvals_from_bounds(boundary_constraints,N):
          "invariants": initial_invariants
     }
 
-    R_t_x_sol = np.tile(e_x, (N, 1)).T
-    R_t_y_sol = np.tile(e_y, (N, 1)).T
-    R_t_z_sol = np.tile(e_z, (N, 1)).T
+    R_t_sol = np.zeros((3,3*N))
+    for i in range(N-1):
+        R_t_sol[:,3*i:3*(i+1)] = np.array([e_x,e_y,e_z]) 
 
-    return [initial_invariants, initial_trajectory, R_t_x_sol, R_t_y_sol, R_t_z_sol], initial_values
+    return [initial_invariants, initial_trajectory, R_t_sol], initial_values
 
 def generate_initvals_from_bounds_rot(boundary_constraints,N):
     R0 = boundary_constraints["orientation"]["initial"]
@@ -60,17 +60,32 @@ def generate_initvals_from_bounds_rot(boundary_constraints,N):
     # Linear initialization
     initial_trajectory = interpR(np.linspace(0, 1, N), [0,1], np.array([R0, R1]))
 
-    _, R_r_sol, initial_invariants = FSr_init(R0, R1)
-    R_r_sol_x = R_r_sol[:,:,0].T
-    R_r_sol_y = R_r_sol[:,:,1].T
-    R_r_sol_z = R_r_sol[:,:,2].T
+    _, R_r, initial_invariants = FSr_init(R0, R1)
+    
+    R_r_sol = np.zeros((3,3*N))
+    R_obj_sol = np.zeros((3,3*N))
+    for i in range(N-1):
+        R_r_sol[:,3*i:3*(i+1)] = np.array([R_r[i,0],R_r[i,1],R_r[i,2]]) 
+        R_obj_sol[:,3*i:3*(i+1)] = np.array([initial_trajectory[i,0],initial_trajectory[i,1],initial_trajectory[i,2]]) 
 
-    R_obj_sol_x = initial_trajectory[:,:,0].T
-    R_obj_sol_y = initial_trajectory[:,:,1].T
-    R_obj_sol_z = initial_trajectory[:,:,2].T
+    return [initial_invariants.T, R_r_sol, R_obj_sol]
 
+# def generate_initvals_from_bounds_rot(boundary_constraints,N):
+#     R0 = boundary_constraints["orientation"]["initial"]
+#     R1 = boundary_constraints["orientation"]["final"]
+#     # Linear initialization
+#     initial_trajectory = interpR(np.linspace(0, 1, N), [0,1], np.array([R0, R1]))
 
-    return [initial_invariants.T, R_r_sol_x, R_r_sol_y, R_r_sol_z, R_obj_sol_x, R_obj_sol_y, R_obj_sol_z]
+#     _, R_r_sol, initial_invariants = FSr_init(R0, R1)
+#     R_r_sol_x = R_r_sol[:,:,0].T
+#     R_r_sol_y = R_r_sol[:,:,1].T
+#     R_r_sol_z = R_r_sol[:,:,2].T
+
+#     R_obj_sol_x = initial_trajectory[:,:,0].T
+#     R_obj_sol_y = initial_trajectory[:,:,1].T
+#     R_obj_sol_z = initial_trajectory[:,:,2].T
+
+#     return [initial_invariants.T, R_r_sol_x, R_r_sol_y, R_r_sol_z, R_obj_sol_x, R_obj_sol_y, R_obj_sol_z]
 
 def calculate_velocity_from_discrete_rotations(R, timestamps):
     """
@@ -157,13 +172,12 @@ def initialize_VI_rot(input_trajectory):
 
     [ex,ey,ez] = estimate_initial_frames(Rdiff)
 
-    R_r_x_sol =  ex.T 
-    R_r_y_sol =  ey.T 
-    R_r_z_sol =  ez.T 
-    R_obj_x =  measured_orientation[:,:,0].T
-    R_obj_y =  measured_orientation[:,:,1].T
-    R_obj_z =  measured_orientation[:,:,2].T
+    R_r = np.zeros((3,3*N))
+    R_obj = np.zeros((3,3*N))
+    for i in range(N-1):
+        R_r[:,3*i:3*(i+1)] = np.array([ex[i,:],ey[i,:],ez[i,:]])  
+        R_obj[:,3*i:3*(i+1)] =  np.array([measured_orientation[i,0],measured_orientation[i,1],measured_orientation[i,2]])
 
     invars = np.vstack((1e0*np.ones((1,N-1)),1e-1*np.ones((1,N-1)), 1e-12*np.ones((1,N-1))))
 
-    return [invars, R_obj_x, R_obj_y, R_obj_z, R_r_x_sol, R_r_y_sol, R_r_z_sol], measured_orientation
+    return [invars, R_obj, R_r], measured_orientation

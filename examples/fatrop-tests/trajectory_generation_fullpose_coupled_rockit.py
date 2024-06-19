@@ -14,11 +14,10 @@ import scipy.interpolate as ip
 from invariants_py.calculate_invariants.rockit_calculate_vector_invariants_position import OCP_calc_pos
 from invariants_py.calculate_invariants.rockit_calculate_vector_invariants_rotation import OCP_calc_rot
 from invariants_py.generate_trajectory.rockit_generate_pose_traj_from_vector_invars import OCP_gen_pose
-from invariants_py.generate_trajectory.rockit_generate_pose_traj_from_vector_invars_jointlim import OCP_gen_pose_jointlim
 from scipy.spatial.transform import Rotation as R
 from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize
 import invariants_py.plotting_functions.plotters as pl
-import collision_detection_bottle as cd
+import invariants_py.collision_detection_bottle as cd
 from invariants_py.reparameterization import interpR
 from invariants_py.initialization import FSr_init
 
@@ -128,32 +127,66 @@ FSt_end = orthonormalize(rotate.as_matrix() @ optim_calc_results.FSt_frames[-1])
 # define new class for OCP results
 optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
 
-# Robot urdf location
-path_to_urdf = dh.find_data_path('ur10.urdf')
-
-# specify optimization problem symbolically
-# FS_online_generation_problem = OCP_gen_pose(window_len=number_samples, fatrop_solver = use_fatrop_solver)
-FS_online_generation_problem = OCP_gen_pose_jointlim(path_to_urdf = path_to_urdf, tip = 'TCP_frame', window_len=number_samples, fatrop_solver = use_fatrop_solver)
-
 # Linear initialization
 R_obj_init = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end]))
 # R_r_init = interpR(np.linspace(0, 1, len(optim_calc_results.FSr_frames)), [0,1], np.array([FSr_start, FSr_end]))
 
-R_r_init, R_r_init_array, U_init = FSr_init(R_obj_start, R_obj_end)
+R_r_init, R_r_init_array, invars_init = FSr_init(R_obj_start, R_obj_end)
+
+boundary_constraints = {
+    "position": {
+        "initial": p_obj_start,
+        "final": p_obj_end
+    },
+    "moving-frame-position": {
+        "initial": FSt_start,
+        "final": FSt_end
+    },
+    "orientation": {
+        "initial": R_obj_start,
+        "final": R_obj_end
+    },
+    "moving-frame-orientation": {
+        "initial": R_r_init,
+        "final": R_r_init
+    }
+}
+
+# Define robot parameters
+urdf_file_name = 'ur10.urdf' # use None if do not want to include robot model
+robot_params = {
+    "urdf_file_name": urdf_file_name,
+    "joint_number": 6, # Number of joints
+    "home": [-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4] * np.ones((number_samples,6)), # Home position joint values
+    "q_lim": [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi], # Join limits
+    "root": 'base_link', # Name of the robot root
+    "tip": 'TCP_frame' # Name of the robot tip
+}
+
+# specify optimization problem symbolically
+FS_online_generation_problem = OCP_gen_pose(boundary_constraints, number_samples, use_fatrop_solver, robot_params)
+
+initial_values = {
+    "trajectory": optim_calc_results.Obj_pos,
+    "moving-frames": optim_calc_results.FSt_frames,
+    "invariants": model_invariants,
+    "invariants-orientation": invars_init,
+    "trajectory-orientation": R_obj_init,
+    "moving-frame-orientation": R_r_init_array,
+    "joint-values": robot_params["home"] if urdf_file_name is not None else {}
+}
 
 # Define OCP weights
-w_invars = np.array([1, 1, 1, 5*10**1, 1.0, 1.0]) # i_r1, i_r2, i_r3, i_t1, i_t2, i_t3
-w_high_active = 0
-w_high_start = 60
-w_high_end = number_samples
-w_invars_high = 10*w_invars
+weights_params = {
+    "w_invars": np.array([1, 1, 1, 5*10**1, 1.0, 1.0]),
+    "w_high_start": 60,
+    "w_high_end": number_samples,
+    "w_high_invars": 10*np.array([1, 1, 1, 5*10**1, 1.0, 1.0]),
+    "w_high_active": 0
+}
 
-# Join initialization and limits
-q_init = [-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4] * np.ones((number_samples,6))
-q_joint_lim = [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi]
 # Solve
-# optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, tot_time = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = optim_calc_results.Obj_pos, R_obj_init = R_obj_init, R_t_init = optim_calc_results.FSt_frames, R_r_init = R_r_init_array, R_t_start = FSt_start, R_r_start = R_r_init, R_t_end = FSt_end, R_r_end = R_r_init, p_obj_start = p_obj_start, R_obj_start = R_obj_start, p_obj_end = p_obj_end, R_obj_end = R_obj_end, step_size = new_stepsize, w_high_start = w_high_start, w_high_end = w_high_end, w_high_invars = w_invars_high, w_invars = w_invars, w_high_active = w_high_active)
-optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, tot_time, joint_values = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = optim_calc_results.Obj_pos, R_obj_init = R_obj_init, R_t_init = optim_calc_results.FSt_frames, R_r_init = R_r_init_array, q_init = q_init, q_lim = q_joint_lim, R_t_start = FSt_start, R_r_start = R_r_init, R_t_end = FSt_end, R_r_end = R_r_init, p_obj_start = p_obj_start, R_obj_start = R_obj_start, p_obj_end = p_obj_end, R_obj_end = R_obj_end, step_size = new_stepsize, w_high_start = w_high_start, w_high_end = w_high_end, w_high_invars = w_invars_high, w_invars = w_invars, w_high_active = w_high_active)
+optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, tot_time, joint_values = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values)
 
 if use_fatrop_solver:
     print('')

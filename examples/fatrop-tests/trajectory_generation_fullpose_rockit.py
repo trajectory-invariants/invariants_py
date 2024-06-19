@@ -19,7 +19,7 @@ from scipy.spatial.transform import Rotation as R
 from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize
 import invariants_py.plotting_functions.plotters as pl
 import random
-import collision_detection_bottle as cd
+import invariants_py.collision_detection_bottle as cd
 from invariants_py.reparameterization import interpR
 from invariants_py.initialization import FSr_init
 
@@ -134,7 +134,7 @@ boundary_constraints = {
         "initial": p_obj_start,
         "final": p_obj_end
     },
-    "moving-frame": {
+    "moving-frame-position": {
         "initial": FSt_start,
         "final": FSt_end
     }
@@ -303,7 +303,7 @@ while current_progress <= 1.0:
             "initial": p_obj_start,
             "final": p_obj_end
         },
-        "moving-frame": {
+        "moving-frame-position": {
             "initial": FSt_start,
             "final": FSt_end
         }
@@ -387,7 +387,7 @@ boundary_constraints = {
         "initial": p_obj_start,
         "final": p_obj_start # will be updated later
     },
-    "moving-frame": {
+    "moving-frame-position": {
         "initial": FSt_start,
         "final": FSt_end
     }

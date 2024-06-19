@@ -143,7 +143,7 @@ def generate_trajectory(data_location, optim_calc_results, p_obj_end, rotate, us
         "initial": p_obj_start,
         "final": p_obj_end
     },
-    "moving-frame": {
+    "moving-frame-position": {
         "initial": FSt_start,
         "final": FSt_end
     },

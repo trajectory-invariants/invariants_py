@@ -107,7 +107,7 @@ class ComputeDist():
             l = j
         if (u_max > 0 and all(C3 > 0)) or (u_max < 0 and all(C3 < 0)):
             return Simplex, C3/u_max
-        d = np.Infinity
+        d = np.inf
         # Find which side of the triangle is closest to the origin
         for j in range(0, 3):
             if (u_max >= 0 and -C3[j] >= 0) or (u_max <= 0 and -C3[j] <= 0):
@@ -135,7 +135,7 @@ class ComputeDist():
             detM += C4[j]
         if (detM > 0 and all(C4 > 0)) or (detM < 0 and all(C4 < 0)):
             return Simplex, C4/detM
-        d = np.Infinity
+        d = np.inf
         # Find which face of the tetrahedron is closest to the origin
         for j in range(0, 4):
             if (detM >= 0 and -C4[j] >= 0) or (detM <= 0 and -C4[j] <= 0):

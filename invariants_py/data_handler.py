@@ -12,9 +12,26 @@ def find_data_path(file_name):
     try:
         module_dir = os.path.dirname(data_folder.__file__)
         data_path = os.path.join(module_dir,file_name)
+        if not os.path.isfile(data_path): np.load(data_path)
     except FileNotFoundError:
-        print(f"File {file_name} not found.")
-        return
+        print(f"\n File '{file_name}' not found. \n")
+        raise
+    return data_path
+
+def find_robot_path(file_name):
+    try:
+        module_dir = os.path.dirname(data_folder.__file__)
+        robot_dir = module_dir + '/robot'
+        data_path = os.path.join(robot_dir,file_name)
+        if not os.path.isfile(data_path): np.load(data_path)
+        print(f"\n Included robot model from urdf file: {file_name} \n")
+    except:
+        if file_name == None:
+            print(f"\n Robot model not included \n")
+            return
+        else:
+            print(f"\n Robot model not found! A urdf file needs to be included in the '/data/robot' directory \n")
+            raise 
     return data_path
 
 def save_invariants_to_csv(progress, invariants, file_name):
