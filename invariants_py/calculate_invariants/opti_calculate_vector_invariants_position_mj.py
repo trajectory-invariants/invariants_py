@@ -1,64 +1,22 @@
 import numpy as np
 import casadi as cas
-import invariants_py.dynamics_vector_invariants as dynamics
+from invariants_py.dynamics_vector_invariants import define_integrator_invariants_position_jerkmodel
 from invariants_py.ocp_helper import jerk_invariant
-
+import invariants_py.initialization as initialization
 class OCP_calc_pos:
 
-    def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_regul = (10**-6)*np.array([1.0, 1.0, 1.0]), planar_task = False):
+    def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_regul = (10**-6)*np.array([1.0, 1.0, 1.0]), planar_task = False, geometric = False, weight_movingframes = 10**-6):
 
-        # System states
-        R_t  = cas.MX.sym('R_t',3,3) # translational Frenet-Serret frame
-        p_obj = cas.MX.sym('p_obj',3,1) # object position
-        i1dot = cas.MX.sym('i1dot',1,1)
-        i1 = cas.MX.sym('i1',1,1)
-        i2 = cas.MX.sym('i2',1,1)
-        x = cas.vertcat(cas.vec(R_t), p_obj, i1dot, i1, i2)
-
-        #np = length(R_obj(:)) + length(p_obj)
-
-        # System controls (invariants)
-        #u = cas.MX.sym('i',3,1)
-        i1ddot = cas.MX.sym('i1ddot')
-        i2dot = cas.MX.sym('i2dot')
-        i3 = cas.MX.sym('i3')
-        u = cas.vertcat(i1ddot,i2dot,i3)
-
-        opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
-        h = opti.parameter(1,1)
-       
-        #%% Define geometric integrator
-        ## Define a geometric integrator for eFSI, (meaning rigid-body motion is perfectly integrated assuming constant invariants)
-        invariants = cas.vertcat(i1,i2,i3)
-        (R_t_plus1, p_obj_plus1) = dynamics.integrate_vector_invariants_position(R_t, p_obj, invariants, h)
-
-        i1dotplus1 = i1dot + i1ddot * h
-        i1plus1 = i1 + i1dot * h + i1ddot * h**2/2
-        i2plus1 = i2 + i2dot * h
-
-        out_plus1 = cas.vertcat(cas.vec(R_t_plus1),p_obj_plus1,i1dotplus1,i1plus1,i2plus1)
-
-        integrator = cas.Function("phi", [x,u,h] , [out_plus1])
-
-
-       
         #%% Create decision variables and parameters for the optimization problem
+        opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
         
-        # Define system states X (unknown object pose + moving frame pose at every time step) 
-        p_obj = []
-        R_t = []
-        i1dot = []
-        i1 = []
-        i2 = []
-        X = []
-        for k in range(window_len):
-            p_obj.append(opti.variable(3,1)) # object position
-            R_t.append(opti.variable(3,3)) # translational Frenet-Serret frame
-            i1dot.append(opti.variable(1,1))
-            i1.append(opti.variable(1,1))
-            i2.append(opti.variable(1,1))
-            
-            X.append(cas.vertcat(cas.vec(R_t[k]), cas.vec(p_obj[k]), cas.vec(i1dot[k]), cas.vec(i1[k]), cas.vec(i2[k]) ))
+        # Define system states X (unknown object pose + moving frame pose at every time step)
+        p_obj = [opti.variable(3, 1) for _ in range(window_len)]  # object position
+        R_t = [opti.variable(3, 3) for _ in range(window_len)]  # translational Frenet-Serret frame
+        i1dot = [opti.variable(1, 1) for _ in range(window_len)]
+        i1 = [opti.variable(1, 1) for _ in range(window_len)]
+        i2 = [opti.variable(1, 1) for _ in range(window_len)]
+        X = [cas.vertcat(cas.vec(R_t[k]), cas.vec(p_obj[k]), cas.vec(i1dot[k]), cas.vec(i1[k]), cas.vec(i2[k])) for k in range(window_len)]
 
         # Define system controls (invariants at every time step)
         i1ddot = opti.variable(1,window_len-1)
@@ -71,34 +29,37 @@ class OCP_calc_pos:
         R_t_0 = opti.parameter(3,3) # initial translational Frenet-Serret frame at first sample of window
         for k in range(window_len):
             p_obj_m.append(opti.parameter(3,1)) # object position
-  
+        h = opti.parameter(1,1) # step in integrator
+
         #%% Specifying the constraints
         
+        # Additional constraint: First invariant remains constant throughout the window
+        if geometric:
+            for k in range(window_len-1):
+                opti.subject_to(i1[k+1] == i1[k])
+                
         # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
         #áopti.subject_to( R_t[-1].T @ R_t[-1] == np.eye(3))
         constr = R_t[0].T @ R_t[0]
         opti.subject_to(cas.vertcat(constr[1,0], constr[2,0], constr[2,1], constr[0,0], constr[1,1], constr[2,2])==cas.vertcat(cas.DM.zeros(3,1), cas.DM.ones(3,1)))
 
-
-        # Dynamic constraints
+        # Dynamic constraints using a multiple shooting strategy
+        integrator = define_integrator_invariants_position_jerkmodel(h)
         for k in range(window_len-1):
             # Integrate current state to obtain next state (next rotation and position)
             Xk_end = integrator(X[k],U[:,k],h)
-            
             # Gap closing constraint
             opti.subject_to(Xk_end==X[k+1])
            
-            
         # 2D contour   
         if planar_task:
             for k in range(window_len):
                 opti.subject_to( cas.dot(R_t[k][:,2],np.array([0,0,1])) > 0)
             
-            
         # Lower bounds on controls
-        #if bool_unsigned_invariants:
-        #    opti.subject_to(U[0,:]>=0) # lower bounds on control
-        #    opti.subject_to(U[1,:]>=0) # lower bounds on control
+        if bool_unsigned_invariants:
+            opti.subject_to(U[0,:]>=0) # lower bounds on control
+            opti.subject_to(U[1,:]>=0) # lower bounds on control
 
         #%% Specifying the objective
 
@@ -118,7 +79,7 @@ class OCP_calc_pos:
             #    err_deriv = U[:,k] - U[:,k-1] # first-order finite backwards derivative (noise smoothing effect)
             #else:
             #    err_deriv = 0
-            err_abs = 10e-6*U[[1,2],k] # absolute value invariants (force arbitrary invariants to zero)
+            err_abs = weight_movingframes**(0.5)*U[[1,2],k] # absolute value invariants (force arbitrary invariants to zero)
 
             jk_weighted = w_regul**(0.5)*jk
 
@@ -133,39 +94,14 @@ class OCP_calc_pos:
 
         #%% Define solver and save variables
         opti.minimize(objective)
-        opti.solver('ipopt',{"print_time":False,"expand":False},{'max_iter':200,'tol':1e-8,'print_level':0,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
+        opti.solver('ipopt',{"print_time":True,"expand":False},{'max_iter':200,'tol':1e-8,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
 
-        
-        # Save variables
-        self.R_t = R_t
-        self.p_obj = p_obj
-        self.i1dot = i1dot
-        self.i1 = i1
-        self.i2 = i2
-        self.i1ddot = i1ddot
-        self.i2dot = i2dot
-        self.i3 = i3
-        self.p_obj_m = p_obj_m
-        self.R_t_0 = R_t_0
-        self.window_len = window_len
-        self.opti = opti
-        self.first_window = True
-        self.h = h
-    
-        self.dummy_solve()
-    
-    
-    def dummy_solve(self):
-        print("dummy solve")
-        for k in range(self.window_len):
-            self.opti.set_initial(self.R_t[k], np.eye(3) )
-            self.opti.set_initial(self.i1[k],1e-12)
-            self.opti.set_initial(self.i2[k],1e-12)
-            self.opti.set_value(self.p_obj_m[k], np.zeros((1,3)))
-        self.opti.set_value(self.h,1)
-        self.opti.set_value(self.R_t_0, np.eye(3,3))
-        self.opti.solve_limited()
-    
+        # Set variables as attributes in clas
+        first_window = False
+        variables = ['R_t', 'p_obj', 'i1dot', 'i1', 'i2', 'i1ddot', 'i2dot', 'i3', 'p_obj_m', 'R_t_0', 'window_len', 'opti', 'first_window', 'h']
+        for var in variables:
+            setattr(self, var, locals()[var])
+
     def calculate_invariants_global(self,trajectory_meas,stepsize):
         #%%
 
@@ -199,7 +135,7 @@ class OCP_calc_pos:
             #self.opti.set_initial(self.U[:,k], 1e-3*np.ones((3,1)))
             
         # Set values parameters
-        self.opti.set_value(self.R_t_0, np.eye(3,3))
+        self.opti.set_value(self.R_t_0, np.array([ex[0,:], ey[0,:], ez[0,:]]).T )
         for k in range(N):
             self.opti.set_value(self.p_obj_m[k], measured_positions[k])       
         
@@ -219,17 +155,15 @@ class OCP_calc_pos:
         self.sol = sol
         
         # Extract the solved variables
-  
         i1 = np.array([sol.value(i) for i in self.i1])
         i2 = np.array([sol.value(i) for i in self.i2])
         i3 = sol.value(self.i3)
         i3 = np.append(i3,i3[-1])
         invariants = np.array((i1,i2,i3)).T
-        
         calculated_trajectory = np.array([sol.value(i) for i in self.p_obj])
-        calculated_movingframe = np.array([sol.value(i) for i in self.R_t])
+        calculated_movingframes = np.array([sol.value(i) for i in self.R_t])
         
-        return invariants, calculated_trajectory, calculated_movingframe
+        return invariants, calculated_trajectory, calculated_movingframes
 
     def calculate_invariants_online(self,trajectory_meas,stepsize,sample_jump):
         #%%
@@ -316,3 +250,4 @@ class OCP_calc_pos:
             calculated_movingframe = np.array([sol.value(i) for i in self.R_t])
             
             return invariants, calculated_trajectory, calculated_movingframe
+

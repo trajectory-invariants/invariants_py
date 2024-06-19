@@ -48,7 +48,7 @@ class OCP_calc_pos:
         # Lower bounds on controls
         if bool_unsigned_invariants:
             opti.subject_to(U[0,:]>=0) # lower bounds on control
-            opti.subject_to(U[1,:]>=0) # lower bounds on control
+            #opti.subject_to(U[1,:]>=0) # lower bounds on control
 
         # 2D contour   
         if planar_task:
@@ -115,8 +115,8 @@ class OCP_calc_pos:
         Pdiff = np.diff(measured_positions,axis=0)
         ex = Pdiff / np.linalg.norm(Pdiff,axis=1).reshape(N-1,1)
         ex = np.vstack((ex,[ex[-1,:]]))
-        ey = np.tile( np.array((0,0,1)), (N,1) )
-        ez = np.array([np.cross(ex[i,:],ey[i,:]) for i in range(N)])
+        ez = np.tile( np.array((0,0,1)), (N,1) )
+        ey = np.array([np.cross(ez[i,:],ex[i,:]) for i in range(N)])
         
         for k in range(N):
             self.opti.set_initial(self.R_t[k], np.array([ex[k,:], ey[k,:], ez[k,:]]).T ) #construct_init_FS_from_traj(meas_traj.Obj_location)

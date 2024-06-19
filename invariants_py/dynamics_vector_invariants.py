@@ -175,6 +175,41 @@ def define_integrator_invariants_position(h):
     
     return integrator
 
+def define_integrator_invariants_position_jerkmodel(h):
+    
+    # System states
+    R_t  = cas.MX.sym('R_t',3,3) # translational Frenet-Serret frame
+    p_obj = cas.MX.sym('p_obj',3,1) # object position
+    i1dot = cas.MX.sym('i1dot',1,1)
+    i1 = cas.MX.sym('i1',1,1)
+    i2 = cas.MX.sym('i2',1,1)
+    x = cas.vertcat(cas.vec(R_t), p_obj, i1dot, i1, i2)
+
+    #np = length(R_obj(:)) + length(p_obj)
+
+    # System controls (invariants)
+    #u = cas.MX.sym('i',3,1)
+    i1ddot = cas.MX.sym('i1ddot')
+    i2dot = cas.MX.sym('i2dot')
+    i3 = cas.MX.sym('i3')
+    u = cas.vertcat(i1ddot,i2dot,i3)
+
+
+    #%% Define geometric integrator
+    ## Define a geometric integrator for eFSI, (meaning rigid-body motion is perfectly integrated assuming constant invariants)
+    invariants = cas.vertcat(i1,i2,i3)
+    (R_t_plus1, p_obj_plus1) = integrate_vector_invariants_position(R_t, p_obj, invariants, h)
+
+    i1dotplus1 = i1dot + i1ddot * h
+    i1plus1 = i1 + i1dot * h + i1ddot * h**2/2
+    i2plus1 = i2 + i2dot * h
+
+    out_plus1 = cas.vertcat(cas.vec(R_t_plus1),p_obj_plus1,i1dotplus1,i1plus1,i2plus1)
+
+    integrator = cas.Function("phi", [x,u,h] , [out_plus1])
+
+    return integrator
+
 def define_integrator_invariants_rotation(h):
     """Define a CasADi function that integrates the vector invariants for rotation over a time interval h."""
 

@@ -5,7 +5,7 @@ from invariants_py import ocp_helper
 
 class OCP_calc_pos:
 
-    def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 10**-2):
+    def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 10**-2, geometric = False):
        
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
         
@@ -47,8 +47,13 @@ class OCP_calc_pos:
         # Lower bounds on controls
         if bool_unsigned_invariants:
             opti.subject_to(U[0,:]>=0) # lower bounds on control
-            opti.subject_to(U[1,:]>=0) # lower bounds on control
+            #opti.subject_to(U[1,:]>=0) # lower bounds on control
 
+        # Additional constraint: First invariant remains constant throughout the window
+        if geometric:
+            for k in range(window_len-2):
+                opti.subject_to(U[0,k+1] == U[0,k])
+    
         # Measurement fitting constraint
         trajectory_error = 0
         for k in range(window_len):
@@ -99,8 +104,8 @@ class OCP_calc_pos:
         Pdiff = np.diff(measured_positions,axis=0)
         ex = Pdiff / np.linalg.norm(Pdiff,axis=1).reshape(N-1,1)
         ex = np.vstack((ex,[ex[-1,:]]))
-        ey = np.tile( np.array((0,0,1)), (N,1) )
-        ez = np.array([np.cross(ex[i,:],ey[i,:]) for i in range(N)])
+        ez = np.tile( np.array((0,0,1)), (N,1) )
+        ey = np.array([np.cross(ez[i,:],ex[i,:]) for i in range(N)])
         #Pdiff_cross = np.cross(Pdiff[0:-1],Pdiff[1:])
         #ey = Pdiff_cross / np.linalg.norm(Pdiff_cross,axis=1).reshape(N-2,1)
         
