@@ -49,7 +49,7 @@ if __name__ == '__main__':
 
     """Select contour"""
     contour_number = 1 # {0 : Rob's contour, 1 : Sabine's contour, 2 : Murtaza's contour} 
-#
+
     """Select optimization"""
     optimization = ocp_tolerance # {ocp_tolerance, ocp_movingframe, ocp_minimumjerk}
 
@@ -58,6 +58,7 @@ if __name__ == '__main__':
     window_length = 0.05 # length of the window in [m], default 0.05m
     model_nb_samples = 250 # number of samples in invariant model
     
+    # Parameters of the optimization problems
     weight_measurements = 1 # weight of the measurements in the optimization problem
     weight_regularization = 10**-12 # weight of the regularization term in the optimization problem
     weight_movingframes = 10**-6 # weight of the moving frames in the optimization problem

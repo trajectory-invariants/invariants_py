@@ -53,7 +53,7 @@ class OCP_calc_pos:
         # 2D contour   
         if planar_task:
             for k in range(window_len):
-                opti.subject_to( cas.dot(R_t[k][:,1],np.array([0,0,1])) > 0)
+                opti.subject_to( cas.dot(R_t[k][:,2],np.array([0,0,1])) > 0)
             
         # Additional constraint: First invariant remains constant throughout the window
         if geometric:
@@ -86,7 +86,7 @@ class OCP_calc_pos:
 
         #%% Define solver and save variables
         opti.minimize(objective)
-        opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':1000,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
+        opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':1000,'tol':1e-4,'print_level':0,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
         
         # Save variables
         self.R_t = R_t

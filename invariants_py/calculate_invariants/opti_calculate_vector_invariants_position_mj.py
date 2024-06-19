@@ -59,7 +59,7 @@ class OCP_calc_pos:
         # Lower bounds on controls
         if bool_unsigned_invariants:
             opti.subject_to(U[0,:]>=0) # lower bounds on control
-            opti.subject_to(U[1,:]>=0) # lower bounds on control
+            #opti.subject_to(U[1,:]>=0) # lower bounds on control
 
         #%% Specifying the objective
 
@@ -94,10 +94,10 @@ class OCP_calc_pos:
 
         #%% Define solver and save variables
         opti.minimize(objective)
-        opti.solver('ipopt',{"print_time":True,"expand":False},{'max_iter':200,'tol':1e-8,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
+        opti.solver('ipopt',{"print_time":True,"expand":False},{'max_iter':200,'tol':1e-8,'print_level':0,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
 
         # Set variables as attributes in clas
-        first_window = False
+        first_window = True
         variables = ['R_t', 'p_obj', 'i1dot', 'i1', 'i2', 'i1ddot', 'i2dot', 'i3', 'p_obj_m', 'R_t_0', 'window_len', 'opti', 'first_window', 'h']
         for var in variables:
             setattr(self, var, locals()[var])

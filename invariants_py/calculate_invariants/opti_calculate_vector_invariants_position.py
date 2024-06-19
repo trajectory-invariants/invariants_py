@@ -5,7 +5,7 @@ from invariants_py import ocp_helper
 
 class OCP_calc_pos:
 
-    def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 10**-2, geometric = False):
+    def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 10**-2, geometric = False, planar_task = True):
        
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
         
@@ -49,11 +49,19 @@ class OCP_calc_pos:
             opti.subject_to(U[0,:]>=0) # lower bounds on control
             #opti.subject_to(U[1,:]>=0) # lower bounds on control
 
+        # 2D contour   
+        if planar_task:
+            for k in range(window_len):
+                opti.subject_to( cas.dot(R_t[k][:,2],np.array([0,0,1])) > 0)
+         
         # Additional constraint: First invariant remains constant throughout the window
         if geometric:
             for k in range(window_len-2):
                 opti.subject_to(U[0,k+1] == U[0,k])
     
+        opti.subject_to( p_obj[0] == p_obj_m[0]) # Fix first measurement
+        opti.subject_to( p_obj[-1] == p_obj_m[-1]) # Fix last measurement
+
         # Measurement fitting constraint
         trajectory_error = 0
         for k in range(window_len):
@@ -77,7 +85,9 @@ class OCP_calc_pos:
 
         #%% Solver
         opti.minimize(objective)
-        opti.solver('ipopt',{"print_time":True,"expand":True},{'gamma_theta':1e-12,'max_iter':200,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
+        opti.solver('ipopt',{"print_time":False,"expand":True},{
+            #'gamma_theta':1e-12,
+            'max_iter':100,'tol':1e-4,'print_level':0,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
         
         # Save variables
         self.R_t = R_t
