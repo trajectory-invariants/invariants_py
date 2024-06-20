@@ -139,7 +139,7 @@ def estimate_initial_frames(vector_traj):
 
     return ex,ey,ez
 
-def initialize_VI_pos(input_trajectory):
+def  initialize_VI_pos(input_trajectory):
 
     if input_trajectory.shape[1] == 3:
         measured_positions = input_trajectory
@@ -147,10 +147,12 @@ def initialize_VI_pos(input_trajectory):
         measured_positions = input_trajectory[:,:3,3]
 
     N = np.size(measured_positions,0)
-    Pdiff = np.diff(measured_positions, axis=0)
-    Pdiff = np.vstack((Pdiff, Pdiff[-1]))
 
-    [ex,ey,ez] = estimate_initial_frames(Pdiff)
+    Pdiff = np.diff(measured_positions,axis=0)
+    ex = Pdiff / np.linalg.norm(Pdiff,axis=1).reshape(N-1,1)
+    ex = np.vstack((ex,[ex[-1,:]]))
+    ez = np.tile( np.array((0,0,1)), (N,1) )
+    ey = np.array([np.cross(ez[i,:],ex[i,:]) for i in range(N)])
 
     R_t = np.zeros((3,3*N))
     for i in range(N-1):
@@ -158,7 +160,23 @@ def initialize_VI_pos(input_trajectory):
 
     p_obj_sol =  measured_positions.T 
     invars = np.vstack((1e0*np.ones((1,N-1)),1e-1*np.ones((1,N-1)), 1e-12*np.ones((1,N-1))))
-    return [invars, p_obj_sol, R_t], measured_positions
+    return [invars, p_obj_sol, R_t]
+
+def  initialize_VI_pos2(measured_positions):
+    
+    N = np.size(measured_positions,0)
+    Pdiff = np.diff(measured_positions, axis=0)
+    Pdiff = np.vstack((Pdiff, Pdiff[-1]))
+
+    [ex,ey,ez] = estimate_initial_frames(Pdiff)
+
+    R_t_init = np.zeros((9,N))
+    for i in range(N):
+        R_t_init[:,i] = np.hstack([ex[i,:],ey[i,:],ez[i,:]])   
+
+    p_obj_sol =  measured_positions.T 
+    invars = np.vstack((1e0*np.ones((1,N-1)),1e-1*np.ones((1,N-1)), 1e-12*np.ones((1,N-1))))
+    return [invars, p_obj_sol, R_t_init]
 
 def initialize_VI_rot(input_trajectory):
 

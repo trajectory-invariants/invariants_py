@@ -5,7 +5,7 @@ from invariants_py import ocp_helper
 
 class OCP_calc_pos:
 
-    def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 10**-2, geometric = False, planar_task = True):
+    def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 10**-2, geometric = False, planar_task = False):
        
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
         
@@ -59,8 +59,8 @@ class OCP_calc_pos:
             for k in range(window_len-2):
                 opti.subject_to(U[0,k+1] == U[0,k])
     
-        opti.subject_to( p_obj[0] == p_obj_m[0]) # Fix first measurement
-        opti.subject_to( p_obj[-1] == p_obj_m[-1]) # Fix last measurement
+        opti.subject_to(p_obj[0] == p_obj_m[0]) # Fix first measurement
+        opti.subject_to(p_obj[-1] == p_obj_m[-1]) # Fix last measurement
 
         # Measurement fitting constraint
         trajectory_error = 0
@@ -87,7 +87,7 @@ class OCP_calc_pos:
         opti.minimize(objective)
         opti.solver('ipopt',{"print_time":False,"expand":True},{
             #'gamma_theta':1e-12,
-            'max_iter':100,'tol':1e-4,'print_level':0,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
+            'max_iter':100,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
         
         # Save variables
         self.R_t = R_t
@@ -227,24 +227,14 @@ if __name__ == "__main__":
 
     # Example data for measured positions and the stepsize
     measured_positions = np.zeros((100, 3))
-    t = np.linspace(0, 1, 100)
+    t = np.linspace(0, 4, 100)
     radius = 1
     height = 2
     measured_positions[:, 0] = radius * np.cos(t)
     measured_positions[:, 1] = radius * np.sin(t)
-    measured_positions[:, 2] = height * t
+    measured_positions[:, 2] = 0.1 * t
     stepsize = t[1]-t[0]
 
-    # Plot the measured positions in a 3D graph
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.plot(measured_positions[:, 0], measured_positions[:, 1], measured_positions[:, 2])
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    if plt.get_backend() != 'agg':
-        plt.show()
-    
     # Test the functionalities of the class
     OCP = OCP_calc_pos(window_len=np.size(measured_positions,0), rms_error_traj=10**-3)
 
@@ -253,9 +243,15 @@ if __name__ == "__main__":
     calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants_global(measured_positions, stepsize)
     #elapsed_time = time.time() - start_time
 
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(measured_positions[:, 0], measured_positions[:, 1], measured_positions[:, 2],'b.-')
+    ax.plot(calc_trajectory[:, 0], calc_trajectory[:, 1], calc_trajectory[:, 2],'r--')
+    plt.show()
+
     # # Print the results and elapsed time
     # print("Calculated invariants:")
-    print(calc_invariants)
+    #print(calc_invariants)
     # print("Calculated Moving Frame:")
     # print(calc_movingframes)
     # print("Calculated Trajectory:")
