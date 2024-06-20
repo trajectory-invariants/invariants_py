@@ -57,14 +57,6 @@ class OCP_gen_pose:
         h = ocp.parameter(1)
         
         # Boundary values
-        if "moving-frame-position" in boundary_constraints and "initial" in boundary_constraints["moving-frame-position"]:
-            R_t_start = ocp.parameter(3,3)
-        if "moving-frame-position" in boundary_constraints and "final" in boundary_constraints["moving-frame-position"]:
-            R_t_end = ocp.parameter(3,3)
-        if "moving-frame-orientation" in boundary_constraints and "initial" in boundary_constraints["moving-frame-orientation"]:
-            R_r_start = ocp.parameter(3,3)
-        if "moving-frame-orientation" in boundary_constraints and "final" in boundary_constraints["moving-frame-orientation"]:
-            R_r_end = ocp.parameter(3,3)
         if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:
             p_obj_start = ocp.parameter(3)
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
@@ -73,6 +65,14 @@ class OCP_gen_pose:
             R_obj_start = ocp.parameter(3,3)
         if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
             R_obj_end = ocp.parameter(3,3)
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["translational"]:
+            R_t_start = ocp.parameter(3,3)
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["translational"]:
+            R_t_end = ocp.parameter(3,3)
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["rotational"]:
+            R_r_start = ocp.parameter(3,3)
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["rotational"]:
+            R_r_end = ocp.parameter(3,3)
         
         if include_robot_model:
             q_lim = ocp.parameter(nb_joints)
@@ -89,14 +89,6 @@ class OCP_gen_pose:
         ocp.subject_to(ocp.at_t0(tril_vec(R_obj.T @ R_obj - np.eye(3))==0.))
         
         # Boundary constraints
-        if "moving-frame-position" in boundary_constraints and "initial" in boundary_constraints["moving-frame-position"]:
-            ocp.subject_to(ocp.at_t0(tril_vec_no_diag(R_t.T @ R_t_start - np.eye(3))) == 0.)
-        if "moving-frame-orientation" in boundary_constraints and "initial" in boundary_constraints["moving-frame-orientation"]:
-            ocp.subject_to(ocp.at_t0(tril_vec_no_diag(R_r.T @ R_r_start - np.eye(3)) == 0.))
-        if "moving-frame-position" in boundary_constraints and "final" in boundary_constraints["moving-frame-position"]:
-            ocp.subject_to(ocp.at_tf(tril_vec_no_diag(R_t.T @ R_t_end - np.eye(3)) == 0.))
-        if "moving-frame-orientation" in boundary_constraints and "final" in boundary_constraints["moving-frame-orientation"]:
-            ocp.subject_to(ocp.at_tf(tril_vec_no_diag(R_r.T @ R_r_end - np.eye(3)) == 0.))
         if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:
             ocp.subject_to(ocp.at_t0(p_obj == p_obj_start))
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
@@ -105,6 +97,14 @@ class OCP_gen_pose:
             ocp.subject_to(ocp.at_t0(tril_vec_no_diag(R_obj.T @ R_obj_start - np.eye(3)) == 0.))
         if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
             ocp.subject_to(ocp.at_tf(tril_vec_no_diag(R_obj.T @ R_obj_end - np.eye(3))==0.))
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["translational"]:
+            ocp.subject_to(ocp.at_t0(tril_vec_no_diag(R_t.T @ R_t_start - np.eye(3))) == 0.)
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["translational"]:
+            ocp.subject_to(ocp.at_tf(tril_vec_no_diag(R_t.T @ R_t_end - np.eye(3)) == 0.))
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["rotational"]:
+            ocp.subject_to(ocp.at_t0(tril_vec_no_diag(R_r.T @ R_r_start - np.eye(3)) == 0.))
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["rotational"]:
+            ocp.subject_to(ocp.at_tf(tril_vec_no_diag(R_r.T @ R_r_end - np.eye(3)) == 0.))
         
         if include_robot_model:
             for i in range(nb_joints):
@@ -174,14 +174,6 @@ class OCP_gen_pose:
             ocp.set_initial(qdot, 0.001*np.ones((nb_joints,window_len-1)))
             ocp.set_value(q_lim,q_limits)
         # Boundary constraints
-        if "moving-frame-position" in boundary_constraints and "initial" in boundary_constraints["moving-frame-position"]:
-            ocp.set_value(R_t_start, np.eye(3))
-        if "moving-frame-position" in boundary_constraints and "final" in boundary_constraints["moving-frame-position"]:
-            ocp.set_value(R_t_end, np.eye(3))
-        if "moving-frame-orientation" in boundary_constraints and "initial" in boundary_constraints["moving-frame-orientation"]:
-            ocp.set_value(R_r_start, np.eye(3))
-        if "moving-frame-orientation" in boundary_constraints and "final" in boundary_constraints["moving-frame-orientation"]:
-            ocp.set_value(R_r_end, np.eye(3))
         if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:
             ocp.set_value(p_obj_start, np.array([0,0,0]))
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
@@ -190,6 +182,14 @@ class OCP_gen_pose:
             ocp.set_value(R_obj_start, np.eye(3))
         if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
             ocp.set_value(R_obj_end, rotate_x(0.05))
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["translational"]:
+            ocp.set_value(R_t_start, np.eye(3))
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["translational"]:
+            ocp.set_value(R_t_end, np.eye(3))
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["rotational"]:
+            ocp.set_value(R_r_start, np.eye(3))
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["rotational"]:
+            ocp.set_value(R_r_end, np.eye(3))
 
         ocp.solve_limited() # code generation
         if fatrop_solver:
@@ -215,22 +215,22 @@ class OCP_gen_pose:
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
             bounds.append(ocp.value(p_obj_end))
             bounds_labels.append("p_obj_end")
-        if "moving-frame-position" in boundary_constraints and "initial" in boundary_constraints["moving-frame-position"]:
-            bounds.append(ocp.value(R_t_start))
-            bounds_labels.append("R_t_start")
-        if "moving-frame-position" in boundary_constraints and "final" in boundary_constraints["moving-frame-position"]:
-            bounds.append(ocp.value(R_t_end))
-            bounds_labels.append("R_t_end")
         if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
             bounds.append(ocp.value(R_obj_start))
             bounds_labels.append("R_obj_start")
         if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
             bounds.append(ocp.value(R_obj_end))
             bounds_labels.append("R_obj_end")
-        if "moving-frame-orientation" in boundary_constraints and "initial" in boundary_constraints["moving-frame-orientation"]:
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["translational"]:
+            bounds.append(ocp.value(R_t_start))
+            bounds_labels.append("R_t_start")
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["translational"]:
+            bounds.append(ocp.value(R_t_end))
+            bounds_labels.append("R_t_end")
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["rotational"]:
             bounds.append(ocp.value(R_r_start))
             bounds_labels.append("R_r_start")
-        if "moving-frame-orientation" in boundary_constraints and "final" in boundary_constraints["moving-frame-orientation"]:
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["rotational"]:
             bounds.append(ocp.value(R_r_end))
             bounds_labels.append("R_r_end")
 
@@ -273,22 +273,22 @@ class OCP_gen_pose:
         self.invars = invars
         self.invars_demo = invars_demo
         self.w_invars = w_invars
-        if "moving-frame-position" in boundary_constraints and "initial" in boundary_constraints["moving-frame-position"]:
-            self.R_t_start = R_t_start
-        if "moving-frame-position" in boundary_constraints and "final" in boundary_constraints["moving-frame-position"]:
-            self.R_t_end = R_t_end
         if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:
             self.p_obj_start = p_obj_start
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
             self.p_obj_end = p_obj_end
-        if "moving-frame-orientation" in boundary_constraints and "initial" in boundary_constraints["moving-frame-orientation"]:
-            self.R_r_start = R_r_start
-        if "moving-frame-orientation" in boundary_constraints and "final" in boundary_constraints["moving-frame-orientation"]:
-            self.R_r_end = R_r_end
         if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
             self.R_obj_start = R_obj_start
         if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
             self.R_obj_end = R_obj_end
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["translational"]:
+            self.R_t_start = R_t_start
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["translational"]:
+            self.R_t_end = R_t_end
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["rotational"]:
+            self.R_r_start = R_r_start
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["rotational"]:
+            self.R_r_end = R_r_end
         self.h = h
         self.window_len = window_len
         self.ocp = ocp
@@ -320,7 +320,15 @@ class OCP_gen_pose:
         if w_high_active:
             w_invars[:, w_high_start:w_high_end+1] = w_high_invars.reshape(-1, 1)
 
-        boundary_values_list = [value for sublist in boundary_constraints.values() for value in sublist.values()]
+        boundary_values_list = []
+        for sublist in boundary_constraints.values(): 
+            try:
+                for subsublist in sublist.values():
+                    for value in subsublist.values():
+                        boundary_values_list.append(value)
+            except:
+                    for value in sublist.values():
+                        boundary_values_list.append(value)
 
         if self.first_window and not initial_values:
             solution_pos,initvals_dict = generate_initvals_from_bounds(boundary_constraints, np.size(invariant_model,0))
@@ -333,9 +341,9 @@ class OCP_gen_pose:
             self.first_window = False
         elif self.first_window:
             if self.include_robot_model:
-                self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["trajectory-position"][:N,:].T, initial_values["moving-frame-position"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["moving-frame-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["trajectory-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N),initial_values["joint-values"].T]
+                self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["trajectory"]["position"][:N,:].T, initial_values["moving-frame"]["translational"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["moving-frame"]["rotational"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["trajectory"]["orientation"][:N].T.transpose(1,2,0).reshape(3,3*N),initial_values["joint-values"].T]
             else:
-                self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["trajectory-position"][:N,:].T, initial_values["moving-frame-position"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["moving-frame-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["trajectory-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N)]
+                self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["trajectory"]["position"][:N,:].T, initial_values["moving-frame"]["translational"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["moving-frame"]["rotational"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["trajectory"]["orientation"][:N].T.transpose(1,2,0).reshape(3,3*N)]
             self.first_window = False
 
         # Call solve function
@@ -473,18 +481,20 @@ if __name__ == "__main__":
             "initial": p_obj_start,
             "final": p_obj_end
         },
-        "moving-frame-position": {
-            "initial": R_t_start,
-            "final": R_t_end
+        "moving-frame": {
+            "translational": {
+                "initial": R_t_start,
+                "final": R_t_end
+            },
+            "rotational": {
+                "initial": R_r_start,
+                "final": R_r_end
+            }
         },
         "orientation": {
             "initial": R_obj_start,
             "final": R_obj_end
         },
-        "moving-frame-orientation": {
-            "initial": R_r_start,
-            "final": R_r_end
-        }
     }
     urdf_file_name = 'ur10.urdf' # use None if do not want to include robot model
     robot_params = {
@@ -500,11 +510,15 @@ if __name__ == "__main__":
     # ocp_obj_jointlim = OCP_gen_pose(boundary_constraints, window_len, use_fatrop_solver,robot_params)
 
     initial_values = {
-        "trajectory-position": p_obj_init,
-        "moving-frame-position": R_t_init,
+        "trajectory": {
+            "position": p_obj_init,
+            "orientation": R_obj_init
+        },
+        "moving-frame": {
+            "translational": R_t_init,
+            "rotational": R_r_init
+        },
         "invariants": invars_demo,
-        "trajectory-orientation": R_obj_init,
-        "moving-frame-orientation": R_r_init,
     }
 
     weights_params = {
