@@ -46,11 +46,11 @@ class OCP_calc_pos:
             total_ek = ocp.sum(ek,grid='control',include_last=True)
             ocp.subject_to(total_ek/N/rms_error_traj**2 < 1)
         else:
-            # Fatrop does not support summing over grid points in the constraints, so we implement if differently
+            # Fatrop does not support summing over grid points inside the constraint, so we implement it differently to achieve the same result
             running_ek = ocp.state() # running sum of squared error
             ocp.subject_to(ocp.at_t0(running_ek == 0))
             ocp.set_next(running_ek, running_ek + ek)
-            ocp.subject_to(ocp.at_tf(running_ek/N < rms_error_traj**2))
+            ocp.subject_to(ocp.at_tf(1000*running_ek/N < 1000*rms_error_traj**2)) # scaling to avoid numerical issues
             
             # total_ek = ocp.state() # total sum of squared error
             # ocp.set_next(total_ek, total_ek)
@@ -208,12 +208,14 @@ if __name__ == "__main__":
     stepsize = t[1]-t[0]
 
     # Test the functionalities of the class
-    OCP = OCP_calc_pos(window_len=N, rms_error_traj=10**-3, fatrop_solver=False)
+    OCP = OCP_calc_pos(window_len=N, rms_error_traj=10**-3, fatrop_solver=True)
 
     # Call the calculate_invariants_global function and measure the elapsed time
     #start_time = time.time()
     calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants_OLD(measured_positions, stepsize)
     #elapsed_time = time.time() - start_time
+
+    ocp_helper.solution_check_pos(measured_positions,calc_trajectory,rms = 10**-3)
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
