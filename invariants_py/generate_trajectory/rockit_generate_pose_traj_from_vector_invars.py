@@ -18,7 +18,7 @@ import invariants_py.data_handler as dh
 
 class OCP_gen_pose:
 
-    def __init__(self, boundary_constraints, window_len = 100, fatrop_solver = False, robot_params = {}, bool_unsigned_invariants = False, max_iters = 300):
+    def __init__(self, boundary_constraints, window_len = 100, fatrop_solver = False, robot_params = {}, bool_unsigned_invariants = False, max_iters = 500):
         
         fatrop_solver = check_solver(fatrop_solver)  
 
@@ -194,6 +194,7 @@ class OCP_gen_pose:
         ocp.solve_limited() # code generation
         if fatrop_solver:
             tot_time = ocp._method.myOCP.get_stats().time_total
+            ocp._method.set_option("max_iter",max_iters)
         else:
             tot_time = 0
 
@@ -333,11 +334,12 @@ class OCP_gen_pose:
         if self.first_window and not initial_values:
             solution_pos,initvals_dict = generate_initvals_from_bounds(boundary_constraints, np.size(invariant_model,0))
             solution_rot = generate_initvals_from_bounds_rot(boundary_constraints, np.size(invariant_model,0))
+            solution = [np.vstack((solution_rot[0],solution_pos[0]))] + solution_pos[1:] + solution_rot[1:] # concatenate invariants and combine lists
             if self.include_robot_model:
-                default_q_init = self.home
-                self.solution = np.hstack([solution_pos,solution_rot,default_q_init])
+                default_q_init = [self.home.T]
+                self.solution = solution+default_q_init
             else:
-                self.solution = np.hstack([solution_pos,solution_rot])
+                self.solution = solution
             self.first_window = False
         elif self.first_window:
             if self.include_robot_model:
