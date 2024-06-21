@@ -41,7 +41,7 @@ class OCP_calc_pos:
 
         # Measurement fitting constraint
         ek = cas.dot(p_obj - p_obj_m, p_obj - p_obj_m) # squared position error
-        if False:
+        if not fatrop_solver:
             # sum of squared position error over all timesteps should be less than the squared RMS error of the trajectory
             total_ek = ocp.sum(ek,grid='control',include_last=True)
             ocp.subject_to(total_ek/N/rms_error_traj**2 < 1)
@@ -50,13 +50,16 @@ class OCP_calc_pos:
             running_ek = ocp.state() # running sum of squared error
             ocp.subject_to(ocp.at_t0(running_ek == 0))
             ocp.set_next(running_ek, running_ek + ek)
-
-            total_ek = ocp.state() # total sum of squared error
-            ocp.set_next(total_ek, total_ek)
-            ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
-                
-            ocp.subject_to(total_ek/N/rms_error_traj**2 < 1)
-
+            ocp.subject_to(ocp.at_tf(running_ek/N < rms_error_traj**2))
+            
+            # total_ek = ocp.state() # total sum of squared error
+            # ocp.set_next(total_ek, total_ek)
+            # ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
+            # total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
+            # ocp.subject_to(total_ek/N < rms_error_traj**2)
+            #total_ek_scaled = running_ek/N/rms_error_traj**2 # scaled total error
+            #ocp.subject_to(ocp.at_tf(total_ek_scaled < 1))
+            
         # Boundary conditions (optional, but seems to help avoid straight line fits)
         ocp.subject_to(ocp.at_t0(p_obj == p_obj_m)) # fix first position to measurement
         ocp.subject_to(ocp.at_tf(p_obj == p_obj_m)) # fix last position to measurement
@@ -67,7 +70,7 @@ class OCP_calc_pos:
             # TODO make direction a parameter instead of hardcoding the Z-axis
             ocp.subject_to( cas.dot(R_t[:,2],np.array([0,0,1])) > 0)
 
-        # TODO can we implement geometric constraint by making i1 a state?
+        # TODO can we implement geometric constraint (constant i1) by making i1 a state?
 
         """ Objective function """
 
@@ -124,7 +127,7 @@ class OCP_calc_pos:
         self.first_window = True
         self.h = h
 
-    def calculate_invariants(self,measured_positions,stepsize, use_previous_solution=False):
+    def calculate_invariants(self,measured_positions,stepsize, use_previous_solution=True):
         # Calculate the invariants for the given measurements
         #
         # measured_positions: N x 3 array of measured positions
@@ -151,7 +154,7 @@ class OCP_calc_pos:
         
     def calculate_invariants_OLD(self,measured_positions,stepsize):
         # Calculate the invariants for the given measurements
-        # Note: this function is not recommended for online use because of overhead due to sampling the solution
+        # Warning: this function is not recommended for online use because of overhead due to sampling the solution
         #
         # measured_positions: N x 3 array of measured positions
         # stepsize: stepsize of the measurements
@@ -199,21 +202,17 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     # Example data for measured positions and the stepsize
-    measured_positions = np.zeros((100, 3))
-    t = np.linspace(0, 4, 100)
-    radius = 1
-    height = 2
-    measured_positions[:, 0] = radius * np.cos(t)
-    measured_positions[:, 1] = radius * np.sin(t)
-    measured_positions[:, 2] = 0.1 * t
+    N = 100
+    t = np.linspace(0, 4, N)
+    measured_positions = np.column_stack((1 * np.cos(t), 1 * np.sin(t), 0.1 * t))
     stepsize = t[1]-t[0]
 
     # Test the functionalities of the class
-    OCP = OCP_calc_pos(window_len=np.size(measured_positions,0), rms_error_traj=10**-3, fatrop_solver=False)
+    OCP = OCP_calc_pos(window_len=N, rms_error_traj=10**-3, fatrop_solver=False)
 
     # Call the calculate_invariants_global function and measure the elapsed time
     #start_time = time.time()
-    calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_positions, stepsize)
+    calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants_OLD(measured_positions, stepsize)
     #elapsed_time = time.time() - start_time
 
     fig = plt.figure()
@@ -229,9 +228,15 @@ if __name__ == "__main__":
     #plt.show()
     # # Print the results and elapsed time
     # print("Calculated invariants:")
-    #print(calc_invariants)
+    # print(calc_invariants)
     # print("Calculated Moving Frame:")
     # print(calc_movingframes)
     # print("Calculated Trajectory:")
     # print(calc_trajectory)
     # print("Elapsed Time:", elapsed_time, "seconds")
+            # total_ek = ocp.state() # total sum of squared error
+            # ocp.set_next(total_ek, total_ek)
+            # ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
+            
+            # total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
+            # ocp.subject_to(total_ek_scaled < 1)

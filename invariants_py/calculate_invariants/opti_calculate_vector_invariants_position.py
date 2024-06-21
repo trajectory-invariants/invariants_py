@@ -226,13 +226,9 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     # Example data for measured positions and the stepsize
-    measured_positions = np.zeros((100, 3))
-    t = np.linspace(0, 4, 100)
-    radius = 1
-    height = 2
-    measured_positions[:, 0] = radius * np.cos(t)
-    measured_positions[:, 1] = radius * np.sin(t)
-    measured_positions[:, 2] = 0.1 * t
+    N = 100
+    t = np.linspace(0, 4, N)
+    measured_positions = np.column_stack((1 * np.cos(t), 1 * np.sin(t), 0.1 * t))
     stepsize = t[1]-t[0]
 
     # Test the functionalities of the class
