@@ -15,7 +15,7 @@ class OCP_calc_pos:
         p_obj = []
         R_t = []
         X = []
-        for k in range(window_len):
+        for k in range(window_len): 
             p_obj.append(opti.variable(3,1)) # object position
             R_t.append(opti.variable(3,3)) # Frenet-Serret frame
             X.append(cas.vertcat(cas.vec(R_t[k]), cas.vec(p_obj[k])))
