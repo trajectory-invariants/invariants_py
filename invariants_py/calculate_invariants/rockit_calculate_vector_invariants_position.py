@@ -126,14 +126,14 @@ class OCP_calc_pos:
         
         """ Encapsulate solver in a casadi function so that it can be easily reused """
 
-        # Solve already once with dummy values so that Fatrop can do code generation (TODO: can this step be avoided somehow?)
+        # Solve already once with dummy values so that Fatrop can do code generation (Q: can this step be avoided somehow?)
         ocp.set_initial(R_t, np.eye(3))
         ocp.set_initial(invars, np.array([1,0.01,0.01]))
         ocp.set_value(p_obj_m, np.vstack((np.linspace(0, 1, N), np.ones((2, N)))))
         ocp.set_value(h, 0.01)
         ocp.solve_limited() # code generation
 
-        # Set Fatrop solver options (TODO: why can this not be done before solving?)
+        # Set Fatrop solver options (Q: why can this not be done before solving?)
         if fatrop_solver:
             ocp._method.set_option("tol",1e-4)
             ocp._method.set_option("print_level",5)
@@ -169,14 +169,14 @@ class OCP_calc_pos:
         Calculate the invariants for the given measurements.
 
         Args:
-            measured_positions (numpy.ndarray): N x 3 array of measured positions.
-            stepsize (float): the discrete time step or arclength step between measurements
-            use_previous_solution (bool, optional): If True, the previous solution is used as the initial guess for the optimization problem. Defaults to True.
+        - measured_positions (numpy.ndarray of shape N x 3): measured positions.
+        - stepsize (float): the discrete time step or arclength step between measurements
+        - use_previous_solution (bool, optional): If True, the previous solution is used as the initial guess for the optimization problem. Defaults to True.
 
         Returns:
-            calculated_invariants: The calculated invariants from the data.
-            trajectory: The trajectory data processed during the calculation.
-            moving_frame: The moving frame data associated with the trajectory.
+        - invariants (numpy.ndarray of shape (N, 3)): calculated invariants
+        - calculated_trajectory (numpy.ndarray of shape (N, 3)): fitted trajectory corresponding to invariants
+        - calculated_movingframes (numpy.ndarray of shape (N, 3, 3)): moving frames corresponding to invariants
         """
 
         # Check if this is the first function call
@@ -200,7 +200,7 @@ class OCP_calc_pos:
         """
         Calculate the invariants for the given measurements.
 
-        Note: This function is not recommended for online use due to overhead caused by sampling the solution.
+        Note: This function is not recommended for repeated use due to overhead caused by sampling the solution.
 
         Parameters:
         - measured_positions (numpy.ndarray of shape (N, 3)): measured positions
@@ -284,9 +284,3 @@ if __name__ == "__main__":
     # print("Calculated Trajectory:")
     # print(calc_trajectory)
     # print("Elapsed Time:", elapsed_time, "seconds")
-            # total_ek = ocp.state() # total sum of squared error
-            # ocp.set_next(total_ek, total_ek)
-            # ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
-            
-            # total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
-            # ocp.subject_to(total_ek_scaled < 1)
