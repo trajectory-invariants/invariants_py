@@ -10,7 +10,7 @@ from invariants_py.initialization import generate_initvals_from_bounds_rot
 class OCP_gen_rot:
 
 
-    def __init__(self, boundary_constraints, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, max_iters = 300, fatrop_solver = False):
+    def __init__(self, boundary_constraints, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, max_iters = 500, fatrop_solver = False):
         
         fatrop_solver = check_solver(fatrop_solver)               
        
@@ -29,14 +29,14 @@ class OCP_gen_rot:
         h = ocp.parameter(1)
         
         # Boundary values
-        if "moving-frame-orientation" in boundary_constraints and "initial" in boundary_constraints["moving-frame-orientation"]:
-            R_r_start = ocp.parameter(3,3)
-        if "moving-frame-orientation" in boundary_constraints and "final" in boundary_constraints["moving-frame-orientation"]:
-            R_r_end = ocp.parameter(3,3)
         if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
             R_obj_start = ocp.parameter(3,3)
         if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
             R_obj_end = ocp.parameter(3,3)
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["rotational"]:
+            R_r_start = ocp.parameter(3,3)
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["rotational"]:
+            R_r_end = ocp.parameter(3,3)
         
         invars_demo = ocp.parameter(3,grid='control',include_last=True) # model invariants
         
@@ -49,14 +49,14 @@ class OCP_gen_rot:
         ocp.subject_to(ocp.at_t0(tril_vec(R_obj.T @ R_obj - np.eye(3))==0.))
         
         # Boundary constraints
-        if "moving-frame-orientation" in boundary_constraints and "initial" in boundary_constraints["moving-frame-orientation"]:
-            ocp.subject_to(ocp.at_t0(tril_vec_no_diag(R_r.T @ R_r_start - np.eye(3)) == 0.))
-        if "moving-frame-orientation" in boundary_constraints and "final" in boundary_constraints["moving-frame-orientation"]:
-            ocp.subject_to(ocp.at_tf(tril_vec_no_diag(R_r.T @ R_r_end - np.eye(3)) == 0.))
         if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
             ocp.subject_to(ocp.at_t0(tril_vec_no_diag(R_obj.T @ R_obj_start - np.eye(3)) == 0.))
         if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
             ocp.subject_to(ocp.at_tf(tril_vec_no_diag(R_obj.T @ R_obj_end - np.eye(3)) == 0.))
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["rotational"]:
+            ocp.subject_to(ocp.at_t0(tril_vec_no_diag(R_r.T @ R_r_start - np.eye(3)) == 0.))
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["rotational"]:
+            ocp.subject_to(ocp.at_tf(tril_vec_no_diag(R_r.T @ R_r_end - np.eye(3)) == 0.))
 
         #ocp.subject_to(ocp.at_t0(R_r == R_r_start))
         #ocp.subject_to(ocp.at_t0(self.diffR(R_r,R_r_start)) == 0)
@@ -97,17 +97,18 @@ class OCP_gen_rot:
         ocp.set_value(invars_demo, 0.001+np.zeros((3,window_len)))
         ocp.set_value(w_invars, 0.001+np.zeros((3,window_len)))
         ocp.set_value(h, 0.01)
-        if "moving-frame-orientation" in boundary_constraints and "initial" in boundary_constraints["moving-frame-orientation"]:
-            ocp.set_value(R_r_start, np.eye(3))
-        if "moving-frame-orientation" in boundary_constraints and "final" in boundary_constraints["moving-frame-orientation"]:
-            ocp.set_value(R_r_end, np.eye(3))
         if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
             ocp.set_value(R_obj_start, np.eye(3))
         if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
             ocp.set_value(R_obj_end, rotate_x(np.pi/4))
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["rotational"]:
+            ocp.set_value(R_r_start, np.eye(3))
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["rotational"]:
+            ocp.set_value(R_r_end, np.eye(3))
         ocp.solve_limited() # code generation
         if fatrop_solver:
             tot_time = ocp._method.myOCP.get_stats().time_total
+            ocp._method.set_option("max_iter",max_iters)
         else:
             tot_time = 0
 
@@ -126,10 +127,10 @@ class OCP_gen_rot:
         if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
             bounds.append(ocp.value(R_obj_end))
             bounds_labels.append("R_obj_end")
-        if "moving-frame-orientation" in boundary_constraints and "initial" in boundary_constraints["moving-frame-orientation"]:
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["rotational"]:
             bounds.append(ocp.value(R_r_start))
             bounds_labels.append("R_r_start")
-        if "moving-frame-orientation" in boundary_constraints and "final" in boundary_constraints["moving-frame-orientation"]:
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["rotational"]:
             bounds.append(ocp.value(R_r_end))
             bounds_labels.append("R_r_end")
         
@@ -152,14 +153,14 @@ class OCP_gen_rot:
         self.invars = invars
         self.invars_demo = invars_demo
         self.w_invars = w_invars
-        if "moving-frame-orientation" in boundary_constraints and "initial" in boundary_constraints["moving-frame-orientation"]:
-            self.R_r_start = R_r_start
-        if "moving-frame-orientation" in boundary_constraints and "final" in boundary_constraints["moving-frame-orientation"]:
-            self.R_r_end = R_r_end
         if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
             self.R_obj_start = R_obj_start
         if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
             self.R_obj_end = R_obj_end
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["rotational"]:
+            self.R_r_start = R_r_start
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["rotational"]:
+            self.R_r_end = R_r_end
         self.h = h
         self.window_len = window_len
         self.ocp = ocp
@@ -173,12 +174,12 @@ class OCP_gen_rot:
 
         N = np.size(invariant_model,0)
         
-        R_obj_init = initial_values['trajectory-orientation']
-        R_r_init = initial_values['moving-frame-orientation']
-        invars_init = initial_values['invariants-orientation']
+        R_obj_init = initial_values["trajectory"]["orientation"]
+        R_r_init = initial_values["moving-frame"]["rotational"]
+        invars_init = initial_values["invariants"]["rotational"]
 
-        R_r_start = boundary_constraints["moving-frame-orientation"]["initial"]
-        R_r_end = boundary_constraints["moving-frame-orientation"]["final"]
+        R_r_start = boundary_constraints["moving-frame"]["rotational"]["initial"]
+        R_r_end = boundary_constraints["moving-frame"]["rotational"]["final"]
         R_obj_start = boundary_constraints["orientation"]["initial"]
         R_obj_end = boundary_constraints["orientation"]["final"]
 
@@ -245,16 +246,32 @@ class OCP_gen_rot:
         if w_high_active:
             w_invars[:, w_high_start:w_high_end+1] = w_high_invars.reshape(-1, 1)
 
-        boundary_values_list = [value for sublist in boundary_constraints.values() for value in sublist.values()]
+        boundary_values_list = []
+        sublist_counter = 0
+        subsublist_counter = 0
+        for sublist in boundary_constraints.values(): 
+            if list(boundary_constraints.keys())[sublist_counter] not in ("position","translational"):
+                try:
+                    for subsublist in sublist.values():
+                        if list(sublist.keys())[subsublist_counter] not in ("position","translational"):
+                            for value in subsublist.values():
+                                boundary_values_list.append(value)
+                        subsublist_counter += 1
+                except:
+                        if list(sublist.keys())[subsublist_counter] not in ("position","translational"):
+                            for value in sublist.values():
+                                boundary_values_list.append(value)
+            sublist_counter += 1
+            subsublist_counter = 0
 
         if self.first_window and not initial_values:
             self.solution = generate_initvals_from_bounds_rot(boundary_constraints, np.size(invariant_model,0))
             self.first_window = False
         elif self.first_window:
             self.solution = [
-                initial_values["invariants-orientation"][:N-1,:].T, 
-                initial_values["moving-frame-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N), 
-                initial_values["trajectory-orientation"][:N].T.transpose(1,2,0).reshape(3,3*N)]
+                initial_values["invariants"]["rotational"][:N-1,:].T, 
+                initial_values["moving-frame"]["rotational"][:N].T.transpose(1,2,0).reshape(3,3*N), 
+                initial_values["trajectory"]["orientation"][:N].T.transpose(1,2,0).reshape(3,3*N)]
             self.first_window = False
 
         # Call solve function
@@ -281,9 +298,11 @@ if __name__ == "__main__":
             "initial": np.eye(3),
             "final": rotate_x(np.pi/6)
         },
-        "moving-frame-orientation": {
-            "initial": np.eye(3),
-            "final": np.eye(3)
+        "moving-frame": {
+            "rotational": {
+                "initial": np.eye(3),
+                "final": np.eye(3)
+            }
         },
     }
     step_size = 0.1

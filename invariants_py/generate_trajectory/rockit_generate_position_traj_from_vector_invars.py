@@ -8,7 +8,7 @@ from invariants_py.ocp_helper import tril_vec, tril_vec_no_diag, check_solver
 
 class OCP_gen_pos:
 
-    def __init__(self, boundary_constraints, window_len = 100, bool_unsigned_invariants = False, fatrop_solver = False):
+    def __init__(self, boundary_constraints, window_len = 100, bool_unsigned_invariants = False, fatrop_solver = False, max_iters = 500):
 
         fatrop_solver = check_solver(fatrop_solver)               
        
@@ -27,14 +27,14 @@ class OCP_gen_pos:
         h = ocp.parameter(1)
         
         # Boundary values
-        if "moving-frame-position" in boundary_constraints and "initial" in boundary_constraints["moving-frame-position"]:
-            R_t_start = ocp.parameter(3,3)
-        if "moving-frame-position" in boundary_constraints and "final" in boundary_constraints["moving-frame-position"]:
-            R_t_end = ocp.parameter(3,3)
         if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:
             p_obj_start = ocp.parameter(3)
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
             p_obj_end = ocp.parameter(3)
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["translational"]:
+            R_t_start = ocp.parameter(3,3)
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["translational"]:
+            R_t_end = ocp.parameter(3,3)
         
         U_demo = ocp.parameter(3,grid='control+') # model invariants
         w_invars = ocp.parameter(3,grid='control+') # weights for invariants
@@ -45,14 +45,14 @@ class OCP_gen_pos:
         ocp.subject_to(ocp.at_t0(tril_vec(R_t.T @ R_t - np.eye(3))==0.))
         
         # Boundary constraints
-        if "moving-frame-position" in boundary_constraints and "initial" in boundary_constraints["moving-frame-position"]:
-            ocp.subject_to(ocp.at_t0(tril_vec_no_diag(R_t.T @ R_t_start - np.eye(3))) == 0.)
-        if "moving-frame-position" in boundary_constraints and "final" in boundary_constraints["moving-frame-position"]:
-            ocp.subject_to(ocp.at_tf(tril_vec_no_diag(R_t.T @ R_t_end - np.eye(3)) == 0.))
         if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:    
             ocp.subject_to(ocp.at_t0(p_obj == p_obj_start))
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
             ocp.subject_to(ocp.at_tf(p_obj == p_obj_end))
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["translational"]:
+            ocp.subject_to(ocp.at_t0(tril_vec_no_diag(R_t.T @ R_t_start - np.eye(3))) == 0.)
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["translational"]:
+            ocp.subject_to(ocp.at_tf(tril_vec_no_diag(R_t.T @ R_t_end - np.eye(3)) == 0.))
 
 
 
@@ -93,14 +93,14 @@ class OCP_gen_pos:
         ocp.set_value(U_demo, 0.001+np.zeros((3,window_len)))
         ocp.set_value(w_invars, 0.001+np.zeros((3,window_len)))
         # Boundary constraints
-        if "moving-frame-position" in boundary_constraints and "initial" in boundary_constraints["moving-frame-position"]:
-            ocp.set_value(R_t_start, np.eye(3))
-        if "moving-frame-position" in boundary_constraints and "final" in boundary_constraints["moving-frame-position"]:
-            ocp.set_value(R_t_end, np.eye(3))
         if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:
             ocp.set_value(p_obj_start, np.array([0,0,0]))
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
             ocp.set_value(p_obj_end, np.array([1,0,0]))
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["translational"]:
+            ocp.set_value(R_t_start, np.eye(3))
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["translational"]:
+            ocp.set_value(R_t_end, np.eye(3))
         ocp.solve_limited()
         
         # OCP to function
@@ -117,10 +117,10 @@ class OCP_gen_pos:
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
             bounds.append(ocp.value(p_obj_end))
             bounds_labels.append("p_obj_end")
-        if "moving-frame-position" in boundary_constraints and "initial" in boundary_constraints["moving-frame-position"]:
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["translational"]:
             bounds.append(ocp.value(R_t_start))
             bounds_labels.append("R_t_start")
-        if "moving-frame-position" in boundary_constraints and "final" in boundary_constraints["moving-frame-position"]:
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["translational"]:
             bounds.append(ocp.value(R_t_end))
             bounds_labels.append("R_t_end")
 
@@ -146,14 +146,14 @@ class OCP_gen_pos:
         self.U = U
         self.U_demo = U_demo
         self.w_invars = w_invars
-        if "moving-frame-position" in boundary_constraints and "initial" in boundary_constraints["moving-frame-position"]:
-            self.R_t_start = R_t_start
-        if "moving-frame-position" in boundary_constraints and "final" in boundary_constraints["moving-frame-position"]:
-            self.R_t_end = R_t_end
         if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:
             self.p_obj_start = p_obj_start
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
             self.p_obj_end = p_obj_end
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["translational"]:
+            self.R_t_start = R_t_start
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["translational"]:
+            self.R_t_end = R_t_end
         self.h = h
         self.window_len = window_len
         self.ocp = ocp
@@ -161,21 +161,14 @@ class OCP_gen_pos:
         self.first_window = True
         self.fatrop = fatrop_solver
 
-        #if fatrop_solver:
-            #ocp._method.set_option("print_level",0)
-            #ocp._method.set_option("tol",1e-11)
+        if fatrop_solver:
+            ocp._method.set_option("max_iter",max_iters)
+            # ocp._method.set_option("print_level",0)
+            # ocp._method.set_option("tol",1e-11)
 
     def generate_trajectory(self, invariant_model, boundary_constraints, step_size, weights_params = {}, initial_values = {}):
         
         N = invariant_model.shape[0]
-
-        # weights_params = {
-        # 'w_invars': (10**-3)*np.array([1.0, 1.0, 1.0]),
-        # 'w_high_start': 1,
-        # 'w_high_end': 0,
-        # 'w_high_invars': (10**-3)*np.array([1.0, 1.0, 1.0]),
-        # 'w_high_active': 0
-        # }
         
         # Get the weights for the invariants or set default values
         w_invars = weights_params.get('w_invars', (10**-3)*np.array([1.0, 1.0, 1.0]))
@@ -189,13 +182,29 @@ class OCP_gen_pos:
         if w_high_active:
             w_invars[:, w_high_start:w_high_end+1] = w_high_invars.reshape(-1, 1)
 
-        boundary_values_list = [value for sublist in boundary_constraints.values() for value in sublist.values()]
+        boundary_values_list = []
+        sublist_counter = 0
+        subsublist_counter = 0
+        for sublist in boundary_constraints.values(): 
+            if list(boundary_constraints.keys())[sublist_counter] not in ("orientation","rotational"):
+                try:
+                    for subsublist in sublist.values():
+                        if list(sublist.keys())[subsublist_counter] not in ("orientation","rotational"):
+                            for value in subsublist.values():
+                                boundary_values_list.append(value)
+                            subsublist_counter += 1
+                except:
+                        if list(sublist.keys())[subsublist_counter] not in ("orientation","rotational"):
+                            for value in sublist.values():
+                                boundary_values_list.append(value)
+            sublist_counter += 1
+            subsublist_counter = 0
 
         if self.first_window and not initial_values:
             self.solution,initvals_dict = generate_initvals_from_bounds(boundary_constraints, np.size(invariant_model,0))
             self.first_window = False
         elif self.first_window:
-            self.solution = [initial_values["invariants-position"][:N-1,:].T, initial_values["trajectory-position"][:N,:].T, initial_values["moving-frame-position"][:N].T.transpose(1,2,0).reshape(3,3*N)]
+            self.solution = [initial_values["invariants"]["translational"][:N-1,:].T, initial_values["trajectory"]["position"][:N,:].T, initial_values["moving-frame"]["translational"][:N].T.transpose(1,2,0).reshape(3,3*N)]
             self.first_window = False
 
         #print(self.solution)
@@ -230,12 +239,12 @@ class OCP_gen_pos:
         
         N = np.size(invariant_model,0)
         
-        p_obj_init = initial_values['trajectory']
-        R_t_init = initial_values['moving-frames']
-        U_init = initial_values['invariants']
+        p_obj_init = initial_values['trajectory']["position"]
+        R_t_init = initial_values["moving-frame"]["translational"]
+        U_init = initial_values["invariants"]["translational"]
 
-        R_t_start = boundary_constraints["moving-frame-position"]["initial"]
-        R_t_end = boundary_constraints["moving-frame-position"]["final"]
+        R_t_start = boundary_constraints["moving-frame"]["translational"]["initial"]
+        R_t_end = boundary_constraints["moving-frame"]["translational"]["final"]
         p_obj_start = boundary_constraints["position"]["initial"]
         p_obj_end = boundary_constraints["position"]["final"]
 
@@ -298,9 +307,11 @@ if __name__ == "__main__":
             "initial": np.array([0, 0, 0]),
             "final": np.array([1, 0, 0])
         },
-        "moving-frame-position": {
-            "initial": np.eye(3),
-            "final": np.eye(3)
+        "moving-frame": {
+            "translational": {
+                "initial": np.eye(3),
+                "final": np.eye(3)
+            }
         },
     }
     step_size = 0.1
@@ -326,3 +337,5 @@ if __name__ == "__main__":
     print("Calculated Trajectory:", calculated_trajectory)
     #print("Calculated Moving Frame:", calculated_movingframe)
 
+
+# %%

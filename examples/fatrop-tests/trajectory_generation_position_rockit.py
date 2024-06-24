@@ -81,15 +81,23 @@ boundary_constraints = {
         "initial": calculate_trajectory[current_index],
         "final": calculate_trajectory[-1] + np.array([0.1, 0.05, 0.05])
     },
-    "moving-frame-position": {
-        "initial": movingframes[current_index],
-        "final": movingframes[-1]
+    "moving-frame": {
+        "translational": {
+            "initial": movingframes[current_index],
+            "final": movingframes[-1]
+        }
     },
 }
 initial_values = {
-    "trajectory-position": calculate_trajectory,
-    "moving-frame-position": movingframes,
-    "invariants-position": model_invariants,
+    "trajectory": {
+        "position": calculate_trajectory
+    },
+    "moving-frame": {
+        "translational": movingframes,
+    },
+    "invariants": {
+        "translational": model_invariants,
+    }
 }
 
 # Generate new trajectory
@@ -99,12 +107,10 @@ weights['w_invars'] = np.array([5 * 10 ** 1, 1.0, 1.0])
 
 if ocp_to_func:
     new_invars, new_trajectory, new_movingframes, tot_time_pos = FS_online_generation_problem.generate_trajectory(
-        invariant_model=model_invariants, initial_values=initial_values, boundary_constraints=boundary_constraints,
-        step_size=new_stepsize, weights_params=weights)
+        model_invariants, boundary_constraints, new_stepsize, weights,initial_values)
 else: 
     new_invars, new_trajectory, new_movingframes, tot_time_pos = FS_online_generation_problem.generate_trajectory_OLD(
-    invariant_model=model_invariants, initial_values=initial_values, boundary_constraints=boundary_constraints,
-    step_size=new_stepsize, weights_params=weights)
+    model_invariants, initial_values, boundary_constraints, new_stepsize, weights)
 
 # print(new_invars)
 # input("Press Enter to continue...")
@@ -153,16 +159,24 @@ while current_progress <= 1.0:
             "initial": calculate_trajectory[current_index],
             "final": trajectory[-1] - current_progress * np.array([-0.2, 0.0, 0.0])
         },
-        "moving-frame-position": {
-            "initial": movingframes[current_index],
-            "final": movingframes[-1]
+        "moving-frame": {
+            "translational": {
+                "initial": movingframes[current_index],
+                "final": movingframes[-1]
+            }
         },
         #  speed/acceleration values - velocity/(acceleration vectors) - moving frame
     }
     initial_values = {
-        "trajectory-position": calculate_trajectory,
-        "moving-frame-position": movingframes,
-        "invariants-position": model_invariants,
+        "trajectory": {
+            "position": calculate_trajectory
+        },
+        "moving-frame": {
+            "translational": movingframes
+        },
+        "invariants": {
+            "translational": model_invariants
+        },
     }
 
     # Calculate remaining trajectory
