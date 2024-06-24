@@ -66,9 +66,9 @@ for k in range(number_samples):
     R_fs_init_array.append(R_fs_init)
 R_fs_init_array = np.array(R_fs_init_array)
 
-boundary_constraints = {"orientation": {"initial": R_obj_start, "final": R_obj_end}, "moving-frame-orientation": {"initial": R_fs_init, "final": R_fs_init}}
+boundary_constraints = {"orientation": {"initial": R_obj_start, "final": R_obj_end}, "moving-frame": {"rotational": {"initial": R_fs_init, "final": R_fs_init}}}
 
-initial_values = {"invariants-orientation": invars_init, "trajectory-orientation": R_obj_init, "moving-frame-orientation": R_fs_init_array}
+initial_values = {"invariants": {"rotational": invars_init}, "trajectory": {"orientation": R_obj_init}, "moving-frame": {"rotational": R_fs_init_array}}
 
 # specify optimization problem symbolically
 FS_online_generation_problem_rot = FS_gen_rot(boundary_constraints, number_samples, fatrop_solver = 1)

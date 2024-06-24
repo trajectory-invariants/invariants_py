@@ -133,23 +133,27 @@ R_obj_init = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1
 
 R_r_init, R_r_init_array, invars_init = FSr_init(R_obj_start, R_obj_end)
 
+model_invariants[:-1,:3] = invars_init
+
 boundary_constraints = {
     "position": {
         "initial": p_obj_start,
         "final": p_obj_end
     },
-    "moving-frame-position": {
-        "initial": FSt_start,
-        "final": FSt_end
-    },
     "orientation": {
         "initial": R_obj_start,
         "final": R_obj_end
     },
-    "moving-frame-orientation": {
-        "initial": R_r_init,
-        "final": R_r_init
-    }
+    "moving-frame": {
+        "translational": {
+            "initial": FSt_start,
+            "final": FSt_end
+        },
+        "rotational": {
+            "initial": R_r_init,
+            "final": R_r_init
+        }
+    },
 }
 
 # Define robot parameters
@@ -167,12 +171,15 @@ robot_params = {
 FS_online_generation_problem = OCP_gen_pose(boundary_constraints, number_samples, use_fatrop_solver, robot_params)
 
 initial_values = {
-    "trajectory": optim_calc_results.Obj_pos,
-    "moving-frames": optim_calc_results.FSt_frames,
+    "trajectory": {
+        "position": optim_calc_results.Obj_pos,
+        "orientation": R_obj_init
+    },
+    "moving-frame": {
+        "translational": optim_calc_results.FSt_frames,
+        "rotational": R_r_init_array,
+    },
     "invariants": model_invariants,
-    "invariants-orientation": invars_init,
-    "trajectory-orientation": R_obj_init,
-    "moving-frame-orientation": R_r_init_array,
     "joint-values": robot_params["home"] if urdf_file_name is not None else {}
 }
 
