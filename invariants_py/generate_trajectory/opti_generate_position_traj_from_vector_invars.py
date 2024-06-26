@@ -2,7 +2,7 @@ import numpy as np
 import casadi as cas
 import invariants_py.dynamics_vector_invariants as dynamics
 from invariants_py import ocp_helper
-from invariants_py.initialization import generate_initvals_from_bounds
+from invariants_py.initialization import generate_initvals_from_constraints
 from invariants_py import spline_handler as sh
 
 class OCP_gen_pos:
@@ -165,7 +165,7 @@ def generate_trajectory_translation(invariant_model, boundary_constraints, N=40)
     OCP = OCP_gen_pos(N = N)
 
     # Initial values
-    initial_values, initial_values_dict = generate_initvals_from_bounds(boundary_constraints, N)
+    initial_values, initial_values_dict = generate_initvals_from_constraints(boundary_constraints, N)
 
     # Resample model invariants to desired number of N samples
     spline_invariant_model = sh.create_spline_model(invariant_model[:,0], invariant_model[:,1:])
