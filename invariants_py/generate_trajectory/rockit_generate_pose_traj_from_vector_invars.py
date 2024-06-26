@@ -201,11 +201,11 @@ class OCP_gen_pose:
         self.first_window = True
 
         # Encapsulate whole rockit specification in a casadi function
-        invars_sampled = ocp.sample(invars_demo, grid='control')[1] # sampled demonstration invariants
-        w_sampled = ocp.sample(w_invars, grid='control')[1] # sampled invariants weights 
-        h_value = ocp.value(h) # value of stepsize
+        input_params = [ocp.sample(invars_demo, grid='control')[1], # sampled demonstration invariants
+                        ocp.sample(w_invars, grid='control')[1], # sampled invariants weights 
+                        ocp.value(h)] # value of stepsize
         if include_robot_model:
-            q_lim_value = ocp.value(q_lim) # value of joint limits
+            input_params.append(ocp.value(q_lim)) # value of joint limits
 
         bounds = []
         bounds_labels = []
@@ -235,36 +235,27 @@ class OCP_gen_pose:
             bounds.append(ocp.value(R_r_end))
             bounds_labels.append("R_r_end")
 
+        solution = [ocp.sample(invars, grid='control-')[1],
+            ocp.sample(p_obj, grid='control')[1], # sampled object positions
+            ocp.sample(R_t, grid='control')[1], # sampled translational FS frame
+            ocp.sample(R_r, grid='control')[1], # sampled rotational FS frame
+            ocp.sample(R_obj, grid='control')[1]] # sampled object orientation
         if include_robot_model:
-            solution = [ocp.sample(invars, grid='control-')[1],
-                ocp.sample(p_obj, grid='control')[1], # sampled object positions
-                ocp.sample(R_t, grid='control')[1], # sampled translational FS frame
-                ocp.sample(R_r, grid='control')[1], # sampled rotational FS frame
-                ocp.sample(R_obj, grid='control')[1], # sampled object orientation
-                ocp.sample(q, grid='control')[1]] # sampled joint value
+            solution.append(ocp.sample(q, grid='control')[1]) # sampled joint values
+            inputs_labels = ["invars","w_invars","stepsize","q_lim","invars1","p_obj1","R_t1","R_r1","R_obj1","q1"] # input labels for debugging
+            solution_labels = ["invars2","p_obj2","R_t2","R_r2","R_obj2","q2"] # output labels for debugging
         else:
-            solution = [ocp.sample(invars, grid='control-')[1],
-                ocp.sample(p_obj, grid='control')[1], # sampled object positions
-                ocp.sample(R_t, grid='control')[1], # sampled translational FS frame
-                ocp.sample(R_r, grid='control')[1], # sampled rotational FS frame
-                ocp.sample(R_obj, grid='control')[1]] # sampled object orientation
-        
+            inputs_labels = ["invars","w_invars","stepsize","invars1","p_obj1","R_t1","R_r1","R_obj1"] # input labels for debugging
+            solution_labels = ["invars2","p_obj2","R_t2","R_r2","R_obj2"] # output labels for debugging
+
         self.ocp = ocp # save the optimization problem locally, avoids problems when multiple rockit ocp's are created
 
-        if include_robot_model:
-            self.ocp_function = self.ocp.to_function('ocp_function', 
-                [invars_sampled,w_sampled,h_value,q_lim_value,*bounds,*solution], # inputs
-                [*solution], # outputs
-                ["invars","w_invars","stepsize","q_lim",*bounds_labels,"invars1","p_obj1","R_t1","R_r1","R_obj1","q1"], # input labels for debugging
-                ["invars2","p_obj2","R_t2","R_r2","R_obj2","q2"], # output labels for debugging
-            )
-        else:
-            self.ocp_function = self.ocp.to_function('ocp_function', 
-                [invars_sampled,w_sampled,h_value,*bounds,*solution], # inputs
-                [*solution], # outputs
-                ["invars","w_invars","stepsize",*bounds_labels,"invars1","p_obj1","R_t1","R_r1","R_obj1"], # input labels for debugging
-                ["invars2","p_obj2","R_t2","R_r2","R_obj2"], # output labels for debugging
-            )
+        self.ocp_function = self.ocp.to_function('ocp_function', 
+            [*input_params,*solution,*bounds], # inputs
+            [*solution], # outputs
+            [*inputs_labels,*bounds_labels], # input labels for debugging
+            [*solution_labels], # output labels for debugging
+        )
 
         # Save variables (only needed for old way of trajectory generation)
         self.R_t = R_t_vec
@@ -298,6 +289,7 @@ class OCP_gen_pose:
         self.fatrop = fatrop_solver
         self.tot_time = tot_time
         self.include_robot_model = include_robot_model
+        self.input_params = input_params
         if include_robot_model:
             self.nb_joints = nb_joints
             self.q = q
@@ -321,6 +313,11 @@ class OCP_gen_pose:
         if w_high_active:
             w_invars[:, w_high_start:w_high_end+1] = w_high_invars.reshape(-1, 1)
 
+        if self.include_robot_model:
+            input_params = [invariant_model.T,w_invars,step_size,self.q_lim]
+        else:
+            input_params = [invariant_model.T,w_invars,step_size]
+
         boundary_values_list = []
         for sublist in boundary_constraints.values(): 
             try:
@@ -335,30 +332,26 @@ class OCP_gen_pose:
             solution_pos,initvals_dict = generate_initvals_from_bounds(boundary_constraints, np.size(invariant_model,0))
             solution_rot = generate_initvals_from_bounds_rot(boundary_constraints, np.size(invariant_model,0))
             solution = [np.vstack((solution_rot[0],solution_pos[0]))] + solution_pos[1:] + solution_rot[1:] # concatenate invariants and combine lists
+            self.solution = solution
             if self.include_robot_model:
-                default_q_init = [self.home.T]
-                self.solution = solution+default_q_init
-            else:
-                self.solution = solution
+                default_q_init = self.home.T
+                self.solution.append(default_q_init)
             self.first_window = False
         elif self.first_window:
+            self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["trajectory"]["position"][:N,:].T, initial_values["moving-frame"]["translational"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["moving-frame"]["rotational"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["trajectory"]["orientation"][:N].T.transpose(1,2,0).reshape(3,3*N)]
             if self.include_robot_model:
-                self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["trajectory"]["position"][:N,:].T, initial_values["moving-frame"]["translational"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["moving-frame"]["rotational"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["trajectory"]["orientation"][:N].T.transpose(1,2,0).reshape(3,3*N),initial_values["joint-values"].T]
-            else:
-                self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["trajectory"]["position"][:N,:].T, initial_values["moving-frame"]["translational"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["moving-frame"]["rotational"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["trajectory"]["orientation"][:N].T.transpose(1,2,0).reshape(3,3*N)]
+                self.solution.append(initial_values["joint-values"].T)
             self.first_window = False
 
         # Call solve function
-        if self.include_robot_model:
-            self.solution = self.ocp_function(invariant_model.T,w_invars,step_size,self.q_lim,*boundary_values_list,*self.solution)
-        else:
-            self.solution = self.ocp_function(invariant_model.T,w_invars,step_size,*boundary_values_list,*self.solution)
+        self.solution = self.ocp_function(*input_params,*self.solution,*boundary_values_list)
 
         #Return the results
         if self.include_robot_model:
             invars_sol, p_obj_sol, R_t_sol, R_r_sol, R_obj_sol, q = self.solution # unpack the results            
         else:
-            invars_sol, p_obj_sol, R_t_sol, R_r_sol, R_obj_sol = self.solution # unpack the results            
+            invars_sol, p_obj_sol, R_t_sol, R_r_sol, R_obj_sol = self.solution # unpack the results    
+
         invariants = np.array(invars_sol).T
         invariants = np.vstack((invariants, invariants[-1,:])) # make a N x 3 array by repeating last row
         new_trajectory_pos = np.array(p_obj_sol).T # make a N x 3 array

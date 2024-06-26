@@ -133,8 +133,6 @@ R_obj_init = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1
 
 R_r_init, R_r_init_array, invars_init = FSr_init(R_obj_start, R_obj_end)
 
-model_invariants[:-1,:3] = invars_init
-
 boundary_constraints = {
     "position": {
         "initial": p_obj_start,
