@@ -5,10 +5,15 @@ import invariants_py.dynamics_vector_invariants as dynamics
 
 class OCP_calc_rot:
 
-    def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180):
+    def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180, solver_options = {}):
        
         #%% Create decision variables and parameters for the optimization problem
-        
+
+        # Set solver options
+        tolerance = solver_options.get('tol',1e-4) # tolerance for the solver
+        max_iter = solver_options.get('max_iter',500) # maximum number of iterations
+        print_level = solver_options.get('print_level',5) # 5 prints info, 0 prints nothing
+
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
 
         # Define system states X (unknown object pose + moving frame pose at every time step) 
@@ -65,7 +70,7 @@ class OCP_calc_rot:
             err_rot = R_obj_m[k].T @ R_obj[k] - np.eye(3) # orientation error
             objective_fit = objective_fit + cas.dot(err_rot,err_rot)
             
-        opti.subject_to(objective_fit/window_len/rms_error_traj**2 < 1)
+        opti.subject_to(objective_fit/window_len < rms_error_traj**2)
 
         # Regularization constraints to deal with singularities and noise
         objective_reg = 0
@@ -89,7 +94,7 @@ class OCP_calc_rot:
 
         #%% Define solver and save variables
         opti.minimize(objective)
-        opti.solver('ipopt',{"print_time":True,"expand":True},{'gamma_theta':1e-12,'max_iter':200,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
+        opti.solver('ipopt',{"print_time":False,"expand":True},{'gamma_theta':1e-12,'max_iter':max_iter,'tol':tolerance,'print_level':print_level,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
         
         # Save variables
         self.R_r = R_r
@@ -224,3 +229,28 @@ class OCP_calc_rot:
             calculated_movingframe = np.array([sol.value(i) for i in self.R_t])
             
             return invariants, calculated_trajectory, calculated_movingframe
+        
+
+if __name__ == "__main__":
+    import invariants_py.kinematics.orientation_kinematics as SO3
+
+    # Test data
+    measured_orientations = SO3.random_traj(N=10) # TODO replace with something more realistic, now it will sometimes fail
+    timestep = 0.01
+    
+    # Specify OCP symbolically
+    N = np.size(measured_orientations,0)
+
+    # Create an instance of OCP_calc_rot
+    ocp = OCP_calc_rot(window_len=N, rms_error_traj=5*pi/180)
+    
+    # Calculate invariants using the calculate_invariants_global method
+    invariants_global, calculated_trajectory_global, calculated_movingframe_global = ocp.calculate_invariants_global(measured_orientations, timestep)
+    
+    # Print the results
+    # print("Global Invariants:")
+    # print(invariants_global)
+    # print("Global Calculated Trajectory:")
+    # print(calculated_trajectory_global)
+    # print("Global Calculated Moving Frame:")
+    # print(calculated_movingframe_global)

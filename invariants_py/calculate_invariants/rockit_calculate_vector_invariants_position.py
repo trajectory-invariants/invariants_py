@@ -85,20 +85,20 @@ class OCP_calc_pos:
         if not fatrop_solver:
             # sum of squared position errors in the window should be less than the specified tolerance rms_error_traj
             total_ek = ocp.sum(ek,grid='control',include_last=True)
-            ocp.subject_to(total_ek/N/rms_error_traj**2 < 1)
+            ocp.subject_to(total_ek/N < rms_error_traj**2)
         else:
             # Fatrop does not support summing over grid points inside the constraint, so we implement it differently to achieve the same result
             running_ek = ocp.state() # running sum of squared error
             ocp.subject_to(ocp.at_t0(running_ek == 0))
             ocp.set_next(running_ek, running_ek + ek)
-            ocp.subject_to(ocp.at_tf(1000*running_ek/N < 1000*rms_error_traj**2)) # scaling to avoid numerical issues in fatrop
+            #ocp.subject_to(ocp.at_tf(1000*running_ek/N < 1000*rms_error_traj**2)) # scaling to avoid numerical issues in fatrop
             
             # TODO this is still needed because last sample is not included in the sum now
-            # total_ek = ocp.state() # total sum of squared error
-            # ocp.set_next(total_ek, total_ek)
-            # ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
+            total_ek = ocp.state() # total sum of squared error
+            ocp.set_next(total_ek, total_ek)
+            ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
             # total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
-            # ocp.subject_to(total_ek/N < rms_error_traj**2)
+            ocp.subject_to(total_ek/N < rms_error_traj**2)
             #total_ek_scaled = running_ek/N/rms_error_traj**2 # scaled total error
             #ocp.subject_to(ocp.at_tf(total_ek_scaled < 1))
             
@@ -161,7 +161,7 @@ class OCP_calc_pos:
             ["invars_out","p_obj_out","R_t_out"]) # (optional) output labels for debugging
 
         # Set variables as class properties (only necessary for calculate_invariants_OLD function)
-        self.R_t= R_t_vec
+        self.R_t = R_t_vec
         self.p_obj = p_obj
         self.U = invars
         self.p_obj_m = p_obj_m

@@ -15,11 +15,11 @@ class TestOCPcalcpos(unittest.TestCase):
         ''' Verify that the invariants are the same for the fatrop and ipopt solver in the rockit implementation '''
 
         # Solve rockit problem with ipopt
-        rockit_ipopt = rockit_ocp(window_len=100, rms_error_traj=10**-3, fatrop_solver=False, solver_options={"print_level": 0, "tol": 1e-6})
+        rockit_ipopt = rockit_ocp(window_len=100, rms_error_traj=10**-3, fatrop_solver=False, solver_options={"print_level": 0, "tol": 1e-10})
         calc_invariants_without_fatrop, _, _ = rockit_ipopt.calculate_invariants(self.measured_positions, self.stepsize)
 
         # Solve rockit problem with fatrop
-        rockit_fatrop = rockit_ocp(window_len=100, rms_error_traj=10**-3, fatrop_solver=True, solver_options={"print_level": 0, "tol": 1e-6})
+        rockit_fatrop = rockit_ocp(window_len=100, rms_error_traj=10**-3, fatrop_solver=True, solver_options={"print_level": 0, "tol": 1e-10})
         calc_invariants_with_fatrop, _, _ = rockit_fatrop.calculate_invariants(self.measured_positions, self.stepsize)
 
         # Compare the results
@@ -29,11 +29,11 @@ class TestOCPcalcpos(unittest.TestCase):
         ''' Verify that the invariants are the same for the fatrop and ipopt solver in the rockit implementation '''
 
         # Solve rockit problem with ipopt
-        ocp_without_fatrop = rockit_ocp(window_len=100, rms_error_traj=10**-3, fatrop_solver=False, solver_options={"print_level": 0, "tol": 1e-6})
+        ocp_without_fatrop = rockit_ocp(window_len=100, rms_error_traj=10**-3, fatrop_solver=False, solver_options={"print_level": 0, "tol": 1e-10})
         calc_invariants_without_fatrop, _, _ = ocp_without_fatrop.calculate_invariants_OLD(self.measured_positions, self.stepsize)
 
         # Solve rockit problem with fatrop
-        ocp_with_fatrop = rockit_ocp(window_len=100, rms_error_traj=10**-3, fatrop_solver=True, solver_options={"print_level": 0, "tol": 1e-6})
+        ocp_with_fatrop = rockit_ocp(window_len=100, rms_error_traj=10**-3, fatrop_solver=True, solver_options={"print_level": 0, "tol": 1e-10})
         calc_invariants_with_fatrop, _, _ = ocp_with_fatrop.calculate_invariants_OLD(self.measured_positions, self.stepsize)
 
         # Compare the results
@@ -43,11 +43,11 @@ class TestOCPcalcpos(unittest.TestCase):
         ''' Verify that the invariants are the same for the fatrop solver in rockit and the ipopt solver in the optistack implementation '''
 
         # Solve rockit problem with fatrop
-        ocp_without_fatrop = rockit_ocp(window_len=100, rms_error_traj=10**-3, fatrop_solver=False, solver_options={"print_level": 0, "tol": 1e-6})
+        ocp_without_fatrop = rockit_ocp(window_len=100, rms_error_traj=10**-3, fatrop_solver=False, solver_options={"print_level": 0, "tol": 1e-10})
         calc_invariants_without_fatrop, _, _ = ocp_without_fatrop.calculate_invariants(self.measured_positions, self.stepsize)
 
         # Solve optistack problem with ipopt
-        ocp_with_fatrop = optistack_ocp(window_len=100, rms_error_traj=10**-3, solver_options={"print_level": 0, "tol": 1e-6})
+        ocp_with_fatrop = optistack_ocp(window_len=100, rms_error_traj=10**-3, solver_options={"print_level": 0, "tol": 1e-10})
         calc_invariants_with_fatrop, _, _ = ocp_with_fatrop.calculate_invariants_global(self.measured_positions, self.stepsize)
 
         # Compare the results

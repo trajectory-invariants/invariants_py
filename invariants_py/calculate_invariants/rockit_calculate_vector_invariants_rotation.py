@@ -10,8 +10,13 @@ from invariants_py.ocp_helper import check_solver, tril_vec
 
 class OCP_calc_rot:
 
-    def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 4*pi/180, fatrop_solver = False):
+    def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 4*pi/180, fatrop_solver = False, solver_options = {}):
        
+        # Set solver options
+        tolerance = solver_options.get('tol',1e-4) # tolerance for the solver
+        max_iter = solver_options.get('max_iter',500) # maximum number of iterations
+        print_level = solver_options.get('print_level',5) # 5 prints info, 0 prints nothing
+
         ocp = rockit.Ocp(T=1.0) # create optimization problem
         N = window_len # number of samples in the window
 
@@ -19,19 +24,21 @@ class OCP_calc_rot:
         #%% Create decision variables and parameters for the optimization problem
         
         # Define system states X (unknown object orientation + moving frame orientation at every time step) 
-        R_obj = ocp.state(3,3) # object orientation
-        R_r  = ocp.state(3,3) # rotational Frenet-Serret frame
-        
+        R_obj_vec = ocp.state(9) # object orientation
+        R_obj = cas.reshape(R_obj_vec,(3,3)) # reshape vector to 3x3 rotation matrix
+        R_r_vec  = ocp.state(9) # rotational Frenet-Serret frame
+        R_r = cas.reshape(R_r_vec,(3,3)) # reshape vector to 3x3 rotation matrix
+  
         # Define system controls (invariants at every time step)
         invars = ocp.control(3) # three invariants [angular velocity | curvature rate | torsion rate]
 
         # Define system parameters P (known values in optimization that need to be set right before solving)
         # R_obj_m = ocp.parameter(3,3,grid='control+') # measured object orientation
-        R_obj_m_x = ocp.parameter(3,1,grid='control+') # measured object orientation, first axis
-        R_obj_m_y = ocp.parameter(3,1,grid='control+') # measured object orientation, second axis
-        R_obj_m_z = ocp.parameter(3,1,grid='control+') # measured object orientation, third axis
-        R_obj_m = cas.horzcat(R_obj_m_x,R_obj_m_y,R_obj_m_z) 
-        # ocp.parameter(3,3,grid='control',include_last=True)#
+        R_obj_m_vec = ocp.parameter(9,grid='control+') # measured object orientation, first axis
+        # R_obj_m_y = ocp.parameter(3,1,grid='control+') # measured object orientation, second axis
+        # R_obj_m_z = ocp.parameter(3,1,grid='control+') # measured object orientation, third axis
+        R_obj_m = cas.reshape(R_obj_m_vec,(3,3)) # reshape vector to 3x3 rotation matrix 
+        # # ocp.parameter(3,3,grid='control',include_last=True)#
         # R_r_0 = ocp.parameter(3,3) # THIS IS COMMENTED OUT IN MATLAB, WHY?
         
         h = ocp.parameter(1) # stepsize
@@ -50,26 +57,25 @@ class OCP_calc_rot:
         # Lower bounds on controls
         if bool_unsigned_invariants:
             ocp.subject_to(invars[0,:]>=0) # lower bounds on control
-            ocp.subject_to(invars[1,:]>=0) # lower bounds on control
+            #ocp.subject_to(invars[1,:]>=0) # lower bounds on control
 
         # Measurement fitting constraint
-        ek = cas.dot(R_obj_m.T @ R_obj - np.eye(3),R_obj_m.T @ R_obj - np.eye(3)) # squared rotation error
+        ek = cas.dot(R_obj_m.T @ R_obj - np.eye(3), R_obj_m.T @ R_obj - np.eye(3)) # squared rotation error
         
         running_ek = ocp.state() # running sum of squared error
         ocp.subject_to(ocp.at_t0(running_ek == 0))
         ocp.set_next(running_ek, running_ek + ek)
+        ocp.subject_to(ocp.at_tf(1000*running_ek/N < 1000*rms_error_traj**2))
 
-        #ocp.subject_to(ocp.at_tf(10e4*running_ek/N < 10e4*rms_error_traj**2))
-
-        total_ek = ocp.state() # total sum of squared error
-        ocp.set_next(total_ek, total_ek)
-        ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
+        # total_ek = ocp.state() # total sum of squared error
+        # ocp.set_next(total_ek, total_ek)
+        # ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
         
-        #total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
-        ocp.subject_to(total_ek/N < rms_error_traj**2) # scaled total error
-        #ocp.subject_to(total_ek_scaled < 1)
+        # #total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
+        # ocp.subject_to(1000*total_ek/N < 1000*rms_error_traj**2) # scaled total error
+        # #ocp.subject_to(total_ek_scaled < 1)
 
-        # opti.subject_to(U[1,-1] == U[1,-2]); # Last sample has no impact on RMS error ##### HOW TO ACCESS U[1,-2] IN ROCKIT
+        # # opti.subject_to(U[1,-1] == U[1,-2]); # Last sample has no impact on RMS error ##### HOW TO ACCESS U[1,-2] IN ROCKIT
 
         #%% Specifying the objective
 
@@ -94,10 +100,10 @@ class OCP_calc_rot:
         # Solve already once with dummy values for code generation (TODO: can this step be avoided somehow?)
         ocp.set_initial(R_r, np.eye(3))
         ocp.set_initial(invars, np.array([1,0.01,0.01]))
-        ocp.set_initial(R_obj, np.eye(3))
-        ocp.set_value(R_obj_m_x, np.tile(np.array([1,0,0]), (N,1)).T)
-        ocp.set_value(R_obj_m_y, np.tile(np.array([0,1,0]), (N,1)).T)
-        ocp.set_value(R_obj_m_z, np.tile(np.array([0,0,1]), (N,1)).T)
+        # ocp.set_initial(R_obj, np.eye(3))
+        ocp.set_value(R_obj_m, np.eye(3))
+        #ocp.set_value(R_obj_m_y, np.tile(np.array([0,1,0]), (N,1)).T)
+        #ocp.set_value(R_obj_m_z, np.tile(np.array([0,0,1]), (N,1)).T)
         # eye = np.zeros((3,3*N))
         # for i in range(N-1):
         #     eye[:,3*i:3*(i+1)] = np.array([np.array([1,0,0]),np.array([0,1,0]),np.array([0,0,1])]) 
@@ -107,23 +113,24 @@ class OCP_calc_rot:
 
         # Set solver options (TODO: why can this not be done before solving?)
         if fatrop_solver:
-            ocp._method.set_option("tol",1e-6)
-            #ocp._method.set_option("print_level",0)
+            ocp._method.set_option("tol",tolerance)
+            ocp._method.set_option("print_level",print_level)
+            ocp._method.set_option("max_iter",max_iter)
         self.first_time = True
         
         # Encapsulate whole rockit specification in a casadi function
         # R_obj_m_sampled = ocp.sample(R_obj_m, grid='control')[1] # sampled measured object orientation (first axis)
-        R_obj_m_x_sampled = ocp.sample(R_obj_m_x, grid='control')[1] # sampled measured object orientation (first axis)
-        R_obj_m_y_sampled = ocp.sample(R_obj_m_y, grid='control')[1] # sampled measured object orientation (second axis)
-        R_obj_m_z_sampled = ocp.sample(R_obj_m_z, grid='control')[1] # sampled measured object orientation (third axis)
+        #R_obj_m_x_sampled = ocp.sample(R_obj_m_x, grid='control')[1] # sampled measured object orientation (first axis)
+        #R_obj_m_y_sampled = ocp.sample(R_obj_m_y, grid='control')[1] # sampled measured object orientation (second axis)
+        R_obj_m_vec_sampled = ocp.sample(R_obj_m_vec, grid='control')[1] # sampled measured object orientation (third axis)
         h_value = ocp.value(h) # value of stepsize
         solution = [ocp.sample(invars, grid='control-')[1],
-            ocp.sample(R_obj, grid='control')[1], # sampled object orientation
-            ocp.sample(R_r, grid='control')[1]] # sampled FS frame
+            ocp.sample(R_obj_vec, grid='control')[1], # sampled object orientation
+            ocp.sample(R_r_vec, grid='control')[1]] # sampled FS frame
         
         self.ocp = ocp # save the optimization problem locally, avoids problems when multiple rockit ocp's are created
         self.ocp_function = self.ocp.to_function('ocp_function', 
-            [R_obj_m_x_sampled,R_obj_m_y_sampled,R_obj_m_z_sampled,h_value,*solution], # inputs
+            [R_obj_m_vec_sampled,h_value,*solution], # inputs
             [*solution], # outputs
             ["R_obj_m_x","R_obj_m_y","R_obj_m_z","h","invars1","R_obj1","R_r1"], # input labels for debugging
             ["invars2","R_obj2","R_r2"], # output labels for debugging
@@ -131,10 +138,15 @@ class OCP_calc_rot:
 
     def calculate_invariants(self,measured_rotations,stepsize): 
 
+        if measured_rotations.shape[1] == 3:
+            measured_rotations = measured_rotations
+        else:
+            measured_rotations = measured_rotations[:,:3,:3]
+
         # Check if this is the first function call
         if self.first_time:
             # Initialize states and controls using measurements
-            self.solution,measured_rotations = initialize_VI_rot(measured_rotations)
+            self.solution = initialize_VI_rot(measured_rotations)
             self.first_time = False
 
         measured_orientations = [measured_rotations[:,:,0].T,measured_rotations[:,:,1].T,measured_rotations[:,:,2].T]
@@ -154,7 +166,7 @@ class OCP_calc_rot:
 if __name__ == "__main__":
 
     # Test data
-    measured_orientations = SO3.random_traj(N=3) # TODO replace with something more realistic, now it will sometimes fail
+    measured_orientations = SO3.random_traj(N=100) # TODO replace with something more realistic, now it will sometimes fail
     timestep = 0.1
     
     # Specify OCP symbolically
@@ -162,6 +174,6 @@ if __name__ == "__main__":
     OCP = OCP_calc_rot(window_len=N,fatrop_solver=True, rms_error_traj=1*pi/180)
 
     # Solve the OCP using the specified data
-    calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_orientations, timestep)
-    print(calc_invariants)
+    #calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_orientations, timestep)
+    #print(calc_invariants)
 
