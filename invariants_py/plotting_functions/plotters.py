@@ -618,7 +618,8 @@ def plot_moving_frames(calc_trajectory, movingframes, length=0.075, skip_frames=
     ax.set_ylabel('Y [m]')
     ax.set_zlabel('Z [m]')
     plt.title('Trajectory and moving frames')
-    plt.show()
+    if plt.get_backend() != 'agg':
+        plt.show()
 
 # Animate the moving frames
 def animate_moving_frames(calc_trajectory, movingframes, length=0.075, skip_frames=5, save_animation=False, filename='animation.gif'):
@@ -653,4 +654,5 @@ def animate_moving_frames(calc_trajectory, movingframes, length=0.075, skip_fram
     ani = animation.FuncAnimation(fig, update_frame, frames=len(calc_trajectory), interval=100, repeat=True)
     if save_animation:
         ani.save(filename, writer='imagemagick', fps=60)
-    plt.show()
+    if plt.get_backend() != 'agg':
+        plt.show()
