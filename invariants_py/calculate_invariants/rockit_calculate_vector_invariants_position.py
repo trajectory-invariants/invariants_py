@@ -14,7 +14,7 @@ Usage:
     OCP = OCP_calc_pos(window_len=N, rms_error_traj=10**-3)
 
     # Calculate invariants
-    invariants,-,- = OCP.calculate_invariants(measured_positions, stepsize)
+    invariants,trajectory,moving-frames = OCP.calculate_invariants(measured_positions, stepsize)
 '''
 
 import numpy as np
@@ -26,7 +26,7 @@ from invariants_py.dynamics_vector_invariants import integrate_vector_invariants
 
 class OCP_calc_pos:
 
-    def __init__(self, window_len=100, rms_error_traj=10**-2, fatrop_solver=False, bool_unsigned_invariants=False, planar_task=False):
+    def __init__(self, window_len=100, rms_error_traj=10**-2, fatrop_solver=False, bool_unsigned_invariants=False, planar_task=False, solver_options = {}):
         """
         Initializes an instance of the RockitCalculateVectorInvariantsPosition class.
         It specifies the optimal control problem (OCP) for calculating the invariants of a trajectory in a symbolic way.
@@ -40,6 +40,11 @@ class OCP_calc_pos:
         """
         # TODO change "planar_task" to "planar_trajectory"
         # TODO change bool_unsigned_invariants to positive_velocity
+
+        # Set solver options
+        tolerance = solver_options.get('tol',1e-4) # tolerance for the solver
+        max_iter = solver_options.get('max_iter',500) # maximum number of iterations
+        print_level = solver_options.get('print_level',5) # 5 prints info, 0 prints nothing
 
         # Use rockit to define the optimal control problem (OCP)
         ocp = rockit.Ocp(T=1.0)
@@ -88,6 +93,7 @@ class OCP_calc_pos:
             ocp.set_next(running_ek, running_ek + ek)
             ocp.subject_to(ocp.at_tf(1000*running_ek/N < 1000*rms_error_traj**2)) # scaling to avoid numerical issues in fatrop
             
+            # TODO this is still needed because last sample is not included in the sum now
             # total_ek = ocp.state() # total sum of squared error
             # ocp.set_next(total_ek, total_ek)
             # ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
@@ -122,7 +128,7 @@ class OCP_calc_pos:
             ocp._method.set_name("/codegen/calculate_position")   
         else:
             ocp.method(rockit.MultipleShooting(N=N-1))
-            ocp.solver('ipopt', {'expand':True, 'ipopt.tol':1e-4,'ipopt.print_info_string':'yes', 'ipopt.max_iter':100,'ipopt.print_level':5, 'ipopt.ma57_automatic_scaling':'no', 'ipopt.linear_solver':'mumps'})
+            ocp.solver('ipopt', {'expand':True, 'ipopt.tol':tolerance,'ipopt.print_info_string':'yes', 'ipopt.max_iter':max_iter,'ipopt.print_level':print_level, 'ipopt.ma57_automatic_scaling':'no', 'ipopt.linear_solver':'mumps'})
         
         """ Encapsulate solver in a casadi function so that it can be easily reused """
 
@@ -135,9 +141,9 @@ class OCP_calc_pos:
 
         # Set Fatrop solver options (Q: why can this not be done before solving?)
         if fatrop_solver:
-            ocp._method.set_option("tol",1e-4)
-            ocp._method.set_option("print_level",5)
-            ocp._method.set_option("max_iter",500)
+            ocp._method.set_option("tol",tolerance)
+            ocp._method.set_option("print_level",print_level)
+            ocp._method.set_option("max_iter",max_iter)
         self.first_time = True
         
         # Encapsulate OCP specification in a casadi function after discretization (sampling)
