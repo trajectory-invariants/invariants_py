@@ -651,8 +651,8 @@ def animate_moving_frames(calc_trajectory, movingframes, length=0.075, skip_fram
         ax.quiver(p[0], p[1], p[2], R[0,1], R[1,1], R[2,1], color='g', length = length)
         ax.quiver(p[0], p[1], p[2], R[0,2], R[1,2], R[2,2], color='b', length = length)
 
-    ani = animation.FuncAnimation(fig, update_frame, frames=len(calc_trajectory), interval=100, repeat=True)
-    if save_animation:
-        ani.save(filename, writer='imagemagick', fps=60)
     if plt.get_backend() != 'agg':
+        ani = animation.FuncAnimation(fig, update_frame, frames=len(calc_trajectory), interval=100, repeat=True)
         plt.show()
+        if save_animation:
+            ani.save(filename, writer='imagemagick', fps=60)        
