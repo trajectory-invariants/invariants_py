@@ -5,8 +5,13 @@ from invariants_py import ocp_helper
 
 class OCP_calc_pos:
 
-    def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 10**-2, geometric = False, planar_task = False):
+    def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 10**-2, geometric = False, planar_task = False, solver_options = {}):
        
+        # Set solver options
+        tolerance = solver_options.get('tol',1e-4) # tolerance for the solver
+        max_iter = solver_options.get('max_iter',500) # maximum number of iterations
+        print_level = solver_options.get('print_level',5) # 5 prints info, 0 prints nothing
+
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
         
         #%% Decision variables and parameters
@@ -87,7 +92,7 @@ class OCP_calc_pos:
         opti.minimize(objective)
         opti.solver('ipopt',{"print_time":False,"expand":True},{
             #'gamma_theta':1e-12,
-            'max_iter':100,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
+            'max_iter':max_iter,'tol':tolerance,'print_level':print_level,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
         
         # Save variables
         self.R_t = R_t

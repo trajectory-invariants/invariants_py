@@ -25,7 +25,7 @@ from invariants_py.ocp_helper import check_solver
 from invariants_py.dynamics_vector_invariants import integrate_vector_invariants_position
 
 class OCP_calc_pos:
-
+    
     def __init__(self, window_len=100, rms_error_traj=10**-2, fatrop_solver=False, bool_unsigned_invariants=False, planar_task=False, solver_options = {}):
         """
         Initializes an instance of the RockitCalculateVectorInvariantsPosition class.
