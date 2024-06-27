@@ -59,12 +59,14 @@ class OCP_calc_rot:
         ocp.subject_to(ocp.at_t0(running_ek == 0))
         ocp.set_next(running_ek, running_ek + ek)
 
-        total_ek = ocp.state() # total sum of squared error
-        ocp.set_next(total_ek, total_ek)
-        ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
+        ocp.subject_to(ocp.at_tf(1000*running_ek/N < 1000*rms_error_traj**2))
+
+        # total_ek = ocp.state() # total sum of squared error
+        # ocp.set_next(total_ek, total_ek)
+        # ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
         
-        total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
-        ocp.subject_to(total_ek_scaled < 1)
+        # total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
+        # ocp.subject_to(total_ek_scaled < 1)
 
         # opti.subject_to(U[1,-1] == U[1,-2]); # Last sample has no impact on RMS error ##### HOW TO ACCESS U[1,-2] IN ROCKIT
 

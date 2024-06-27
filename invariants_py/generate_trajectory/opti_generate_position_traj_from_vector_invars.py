@@ -129,16 +129,16 @@ class OCP_gen_pos:
         
         # Initialize states
         for k in range(N):
-            self.opti.set_initial(self.R_t[k], initial_values["moving-frames"][k])
-            self.opti.set_initial(self.p_obj[k], initial_values["trajectory"][k])
+            self.opti.set_initial(self.R_t[k], initial_values["moving-frame"]["translational"][k])
+            self.opti.set_initial(self.p_obj[k], initial_values["trajectory"]["position"][k])
             
         # Initialize controls
         for k in range(N-1):    
             self.opti.set_initial(self.U[:,k], U_demo[k,:])
 
         # Set values boundary constraints
-        #self.opti.set_value(self.R_t_start,boundary_constraints["moving-frames"]["initial"])
-        #self.opti.set_value(self.R_t_end,boundary_constraints["moving-frames"]["final"])
+        #self.opti.set_value(self.R_t_start,boundary_constraints["moving-frame"]["translational"]["initial"])
+        #self.opti.set_value(self.R_t_end,boundary_constraints["moving-frame"]["translational"]["final"])
         self.opti.set_value(self.p_obj_start,boundary_constraints["position"]["initial"])
         self.opti.set_value(self.p_obj_end,boundary_constraints["position"]["final"])
                 
