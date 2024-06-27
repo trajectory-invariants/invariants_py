@@ -59,14 +59,15 @@ class OCP_calc_rot:
         ocp.subject_to(ocp.at_t0(running_ek == 0))
         ocp.set_next(running_ek, running_ek + ek)
 
-        ocp.subject_to(ocp.at_tf(1000*running_ek/N < 1000*rms_error_traj**2))
+        #ocp.subject_to(ocp.at_tf(10e4*running_ek/N < 10e4*rms_error_traj**2))
 
-        # total_ek = ocp.state() # total sum of squared error
-        # ocp.set_next(total_ek, total_ek)
-        # ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
+        total_ek = ocp.state() # total sum of squared error
+        ocp.set_next(total_ek, total_ek)
+        ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
         
-        # total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
-        # ocp.subject_to(total_ek_scaled < 1)
+        #total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
+        ocp.subject_to(total_ek/N < rms_error_traj**2) # scaled total error
+        #ocp.subject_to(total_ek_scaled < 1)
 
         # opti.subject_to(U[1,-1] == U[1,-2]); # Last sample has no impact on RMS error ##### HOW TO ACCESS U[1,-2] IN ROCKIT
 
@@ -158,8 +159,9 @@ if __name__ == "__main__":
     
     # Specify OCP symbolically
     N = np.size(measured_orientations,0)
-    OCP = OCP_calc_rot(window_len=N,fatrop_solver=False, rms_error_traj=10*pi/180)
+    OCP = OCP_calc_rot(window_len=N,fatrop_solver=True, rms_error_traj=1*pi/180)
 
     # Solve the OCP using the specified data
     calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_orientations, timestep)
     print(calc_invariants)
+
