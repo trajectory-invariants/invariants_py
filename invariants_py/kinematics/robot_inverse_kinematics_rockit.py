@@ -87,7 +87,7 @@ if __name__ == "__main__":
     trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
     pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
     N = 100
-    root_link_name = "base_link"
+    root_link_name = "world"
     tip_link_name = "TCP_frame"
     path_to_urdf = dh.find_data_path('robot/ur10.urdf')
     startpos = [0.3056, 0.0635, 0.441]
