@@ -155,14 +155,13 @@ boundary_constraints = {
 }
 
 # Define robot parameters
-urdf_file_name = 'ur10.urdf' # use None if do not want to include robot model
 robot_params = {
-    "urdf_file_name": urdf_file_name,
-    "joint_number": 6, # Number of joints
-    "home": [-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4] * np.ones((number_samples,6)), # Home position joint values
-    "q_lim": [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi], # Join limits
-    "root": 'base_link', # Name of the robot root
-    "tip": 'TCP_frame' # Name of the robot tip
+    "urdf_file_name": 'ur10.urdf', # use None if do not want to include robot model
+    "q_init": [-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4] * np.ones((number_samples,6)), # Initial joint values
+    "tip": 'TCP_frame' # Name of the robot tip (if empty standard 'tool0' is used)
+    # "joint_number": 6, # Number of joints (if empty it is automatically taken from urdf file)
+    # "q_lim": [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi], # Join limits (if empty it is automatically taken from urdf file)
+    # "root": 'world', # Name of the robot root (if empty it is automatically taken from urdf file)
 }
 
 # specify optimization problem symbolically
@@ -178,7 +177,7 @@ initial_values = {
         "rotational": R_r_init_array,
     },
     "invariants": model_invariants,
-    "joint-values": robot_params["home"] if urdf_file_name is not None else {}
+    "joint-values": robot_params["q_init"] if robot_params["urdf_file_name"] is not None else {}
 }
 
 # Define OCP weights
