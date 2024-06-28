@@ -164,21 +164,25 @@ class OCP_gen_pose:
         # Solve already once with dummy values for code generation (TODO: can this step be avoided somehow?)
         ocp.set_initial(R_t, np.eye(3))
         ocp.set_initial(R_r, np.eye(3))
-        ocp.set_initial(p_obj, np.array([0, 0, 0]))
         ocp.set_initial(R_obj, np.eye(3))
         ocp.set_initial(invars, np.array([1,0.01,0.01,0.001,0.001,0.001])) #i_r1,i_r2,i_r3,i_t1,i_t2,i_t3
         ocp.set_value(invars_demo, 0.001+np.zeros((6,window_len)))
         ocp.set_value(w_invars, 0.001+np.zeros((6,window_len)))
-        ocp.set_value(h, 0.01)
+        ocp.set_value(h, 0.1)
         if include_robot_model:
+            p_obj_dummy, _ = robot_forward_kinematics(q_init[0],path_to_urdf,root,tip)
             ocp.set_initial(q,q_init) 
             ocp.set_initial(qdot, 0.001*np.ones((nb_joints,window_len-1)))
             ocp.set_value(q_lim,q_limits)
+        else:
+            p_obj_dummy = np.array([0, 0, 0])
+        ocp.set_initial(p_obj, p_obj_dummy)
+
         # Boundary constraints
         if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:
-            ocp.set_value(p_obj_start, np.array([0,0,0]))
+            ocp.set_value(p_obj_start, p_obj_dummy)
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
-            ocp.set_value(p_obj_end, np.array([0.01,0,0]))
+            ocp.set_value(p_obj_end, p_obj_dummy + np.array([0.01,0,0]))
         if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
             ocp.set_value(R_obj_start, np.eye(3))
         if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
