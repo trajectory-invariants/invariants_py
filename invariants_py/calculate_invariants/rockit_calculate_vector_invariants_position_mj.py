@@ -8,8 +8,13 @@ from invariants_py.ocp_helper import check_solver
 
 class OCP_calc_pos:
 
-    def __init__(self, nb_samples = 100, w_pos = 1, w_regul_jerk = 10**-6 , w_regul_invars = 10**-10, fatrop_solver = False, planar_task = False):
+    def __init__(self, window_len = 100, w_pos = 1, w_regul_jerk = 10**-6 , bool_unsigned_invariants = False, w_regul_invars = 10**-10, fatrop_solver = False, planar_task = False, solver_options = {}):
         fatrop_solver = check_solver(fatrop_solver)               
+
+        # Set solver options
+        tolerance = solver_options.get('tol',1e-4) # tolerance for the solver
+        max_iter = solver_options.get('max_iter',500) # maximum number of iterations
+        print_level = solver_options.get('print_level',5) # 5 prints info, 0 prints nothing
 
         #%% Decision variables and parameters for the optimization problem 
         self.ocp = rockit.Ocp(T=1.0)        
@@ -61,8 +66,13 @@ class OCP_calc_pos:
             # a . b < 0 -> a and b are pointing in the opposite direction 
             self.ocp.subject_to(cas.dot( self.R_t_z , np.array([0,0,1]) ) > 0)  
 
+        # Lower bounds on controls
+        if bool_unsigned_invariants:
+            self.ocp.subject_to(self.i1 >= 0) # velocity always positive
+            #ocp.subject_to(invars[1,:]>=0) # curvature rate always positive
+
         #%% Objective function
-        self.N_controls = nb_samples-1
+        self.N_controls = window_len-1
 
         # Term 1: Measurement fitting constraint
         obj_fit = self.ocp.sum(1/self.N_controls*w_pos*cas.dot(self.p_obj-self.p_obj_m,self.p_obj-self.p_obj_m))
@@ -88,11 +98,11 @@ class OCP_calc_pos:
         else:
             self.ocp.method(rockit.MultipleShooting(N=self.N_controls))
             #ocp.solver('ipopt', {'expand':True})
-            silent_ipopt_options = {"print_time":False,"expand":True,"ipopt.print_level":0,'ipopt.max_iter':200,'ipopt.tol':1e-8}
+            silent_ipopt_options = {"print_time":False,"expand":True,"ipopt.print_level":print_level,'ipopt.max_iter':max_iter,'ipopt.tol':tolerance}
             self.ocp.solver('ipopt', silent_ipopt_options)
         
         # Solve already once with dummy measurements
-        self.initialize_solver(nb_samples)
+        self.initialize_solver(window_len)
         if fatrop_solver:
             self.ocp._method.set_option("print_level",0)
             self.ocp._method.set_option("tol",1e-12)
@@ -143,7 +153,7 @@ class OCP_calc_pos:
         self.ocp.set_value(self.h,1)
         self.ocp.solve_limited()
         
-    def calculate_invariants_online(self,measured_positions,stepsize,window_step=1):
+    def calculate_invariants(self,measured_positions,stepsize,window_step=1):
         #%%
         use_previous_solution = False 
         # ---> Added by Arno, it might not be the best way to always use the previous solution as initialisation for the next window. 
@@ -338,7 +348,7 @@ if __name__ == "__main__":
     stepsize = t[1]-t[0]
 
     # Test the functionalities of the class
-    OCP = OCP_calc_pos(nb_samples=N, fatrop_solver=True)
+    OCP = OCP_calc_pos(window_len=N, fatrop_solver=True)
 
     # Call the calculate_invariants_global function and measure the elapsed time
     #start_time = time.time()

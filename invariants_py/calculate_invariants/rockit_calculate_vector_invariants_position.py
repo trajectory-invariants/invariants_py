@@ -98,7 +98,7 @@ class OCP_calc_pos:
             ocp.set_next(total_ek, total_ek)
             ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
             # total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
-            ocp.subject_to(total_ek/N < rms_error_traj**2)
+            ocp.subject_to(1000*total_ek/N < 1000*rms_error_traj**2)
             #total_ek_scaled = running_ek/N/rms_error_traj**2 # scaled total error
             #ocp.subject_to(ocp.at_tf(total_ek_scaled < 1))
             
