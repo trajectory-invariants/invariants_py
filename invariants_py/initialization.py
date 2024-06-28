@@ -207,3 +207,27 @@ def initialize_VI_rot(input_trajectory):
     invars = np.vstack((1e0*np.ones((1,N-1)),1e-1*np.ones((1,N-1)), 1e-12*np.ones((1,N-1))))
 
     return [invars, R_obj, R_r], measured_orientation
+
+def initialize_VI_rot2(measured_orientation):
+
+    N = np.size(measured_orientation,0)
+    Rdiff = calculate_velocity_from_discrete_rotations(measured_orientation,timestamps=np.arange(N))
+
+    print(Rdiff)
+
+    [ex,ey,ez] = estimate_initial_frames(Rdiff)
+
+    # R_t_init = np.zeros((9,N))
+    # for i in range(N):
+    #     R_t_init[:,i] = np.hstack([ex[i,:],ey[i,:],ez[i,:]])   
+
+
+    R_r = np.zeros((9,N))
+    R_obj = np.zeros((9,N))
+    for i in range(N):
+        R_r[:,i] = np.hstack([ex[i,:],ey[i,:],ez[i,:]])  
+        R_obj[:,i] =  np.hstack([measured_orientation[i,:,0],measured_orientation[i,:,1],measured_orientation[i,:,2]])
+
+    invars = np.vstack((1e0*np.ones((1,N-1)),1e-1*np.ones((1,N-1)), 1e-12*np.ones((1,N-1))))
+
+    return [invars, R_obj, R_r]

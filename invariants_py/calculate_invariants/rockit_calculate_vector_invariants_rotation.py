@@ -5,7 +5,7 @@ import casadi as cas
 import rockit
 from invariants_py.dynamics_vector_invariants import integrate_vector_invariants_rotation
 import invariants_py.kinematics.orientation_kinematics as SO3
-from invariants_py.initialization import initialize_VI_rot
+from invariants_py.initialization import initialize_VI_rot2
 from invariants_py.ocp_helper import check_solver, tril_vec
 
 class OCP_calc_rot:
@@ -57,18 +57,23 @@ class OCP_calc_rot:
         # Measurement fitting constraint
         ek = cas.dot(R_obj_m.T @ R_obj - np.eye(3), R_obj_m.T @ R_obj - np.eye(3)) # squared rotation error
         
-        running_ek = ocp.state() # running sum of squared error
-        ocp.subject_to(ocp.at_t0(running_ek == 0))
-        ocp.set_next(running_ek, running_ek + ek)
-        #ocp.subject_to(ocp.at_tf(1000*running_ek/N < 1000*rms_error_traj**2))
+        if not fatrop_solver:
+            # sum of squared position errors in the window should be less than the specified tolerance rms_error_traj
+            total_ek = ocp.sum(ek,grid='control',include_last=True)
+            ocp.subject_to(total_ek/N < rms_error_traj**2)
+        else:
+            running_ek = ocp.state() # running sum of squared error
+            ocp.subject_to(ocp.at_t0(running_ek == 0))
+            ocp.set_next(running_ek, running_ek + ek)
+            #ocp.subject_to(ocp.at_tf(1000*running_ek/N < 1000*rms_error_traj**2))
 
-        total_ek = ocp.state() # total sum of squared error
-        ocp.set_next(total_ek, total_ek)
-        ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
-        
-        # #total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
-        ocp.subject_to(1000*total_ek/N < 1000*rms_error_traj**2) # scaled total error
-        # #ocp.subject_to(total_ek_scaled < 1)
+            total_ek = ocp.state() # total sum of squared error
+            ocp.set_next(total_ek, total_ek)
+            ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
+            
+            # #total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
+            ocp.subject_to(1000*total_ek/N < 1000*rms_error_traj**2) # scaled total error
+            # #ocp.subject_to(total_ek_scaled < 1)
 
         #%% Specifying the objective
 
@@ -82,26 +87,19 @@ class OCP_calc_rot:
         if fatrop_solver:
             ocp.method(rockit.external_method('fatrop', N=N-1))
             ocp._method.set_name("/codegen/rotation") # pick a unique name when using multiple OCP specifications in the same script
-            # self.ocp._transcribe()
-            # self.ocp._method.set_option("iterative_refinement", False)
-            # self.ocp._method.set_option("tol", 1e-8)
+            self.ocp._transcribe()
+            self.ocp._method.set_option("iterative_refinement", False)
         else:
             ocp.method(rockit.MultipleShooting(N=N-1))
-            ocp.solver('ipopt', {'expand':True})
-            # ocp.solver('ipopt',{"print_time":True,"expand":True},{'gamma_theta':1e-12,'max_iter':200,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
+            #ocp.solver('ipopt', {'expand':True})
+            ocp.solver('ipopt',{"print_time":True,"expand":False,'ipopt.gamma_theta':1e-12,'ipopt.max_iter':max_iter,'ipopt.tol':tolerance,'ipopt.print_level':print_level,'ipopt.ma57_automatic_scaling':'no','ipopt.linear_solver':'mumps'})
         
         # Solve already once with dummy values for code generation (TODO: can this step be avoided somehow?)
         ocp.set_initial(R_r, np.eye(3))
+        ocp.set_initial(R_obj, np.eye(3))
         ocp.set_initial(invars, np.array([1,0.01,0.01]))
-        # ocp.set_initial(R_obj, np.eye(3))
-        ocp.set_value(R_obj_m, np.eye(3))
-        #ocp.set_value(R_obj_m_y, np.tile(np.array([0,1,0]), (N,1)).T)
-        #ocp.set_value(R_obj_m_z, np.tile(np.array([0,0,1]), (N,1)).T)
-        # eye = np.zeros((3,3*N))
-        # for i in range(N-1):
-        #     eye[:,3*i:3*(i+1)] = np.array([np.array([1,0,0]),np.array([0,1,0]),np.array([0,0,1])]) 
-        # ocp.set_value(R_obj_m, eye)
-        ocp.set_value(h, 0.01)
+        ocp.set_value(R_obj_m_vec, np.tile(cas.vec(np.eye(3)), (1,N)))
+        ocp.set_value(h, 0.001)
         ocp.solve_limited() # code generation
 
         # Set solver options (TODO: why can this not be done before solving?)
@@ -112,9 +110,6 @@ class OCP_calc_rot:
         self.first_time = True
         
         # Encapsulate whole rockit specification in a casadi function
-        # R_obj_m_sampled = ocp.sample(R_obj_m, grid='control')[1] # sampled measured object orientation (first axis)
-        #R_obj_m_x_sampled = ocp.sample(R_obj_m_x, grid='control')[1] # sampled measured object orientation (first axis)
-        #R_obj_m_y_sampled = ocp.sample(R_obj_m_y, grid='control')[1] # sampled measured object orientation (second axis)
         R_obj_m_vec_sampled = ocp.sample(R_obj_m_vec, grid='control')[1] # sampled measured object orientation (third axis)
         h_value = ocp.value(h) # value of stepsize
         solution = [ocp.sample(invars, grid='control-')[1],
@@ -125,27 +120,27 @@ class OCP_calc_rot:
         self.ocp_function = self.ocp.to_function('ocp_function', 
             [R_obj_m_vec_sampled,h_value,*solution], # inputs
             [*solution], # outputs
-            ["R_obj_m_x","R_obj_m_y","R_obj_m_z","h","invars1","R_obj1","R_r1"], # input labels for debugging
+            ["R_obj_m","h","invars1","R_obj1","R_r1"], # input labels for debugging
             ["invars2","R_obj2","R_r2"], # output labels for debugging
         )
 
-    def calculate_invariants(self,measured_rotations,stepsize): 
+    def calculate_invariants(self,R_meas,stepsize): 
 
-        if measured_rotations.shape[1] == 3:
-            measured_rotations = measured_rotations
-        else:
-            measured_rotations = measured_rotations[:,:3,:3]
+        if not R_meas.shape[1] == 3:
+            R_meas = R_meas[:,:3,:3]
 
         # Check if this is the first function call
         if self.first_time:
             # Initialize states and controls using measurements
-            self.solution = initialize_VI_rot(measured_rotations)
+            self.solution = initialize_VI_rot2(R_meas)
             self.first_time = False
 
-        measured_orientations = [measured_rotations[:,:,0].T,measured_rotations[:,:,1].T,measured_rotations[:,:,2].T]
+        R_t_init = np.zeros((9,N))
+        for i in range(N):
+            R_t_init[:,i] = np.hstack([R_meas[i,:,0],R_meas[i,:,1],R_meas[i,:,2]])   
 
         # Solve the optimization problem for the given measurements starting from previous solution
-        self.solution = self.ocp_function(*measured_orientations, stepsize, *self.solution)
+        self.solution = self.ocp_function(R_t_init, stepsize, *self.solution)
 
         # Return the results    
         invars, R_obj_sol, R_r_sol  = self.solution # unpack the results            
@@ -158,15 +153,28 @@ class OCP_calc_rot:
 
 if __name__ == "__main__":
 
-    # Test data
-    measured_orientations = SO3.random_traj(N=100) # TODO replace with something more realistic, now it will sometimes fail
-    timestep = 0.1
-    
-    # Specify OCP symbolically
-    N = np.size(measured_orientations,0)
-    OCP = OCP_calc_rot(window_len=N,fatrop_solver=True, rms_error_traj=1*pi/180)
+    from invariants_py.reparameterization import interpR
 
-    # Solve the OCP using the specified data
-    #calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_orientations, timestep)
-    #print(calc_invariants)
+    # Test data    
+    R_start = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])  # Rotation matrix 1
+    R_mid = np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])  # Rotation matrix 3
+    R_end = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])  # Rotation matrix 2
+
+    # Interpolate between R_start and R_end
+    measured_orientations = interpR(np.linspace(0, 1, 100), np.array([0,0.8,1]), np.stack([R_start, R_mid, R_end],0))
+    timestep = 0.001
+    
+
+    # TODO fix problem with logm theta=pi
+    print((np.array([R_start,R_mid,R_end])))
+    
+    print(measured_orientations)
+
+    # # Specify OCP symbolically
+    # N = np.size(measured_orientations,0)
+    # OCP = OCP_calc_rot(window_len=N,fatrop_solver=False, rms_error_traj=1*pi/180)
+
+    # # Solve the OCP using the specified data
+    # calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_orientations, timestep)
+    # #print(calc_invariants)
 
