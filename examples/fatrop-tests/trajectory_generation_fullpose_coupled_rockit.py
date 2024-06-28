@@ -20,6 +20,7 @@ import invariants_py.plotting_functions.plotters as pl
 import invariants_py.collision_detection_bottle as cd
 from invariants_py.reparameterization import interpR
 from invariants_py.initialization import FSr_init
+import random
 
 #%%
 data_location = dh.find_data_path('beer_1.txt')
@@ -155,14 +156,13 @@ boundary_constraints = {
 }
 
 # Define robot parameters
-urdf_file_name = 'ur10.urdf' # use None if do not want to include robot model
 robot_params = {
-    "urdf_file_name": urdf_file_name,
-    "joint_number": 6, # Number of joints
-    "home": [-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4] * np.ones((number_samples,6)), # Home position joint values
-    "q_lim": [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi], # Join limits
-    "root": 'base_link', # Name of the robot root
-    "tip": 'TCP_frame' # Name of the robot tip
+    "urdf_file_name": 'ur10.urdf', # use None if do not want to include robot model
+    "q_init": [-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4] * np.ones((number_samples,6)), # Initial joint values
+    "tip": 'TCP_frame' # Name of the robot tip (if empty standard 'tool0' is used)
+    # "joint_number": 6, # Number of joints (if empty it is automatically taken from urdf file)
+    # "q_lim": [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi], # Join limits (if empty it is automatically taken from urdf file)
+    # "root": 'world', # Name of the robot root (if empty it is automatically taken from urdf file)
 }
 
 # specify optimization problem symbolically
@@ -178,7 +178,7 @@ initial_values = {
         "rotational": R_r_init_array,
     },
     "invariants": model_invariants,
-    "joint-values": robot_params["home"] if urdf_file_name is not None else {}
+    "joint-values": robot_params["q_init"] if robot_params["urdf_file_name"] is not None else {}
 }
 
 # Define OCP weights
@@ -262,87 +262,87 @@ if plt.get_backend() != 'agg':
 
 # # Generation of multiple trajectories to test FATROP calculation speed
 
-# current_progress = 0
-# number_samples = 100
-# number_of_trajectories = 100
+current_progress = 0
+number_samples = 100
+number_of_trajectories = 100
 
-# progress_values = np.linspace(current_progress, arclength_n[-1], number_samples)
-# model_invariants,new_stepsize = interpolate_model_invariants(spline_model_trajectory,progress_values)
+progress_values = np.linspace(current_progress, arclength_n[-1], number_samples)
+model_invariants,new_stepsize = interpolate_model_invariants(spline_model_trajectory,progress_values)
 
-# # pl.plot_interpolated_invariants(optim_calc_results.invariants, model_invariants, arclength_n, progress_values)
+# pl.plot_interpolated_invariants(optim_calc_results.invariants, model_invariants, arclength_n, progress_values)
 
-# # new constraints
-# current_index = round(current_progress*len(trajectory))
-# p_obj_start = optim_calc_results.Obj_pos[current_index]
-# R_obj_start = orthonormalize(optim_calc_results.Obj_frames[current_index])
-# FSt_start = orthonormalize(optim_calc_results.FSt_frames[current_index])
-# FSr_start = orthonormalize(optim_calc_results.FSr_frames[current_index])
-# FSt_end = orthonormalize(optim_calc_results.FSt_frames[-1])
-# FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
+# new constraints
+current_index = round(current_progress*len(trajectory))
+boundary_constraints["position"]["initial"] = optim_calc_results.Obj_pos[current_index]
+boundary_constraints["orientation"]["initial"] = orthonormalize(optim_calc_results.Obj_frames[current_index])
+boundary_constraints["moving-frame"]["translational"]["initial"] = orthonormalize(optim_calc_results.FSt_frames[current_index])
+boundary_constraints["moving-frame"]["rotational"]["initial"] = orthonormalize(optim_calc_results.FSr_frames[current_index])
+boundary_constraints["moving-frame"]["translational"]["final"] = orthonormalize(optim_calc_results.FSt_frames[-1])
+boundary_constraints["moving-frame"]["rotational"]["final"] = orthonormalize(optim_calc_results.FSr_frames[-1])
 
-# # define new class for OCP results
-# optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
+# define new class for OCP results
+optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
 
-# # specify optimization problem symbolically
-# FS_online_generation_problem = OCP_gen_pose_jointlim(path_to_urdf = path_to_urdf, tip = 'TCP_frame', window_len=number_samples, fatrop_solver = use_fatrop_solver)
+# specify optimization problem symbolically
+# FS_online_generation_problem = OCP_gen_pose(boundary_constraints, number_samples, use_fatrop_solver, robot_params)
 
-# fig = plt.figure(figsize=(14,8))
-# ax = fig.add_subplot(111, projection='3d')
-# ax.plot(optim_calc_results.Obj_pos[:,0],optim_calc_results.Obj_pos[:,1],optim_calc_results.Obj_pos[:,2],'b')
+fig = plt.figure(figsize=(14,8))
+ax = fig.add_subplot(111, projection='3d')
+ax.plot(optim_calc_results.Obj_pos[:,0],optim_calc_results.Obj_pos[:,1],optim_calc_results.Obj_pos[:,2],'b')
 
-# total_time = 0
-# counter = 0
-# max_time = 0
-# targets = np.zeros((number_of_trajectories,4))
-# for k in range(len(targets)):
-# # for x in range(-2,3):
-#     # for y in range(-2,3):
-#         # p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([0.05*x,0.05*y,0])
-#     targets[k,:-1] = optim_calc_results.Obj_pos[-1] + np.array([random.uniform(-0.2,0.2),random.uniform(-0.2,0.2),random.uniform(-0.05,0.05)])
-#     targets[k,-1] = random.uniform(0,30)
-#     p_obj_end = targets[k,:-1]
-#     rotate = R.from_euler('z', targets[k,-1], degrees=True)
-#     R_obj_end =  orthonormalize(rotate.apply(optim_calc_results.Obj_frames[-1]))
+total_time = 0
+counter = 0
+max_time = 0
+targets = np.zeros((number_of_trajectories,4))
+for k in range(len(targets)):
+# for x in range(-2,3):
+    # for y in range(-2,3):
+        # p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([0.05*x,0.05*y,0])
+    targets[k,:-1] = optim_calc_results.Obj_pos[-1] + np.array([random.uniform(-0.2,0.2),random.uniform(-0.1,0.3),random.uniform(-0.05,0.05)])
+    targets[k,-1] = random.uniform(0,30)
+    boundary_constraints["position"]["final"] = targets[k,:-1]
+    rotate = R.from_euler('z', targets[k,-1], degrees=True)
+    boundary_constraints["orientation"]["final"]=  orthonormalize(rotate.apply(optim_calc_results.Obj_frames[-1]))
     
-#     # Solve
-#     optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, tot_time, joint_values = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = optim_calc_results.Obj_pos, R_obj_init = R_obj_init, R_t_init = optim_calc_results.FSt_frames, R_r_init = R_r_init_array, q_init = q_init, q_lim = q_joint_lim, R_t_start = FSt_start, R_r_start = R_r_init, R_t_end = FSt_end, R_r_end = R_r_init, p_obj_start = p_obj_start, R_obj_start = R_obj_start, p_obj_end = p_obj_end, R_obj_end = R_obj_end, step_size = new_stepsize, w_high_start = w_high_start, w_high_end = w_high_end, w_high_invars = w_invars_high, w_invars = w_invars, w_high_active = w_high_active)
+    # Solve
+    optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, tot_time, joint_values = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values)
+
+    for i in range(len(optim_gen_results.Obj_frames)):
+        optim_gen_results.Obj_frames[i] = orthonormalize(optim_gen_results.Obj_frames[i])
+
+    ax.plot(optim_gen_results.Obj_pos[:,0],optim_gen_results.Obj_pos[:,1],optim_gen_results.Obj_pos[:,2],'r')
+
+    # indx_online = np.trunc(np.linspace(0,len(optim_gen_results.Obj_pos)-1,n_frames))
+    # indx_online = indx_online.astype(int)
+    # for i in indx_online:
+    #     pl.plot_3d_frame(optim_calc_results.Obj_pos[i,:],optim_calc_results.Obj_frames[i,:,:],1,0.01,['red','green','blue'],ax)
+    #     pl.plot_3d_frame(optim_gen_results.Obj_pos[i,:],optim_gen_results.Obj_frames[i,:,:],1,0.01,['red','green','blue'],ax)
+        # pl.plot_stl(opener_location,optim_gen_results.Obj_pos[i,:],optim_gen_results.Obj_frames[i,:,:],colour="r",alpha=0.2,ax=ax)
+    if use_fatrop_solver:
+        new_time = tot_time
+        if new_time > max_time:
+            max_time = new_time
+        total_time += new_time
     
-#     for i in range(len(optim_gen_results.Obj_frames)):
-#         optim_gen_results.Obj_frames[i] = orthonormalize(optim_gen_results.Obj_frames[i])
+    counter += 1
+    # plt.show(block=False)
+if use_fatrop_solver:
+    print('')
+    print("AVERAGE time to generate new trajectory: ")
+    print(str(total_time/counter) + "[s]") # last time average was 80ms
+    print('')
+    print("MAXIMUM time to generate new trajectory: ")
+    print(str(max_time) + "[s]") # last time maximum was 156ms
 
-#     ax.plot(optim_gen_results.Obj_pos[:,0],optim_gen_results.Obj_pos[:,1],optim_gen_results.Obj_pos[:,2],'r')
+# fig = plt.figure(figsize=(10,6))
+# ax1 = fig.add_subplot(111, projection='3d')
+# ax1 = plt.axes(projection='3d')
+# ax1.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,2],'b')
+# ax1.plot(targets[:,0],targets[:,1],targets[:,2],'r.')
 
-#     # indx_online = np.trunc(np.linspace(0,len(optim_gen_results.Obj_pos)-1,n_frames))
-#     # indx_online = indx_online.astype(int)
-#     # for i in indx_online:
-#     #     pl.plot_3d_frame(optim_calc_results.Obj_pos[i,:],optim_calc_results.Obj_frames[i,:,:],1,0.01,['red','green','blue'],ax)
-#     #     pl.plot_3d_frame(optim_gen_results.Obj_pos[i,:],optim_gen_results.Obj_frames[i,:,:],1,0.01,['red','green','blue'],ax)
-#         # pl.plot_stl(opener_location,optim_gen_results.Obj_pos[i,:],optim_gen_results.Obj_frames[i,:,:],colour="r",alpha=0.2,ax=ax)
-#     if use_fatrop_solver:
-#         new_time = tot_time
-#         if new_time > max_time:
-#             max_time = new_time
-#         total_time += new_time
-    
-#     counter += 1
-#     # plt.show(block=False)
-# if use_fatrop_solver:
-#     print('')
-#     print("AVERAGE time to generate new trajectory: ")
-#     print(str(total_time/counter) + "[s]") # last time average was 80ms
-#     print('')
-#     print("MAXIMUM time to generate new trajectory: ")
-#     print(str(max_time) + "[s]") # last time maximum was 156ms
+fig = plt.figure(figsize=(5,5))
+ax2 = fig.add_subplot()
+ax2.plot(targets[:,-1],'r.')
 
-# # fig = plt.figure(figsize=(10,6))
-# # ax1 = fig.add_subplot(111, projection='3d')
-# # ax1 = plt.axes(projection='3d')
-# # ax1.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,2],'b')
-# # ax1.plot(targets[:,0],targets[:,1],targets[:,2],'r.')
-
-# fig = plt.figure(figsize=(5,5))
-# ax2 = fig.add_subplot()
-# ax2.plot(targets[:,-1],'r.')
-
-# if plt.get_backend() != 'agg':
-#    plt.show()
+if plt.get_backend() != 'agg':
+   plt.show()

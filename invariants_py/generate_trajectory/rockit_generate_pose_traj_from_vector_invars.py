@@ -14,6 +14,7 @@ from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag, d
 from invariants_py.kinematics.orientation_kinematics import rotate_x
 from invariants_py.initialization import generate_initvals_from_constraints
 import invariants_py.data_handler as dh
+import yourdfpy as urdf
 
 class OCP_gen_pose:
 
@@ -26,11 +27,12 @@ class OCP_gen_pose:
         path_to_urdf = dh.find_robot_path(urdf_file_name) 
         include_robot_model = True if path_to_urdf is not None else False
         if include_robot_model:
-            nb_joints = robot_params.get('join_number', 6)
-            home = robot_params.get('home', np.zeros(nb_joints))
-            q_limits = robot_params.get('q_lim', 2*np.pi*np.ones(nb_joints))
-            root = robot_params.get('root', 'base_link')
+            robot = urdf.URDF.load(path_to_urdf)
+            nb_joints = robot_params.get('joint_number', robot.num_actuated_joints)
+            q_limits = robot_params.get('q_lim', [robot._actuated_joints[i].limit.upper for i in range(robot.num_actuated_joints)])
+            root = robot_params.get('root', robot.base_link)
             tip = robot_params.get('tip', 'tool0')
+            q_init = robot_params.get('q_init', np.zeros(nb_joints))
 
         #%% Create decision variables and parameters for the optimization problem
         
@@ -162,21 +164,25 @@ class OCP_gen_pose:
         # Solve already once with dummy values for code generation (TODO: can this step be avoided somehow?)
         ocp.set_initial(R_t, np.eye(3))
         ocp.set_initial(R_r, np.eye(3))
-        ocp.set_initial(p_obj, np.array([0, 0, 0]))
         ocp.set_initial(R_obj, np.eye(3))
         ocp.set_initial(invars, np.array([1,0.01,0.01,0.001,0.001,0.001])) #i_r1,i_r2,i_r3,i_t1,i_t2,i_t3
         ocp.set_value(invars_demo, 0.001+np.zeros((6,window_len)))
         ocp.set_value(w_invars, 0.001+np.zeros((6,window_len)))
-        ocp.set_value(h, 0.01)
+        ocp.set_value(h, 0.1)
         if include_robot_model:
-            ocp.set_initial(q,home) 
+            p_obj_dummy, _ = robot_forward_kinematics(q_init[0],path_to_urdf,root,tip)
+            ocp.set_initial(q,q_init) 
             ocp.set_initial(qdot, 0.001*np.ones((nb_joints,window_len-1)))
             ocp.set_value(q_lim,q_limits)
+        else:
+            p_obj_dummy = np.array([0, 0, 0])
+        ocp.set_initial(p_obj, p_obj_dummy)
+
         # Boundary constraints
         if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:
-            ocp.set_value(p_obj_start, np.array([0,0,0]))
+            ocp.set_value(p_obj_start, p_obj_dummy)
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
-            ocp.set_value(p_obj_end, np.array([0.01,0,0]))
+            ocp.set_value(p_obj_end, p_obj_dummy + np.array([0.01,0,0]))
         if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
             ocp.set_value(R_obj_start, np.eye(3))
         if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
@@ -293,7 +299,7 @@ class OCP_gen_pose:
             self.nb_joints = nb_joints
             self.q = q
             self.qdot = qdot
-            self.home = home
+            self.q_init = q_init
             self.q_lim = q_limits
 
     def generate_trajectory(self, invariant_model, boundary_constraints, step_size, weights_params = {}, initial_values = {}):
@@ -328,7 +334,7 @@ class OCP_gen_pose:
                         boundary_values_list.append(value)
 
         if self.first_window and not initial_values:
-            self.solution = generate_initvals_from_constraints(boundary_constraints, np.size(invariant_model,0), q_init = self.home if self.include_robot_model else None)
+            self.solution = generate_initvals_from_constraints(boundary_constraints, np.size(invariant_model,0), q_init = self.q_init if self.include_robot_model else None)
             self.first_window = False
         elif self.first_window:
             self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["trajectory"]["position"][:N,:].T, initial_values["moving-frame"]["translational"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["moving-frame"]["rotational"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["trajectory"]["orientation"][:N].T.transpose(1,2,0).reshape(3,3*N)]
