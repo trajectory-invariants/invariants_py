@@ -12,8 +12,7 @@ import invariants_py.dynamics_vector_invariants as dynamics
 from invariants_py.kinematics.robot_forward_kinematics import robot_forward_kinematics
 from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag, diffR, diag
 from invariants_py.kinematics.orientation_kinematics import rotate_x
-from invariants_py.initialization import generate_initvals_from_bounds
-from invariants_py.initialization import generate_initvals_from_bounds_rot
+from invariants_py.initialization import generate_initvals_from_constraints
 import invariants_py.data_handler as dh
 
 class OCP_gen_pose:
@@ -329,13 +328,7 @@ class OCP_gen_pose:
                         boundary_values_list.append(value)
 
         if self.first_window and not initial_values:
-            solution_pos,initvals_dict = generate_initvals_from_bounds(boundary_constraints, np.size(invariant_model,0))
-            solution_rot = generate_initvals_from_bounds_rot(boundary_constraints, np.size(invariant_model,0))
-            solution = [np.vstack((solution_rot[0],solution_pos[0]))] + solution_pos[1:] + solution_rot[1:] # concatenate invariants and combine lists
-            self.solution = solution
-            if self.include_robot_model:
-                default_q_init = self.home.T
-                self.solution.append(default_q_init)
+            self.solution = generate_initvals_from_constraints(boundary_constraints, np.size(invariant_model,0), q_init = self.home if self.include_robot_model else None)
             self.first_window = False
         elif self.first_window:
             self.solution = [initial_values["invariants"][:N-1,:].T, initial_values["trajectory"]["position"][:N,:].T, initial_values["moving-frame"]["translational"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["moving-frame"]["rotational"][:N].T.transpose(1,2,0).reshape(3,3*N), initial_values["trajectory"]["orientation"][:N].T.transpose(1,2,0).reshape(3,3*N)]

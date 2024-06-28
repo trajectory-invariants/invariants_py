@@ -22,76 +22,75 @@ def FSr_init(R_obj_start,R_obj_end,N=100):
 
     return R_r_init, R_r_init_array, U_init
 
-def generate_initvals_from_bounds(boundary_constraints,N):
+def generate_initvals_from_constraints(boundary_constraints,N, skip = {}, q_init = None):
+    solution_pos = None
+    solution_rot = None
+
+    if "position" in boundary_constraints and "position" not in skip:
+        # Generate initial trajectory using linear interpolation
+        p1 = boundary_constraints["position"]["final"]
+        p0 = boundary_constraints["position"]["initial"]
+        initial_trajectory = np.linspace(p0, p1, N).T
+
+        # Generate corresponding initial invariants
+        diff_vector = np.array(p1) - np.array(p0)
+        L = np.linalg.norm(diff_vector)
+        initial_invariants = np.tile(np.array([[L],[0.0001],[0.0001]]),(1,N-1))
+
+        # Generate corresponding initial moving frames using Gram-Schmidt process
+        e_x = diff_vector / L
+        e_y = np.array([0, 1, 0]) - np.dot(np.array([0, 1, 0]), e_x) * e_x
+        e_y = e_y / np.linalg.norm(e_y)
+        e_z = np.cross(e_x, e_y)
+        R_mf = np.column_stack((e_x, e_y, e_z))
+        initial_movingframes = np.tile(R_mf, (N,1,1))
+
+        initial_values = {
+            "trajectory": {
+                "position": initial_trajectory.T
+            },
+            "moving-frame": {
+                "translational": initial_movingframes
+            },
+            "invariants": {
+                "translational": initial_invariants
+            }
+        }
+
+        R_t_sol = np.zeros((3,3*N))
+        for i in range(N):
+            R_t_sol[:,3*i:3*(i+1)] = np.array([e_x,e_y,e_z]) 
+
+        solution_pos = [initial_invariants, initial_trajectory, R_t_sol]
+
+    if "orientation" in boundary_constraints and "orientation" not in skip:
+        R0 = boundary_constraints["orientation"]["initial"]
+        R1 = boundary_constraints["orientation"]["final"]
+        # Linear initialization
+        initial_trajectory = interpR(np.linspace(0, 1, N), [0,1], np.array([R0, R1]))
+
+        _, R_r, initial_invariants = FSr_init(R0, R1, N)
+        
+        R_r_sol = np.zeros((3,3*N))
+        R_obj_sol = np.zeros((3,3*N))
+        for i in range(N):
+            R_r_sol[:,3*i:3*(i+1)] = np.array([R_r[i,0],R_r[i,1],R_r[i,2]]) 
+            R_obj_sol[:,3*i:3*(i+1)] = np.array([initial_trajectory[i,0],initial_trajectory[i,1],initial_trajectory[i,2]]) 
+
+        solution_rot = [initial_invariants.T, R_r_sol, R_obj_sol]
+  
+    if solution_pos is not None:
+        if solution_rot is not None:
+            solution = [np.vstack((solution_rot[0],solution_pos[0]))] + solution_pos[1:] + solution_rot[1:] # concatenate invariants and combine lists
+        else:
+            solution = [solution_pos,initial_values]
+    else:
+        solution = solution_rot
     
-    # Generate initial trajectory using linear interpolation
-    p1 = boundary_constraints["position"]["final"]
-    p0 = boundary_constraints["position"]["initial"]
-    initial_trajectory = np.linspace(p0, p1, N).T
-
-    # Generate corresponding initial invariants
-    diff_vector = np.array(p1) - np.array(p0)
-    L = np.linalg.norm(diff_vector)
-    initial_invariants = np.tile(np.array([[L],[0.0001],[0.0001]]),(1,N-1))
-
-    # Generate corresponding initial moving frames using Gram-Schmidt process
-    e_x = diff_vector / L
-    e_y = np.array([0, 1, 0]) - np.dot(np.array([0, 1, 0]), e_x) * e_x
-    e_y = e_y / np.linalg.norm(e_y)
-    e_z = np.cross(e_x, e_y)
-    R_mf = np.column_stack((e_x, e_y, e_z))
-    initial_movingframes = np.tile(R_mf, (N,1,1))
-
-    initial_values = {
-         "trajectory": {
-             "position": initial_trajectory.T
-         },
-         "moving-frame": {
-             "translational": initial_movingframes
-         },
-         "invariants": {
-             "translational": initial_invariants
-         }
-    }
-
-    R_t_sol = np.zeros((3,3*N))
-    for i in range(N-1):
-        R_t_sol[:,3*i:3*(i+1)] = np.array([e_x,e_y,e_z]) 
-
-    return [initial_invariants, initial_trajectory, R_t_sol], initial_values
-
-def generate_initvals_from_bounds_rot(boundary_constraints,N):
-    R0 = boundary_constraints["orientation"]["initial"]
-    R1 = boundary_constraints["orientation"]["final"]
-    # Linear initialization
-    initial_trajectory = interpR(np.linspace(0, 1, N), [0,1], np.array([R0, R1]))
-
-    _, R_r, initial_invariants = FSr_init(R0, R1)
+    if q_init is not None:
+        solution.append(q_init.T)
     
-    R_r_sol = np.zeros((3,3*N))
-    R_obj_sol = np.zeros((3,3*N))
-    for i in range(N-1):
-        R_r_sol[:,3*i:3*(i+1)] = np.array([R_r[i,0],R_r[i,1],R_r[i,2]]) 
-        R_obj_sol[:,3*i:3*(i+1)] = np.array([initial_trajectory[i,0],initial_trajectory[i,1],initial_trajectory[i,2]]) 
-
-    return [initial_invariants.T, R_r_sol, R_obj_sol]
-
-# def generate_initvals_from_bounds_rot(boundary_constraints,N):
-#     R0 = boundary_constraints["orientation"]["initial"]
-#     R1 = boundary_constraints["orientation"]["final"]
-#     # Linear initialization
-#     initial_trajectory = interpR(np.linspace(0, 1, N), [0,1], np.array([R0, R1]))
-
-#     _, R_r_sol, initial_invariants = FSr_init(R0, R1)
-#     R_r_sol_x = R_r_sol[:,:,0].T
-#     R_r_sol_y = R_r_sol[:,:,1].T
-#     R_r_sol_z = R_r_sol[:,:,2].T
-
-#     R_obj_sol_x = initial_trajectory[:,:,0].T
-#     R_obj_sol_y = initial_trajectory[:,:,1].T
-#     R_obj_sol_z = initial_trajectory[:,:,2].T
-
-#     return [initial_invariants.T, R_r_sol_x, R_r_sol_y, R_r_sol_z, R_obj_sol_x, R_obj_sol_y, R_obj_sol_z]
+    return solution
 
 def calculate_velocity_from_discrete_rotations(R, timestamps):
     """

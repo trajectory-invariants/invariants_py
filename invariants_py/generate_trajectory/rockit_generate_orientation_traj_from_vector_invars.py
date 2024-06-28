@@ -5,7 +5,7 @@ import invariants_py.dynamics_vector_invariants as dynamics
 import time
 from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag, diffR, diag
 from invariants_py.kinematics.orientation_kinematics import rotate_x
-from invariants_py.initialization import generate_initvals_from_bounds_rot
+from invariants_py.initialization import generate_initvals_from_constraints
 
 class OCP_gen_rot:
 
@@ -246,26 +246,27 @@ class OCP_gen_rot:
         if w_high_active:
             w_invars[:, w_high_start:w_high_end+1] = w_high_invars.reshape(-1, 1)
 
+        to_skip = ("position","translational")
         boundary_values_list = []
         sublist_counter = 0
         subsublist_counter = 0
         for sublist in boundary_constraints.values(): 
-            if list(boundary_constraints.keys())[sublist_counter] not in ("position","translational"):
+            if list(boundary_constraints.keys())[sublist_counter] not in to_skip:
                 try:
                     for subsublist in sublist.values():
-                        if list(sublist.keys())[subsublist_counter] not in ("position","translational"):
+                        if list(sublist.keys())[subsublist_counter] not in to_skip:
                             for value in subsublist.values():
                                 boundary_values_list.append(value)
                         subsublist_counter += 1
                 except:
-                        if list(sublist.keys())[subsublist_counter] not in ("position","translational"):
+                        if list(sublist.keys())[subsublist_counter] not in to_skip:
                             for value in sublist.values():
                                 boundary_values_list.append(value)
             sublist_counter += 1
             subsublist_counter = 0
 
         if self.first_window and not initial_values:
-            self.solution = generate_initvals_from_bounds_rot(boundary_constraints, np.size(invariant_model,0))
+            self.solution = generate_initvals_from_constraints(boundary_constraints, np.size(invariant_model,0), to_skip)
             self.first_window = False
         elif self.first_window:
             self.solution = [
