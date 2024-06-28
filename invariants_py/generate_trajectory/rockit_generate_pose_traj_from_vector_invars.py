@@ -29,7 +29,7 @@ class OCP_gen_pose:
         if include_robot_model:
             robot = urdf.URDF.load(path_to_urdf)
             nb_joints = robot_params.get('joint_number', robot.num_actuated_joints)
-            q_limits = robot_params.get('q_lim', [robot._actuated_joints[i].limit.upper for i in range(robot.num_actuated_joints)])
+            q_limits = robot_params.get('q_lim', np.array([robot._actuated_joints[i].limit.upper for i in range(robot.num_actuated_joints)]))
             root = robot_params.get('root', robot.base_link)
             tip = robot_params.get('tip', 'tool0')
             q_init = robot_params.get('q_init', np.zeros(nb_joints))
@@ -300,7 +300,8 @@ class OCP_gen_pose:
             self.q = q
             self.qdot = qdot
             self.q_init = q_init
-            self.q_lim = q_limits
+            self.q_lim = q_lim
+            self.q_limits = q_limits
 
     def generate_trajectory(self, invariant_model, boundary_constraints, step_size, weights_params = {}, initial_values = {}):
 
@@ -319,7 +320,7 @@ class OCP_gen_pose:
             w_invars[:, w_high_start:w_high_end+1] = w_high_invars.reshape(-1, 1)
 
         if self.include_robot_model:
-            input_params = [invariant_model.T,w_invars,step_size,self.q_lim]
+            input_params = [invariant_model.T,w_invars,step_size,self.q_limits]
         else:
             input_params = [invariant_model.T,w_invars,step_size]
 
@@ -365,70 +366,55 @@ class OCP_gen_pose:
         return invariants, new_trajectory_pos, new_trajectory_rot, movingframe_pos, movingframe_rot, self.tot_time, joint_val
     
 
-    def generate_trajectory_OLD(self,invars_demo,p_obj_init,R_obj_init,R_t_init,R_r_init,q_init,q_lim,R_t_start,R_r_start,R_t_end,R_r_end,p_obj_start,R_obj_start,p_obj_end,R_obj_end, step_size, invars_init = None, w_invars = (10**-3)*np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), w_high_start = 1, w_high_end = 0, w_high_invars = (10**-3)*np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), w_high_active = 0):
-        #%%
-        if invars_init is None:
-            invars_init = invars_demo
+    def generate_trajectory_OLD(self,invariant_model, boundary_constraints,step_size, weights_params = {}, initial_values = {}):
+        
+        N = invariant_model.shape[0]
 
-        # R_obj_init_packed = np.zeros((3,3*self.window_len))
-        # R_t_init_packed = np.zeros((3,3*self.window_len))
-        # R_r_init_packed = np.zeros((3,3*self.window_len))
-        # for i in range(self.window_len-1):
-        #     R_obj_init_packed[:,3*i:3*(i+1)] = R_obj_init[i]  
-        #     R_t_init_packed[:,3*i:3*(i+1)] = R_t_init[i]
-        #     R_r_init_packed[:,3*i:3*(i+1)] = R_r_init[i]
-        # print(np.size(R_obj_init_packed))
-
-        # Initialize states
-        self.ocp.set_initial(self.p_obj, p_obj_init[:self.window_len,:].T)
-        # A = R_obj_init[:2]
-        # print(A)
-        # B = R_obj_init[:2].transpose(0,2,1).reshape(-1,9).T
-        # print(B)
-        # C = B.T.reshape(-1, 3, 3).transpose(0, 2, 1)
-        # print(C)
-
-
-        self.ocp.set_initial(self.R_obj, R_obj_init.transpose(0,2,1).reshape(-1,9).T)
-        self.ocp.set_initial(self.R_t, R_t_init.transpose(0,2,1).reshape(-1,9).T)
-        self.ocp.set_initial(self.R_r, R_r_init.transpose(0,2,1).reshape(-1,9).T)
-        # self.ocp.set_initial(self.R_obj, R_obj_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len))  ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
-        # self.ocp.set_initial(self.R_t, R_t_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len))   ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
-        # self.ocp.set_initial(self.R_r, R_r_init[:self.window_len].T.transpose(1,2,0).reshape(3,3*self.window_len))   ########  I AM NOT SURE HOW TO SOLVE THIS FOR NOW ##############################
-        self.ocp.set_initial(self.q,q_init.T)
+        if not initial_values:
+            _ , initial_values = generate_initvals_from_constraints(boundary_constraints, np.size(invariant_model,0), q_init = self.q_init if self.include_robot_model else None)
             
+        # Initialize states
+        self.ocp.set_initial(self.p_obj, initial_values["trajectory"]["position"][:N,:].T)
+        self.ocp.set_initial(self.R_obj, initial_values["trajectory"]["orientation"].transpose(0,2,1).reshape(-1,9).T)
+        self.ocp.set_initial(self.R_t, initial_values["moving-frame"]["translational"].transpose(0,2,1).reshape(-1,9).T)
+        self.ocp.set_initial(self.R_r, initial_values["moving-frame"]["rotational"].transpose(0,2,1).reshape(-1,9).T)
+        
         # Initialize controls
-        self.ocp.set_initial(self.invars,invars_init[:-1,:].T)
-        self.ocp.set_initial(self.qdot, 0.001*np.ones((self.nb_joints,self.window_len-1)))
+        self.ocp.set_initial(self.invars,initial_values["invariants"][:-1,:].T)
 
         # Set values boundary constraints
-        self.ocp.set_value(self.R_t_start,R_t_start)
-        self.ocp.set_value(self.R_t_end,R_t_end)
-        self.ocp.set_value(self.R_r_start,R_r_start)
-        self.ocp.set_value(self.R_r_end,R_r_end)
-        self.ocp.set_value(self.p_obj_start,p_obj_start)
-        self.ocp.set_value(self.p_obj_end,p_obj_end)
-        self.ocp.set_value(self.R_obj_start,R_obj_start)
-        self.ocp.set_value(self.R_obj_end,R_obj_end)
-        self.ocp.set_value(self.q_lim,q_lim)
+        self.ocp.set_value(self.R_t_start,boundary_constraints["moving-frame"]["translational"]["initial"])
+        self.ocp.set_value(self.R_t_end,boundary_constraints["moving-frame"]["translational"]["final"])
+        self.ocp.set_value(self.R_r_start,boundary_constraints["moving-frame"]["rotational"]["initial"])
+        self.ocp.set_value(self.R_r_end,boundary_constraints["moving-frame"]["rotational"]["final"])
+        self.ocp.set_value(self.p_obj_start,boundary_constraints["position"]["initial"])
+        self.ocp.set_value(self.p_obj_end,boundary_constraints["position"]["final"])
+        self.ocp.set_value(self.R_obj_start,boundary_constraints["orientation"]["initial"])
+        self.ocp.set_value(self.R_obj_end,boundary_constraints["orientation"]["final"])
+        if self.include_robot_model:
+            self.ocp.set_initial(self.q, initial_values["joint-values"].T)
+            self.ocp.set_initial(self.qdot, 0.001*np.ones((self.nb_joints,N-1)))
+            self.ocp.set_value(self.q_lim,self.q_limits)
 
         # Set values parameters
         self.ocp.set_value(self.h,step_size)
-        self.ocp.set_value(self.invars_demo, invars_demo.T)   
-        weights = np.zeros((len(invars_demo),6))
+        self.ocp.set_value(self.invars_demo, invariant_model.T)  
+
+        # Get the weights for the invariants or set default values
+        w_invars = weights_params.get('w_invars', (10**-3)*np.ones((6)))
+        w_high_start = weights_params.get('w_high_start', N)
+        w_high_end = weights_params.get('w_high_end', N)
+        w_high_invars = weights_params.get('w_high_invars', (10**-3)*np.ones(6))
+        w_high_active = weights_params.get('w_high_active', 0)
+
+        # Set the weights for the invariants
+        w_invars = np.tile(w_invars, (len(invariant_model),1)).T
         if w_high_active:
-            for i in range(len(invars_demo)):
-                if i >= w_high_start and i <= w_high_end:
-                    weights[i,:] = w_high_invars
-                else:
-                    weights[i,:] = w_invars
-        else:
-            for i in range(len(invars_demo)):
-                weights[i,:] = w_invars
-        self.ocp.set_value(self.w_invars, weights.T)  
+            w_invars[:, w_high_start:w_high_end+1] = w_high_invars.reshape(-1, 1)
+        self.ocp.set_value(self.w_invars,w_invars)
 
         # Solve the NLP
-        sol = self.ocp.solve()
+        sol = self.ocp.solve_limited()
         if self.fatrop:
             tot_time = self.ocp._method.myOCP.get_stats().time_total
         else:
@@ -448,7 +434,10 @@ class OCP_gen_pose:
         _,new_trajectory_rot = sol.sample(self.R_obj,grid='control')
         _,movingframe_pos = sol.sample(self.R_t,grid='control')
         _,movingframe_rot = sol.sample(self.R_r,grid='control')
-        _,joint_val = sol.sample(self.q,grid='control')
+        if self.include_robot_model:
+            _,joint_val = sol.sample(self.q,grid='control')
+        else:
+            joint_val = {}
 
         return invariants, new_trajectory_pos, new_trajectory_rot.T.reshape(-1, 3, 3).transpose(0, 2, 1), movingframe_pos.T.reshape(-1, 3, 3).transpose(0, 2, 1), movingframe_rot.T.reshape(-1, 3, 3).transpose(0, 2, 1), tot_time, joint_val
     
@@ -523,7 +512,7 @@ if __name__ == "__main__":
 
     
     # Call generate_trajectory function (WITHOUT robot model)
-    invariants, new_trajectory_pos, new_trajectory_rot, movingframe_pos, movingframe_rot, tot_time, [] = ocp_obj.generate_trajectory(invars_demo,boundary_constraints,step_size,weights_params,initial_values)
+    invariants, new_trajectory_pos, new_trajectory_rot, movingframe_pos, movingframe_rot, tot_time, [] = ocp_obj.generate_trajectory_OLD(invars_demo,boundary_constraints,step_size,weights_params,initial_values)
     # Call generate_trajectory function (WITH robot model)
     # invariants_rob, new_trajectory_pos_rob, new_trajectory_rot_rob, movingframe_pos_rob, movingframe_rot_rob, tot_time_rob, joint_values_rob = ocp_obj_jointlim.generate_trajectory(invars_demo,boundary_constraints,step_size,weights_params,initial_values)
     
