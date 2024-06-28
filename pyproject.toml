@@ -19,7 +19,8 @@ dependencies = [ # it is possible to have optional dependencies
     "numpy-stl",
     "pandas",
     "urdf2casadi",
-    "jupyter"
+    "jupyter",
+    "yourdfpy"
 ]
 classifiers = [ # only relevant/used for PyPI
     "Development Status :: 3 - Alpha",

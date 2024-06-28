@@ -3,7 +3,7 @@ import casadi as cas
 import rockit
 import invariants_py.dynamics_vector_invariants as dynamics
 import time
-from invariants_py.initialization import generate_initvals_from_bounds
+from invariants_py.initialization import generate_initvals_from_constraints
 from invariants_py.ocp_helper import tril_vec, tril_vec_no_diag, check_solver
 
 class OCP_gen_pos:
@@ -182,26 +182,27 @@ class OCP_gen_pos:
         if w_high_active:
             w_invars[:, w_high_start:w_high_end+1] = w_high_invars.reshape(-1, 1)
 
+        to_skip = ("orientation","rotational")
         boundary_values_list = []
         sublist_counter = 0
         subsublist_counter = 0
         for sublist in boundary_constraints.values(): 
-            if list(boundary_constraints.keys())[sublist_counter] not in ("orientation","rotational"):
+            if list(boundary_constraints.keys())[sublist_counter] not in to_skip:
                 try:
                     for subsublist in sublist.values():
-                        if list(sublist.keys())[subsublist_counter] not in ("orientation","rotational"):
+                        if list(sublist.keys())[subsublist_counter] not in to_skip:
                             for value in subsublist.values():
                                 boundary_values_list.append(value)
                             subsublist_counter += 1
                 except:
-                        if list(sublist.keys())[subsublist_counter] not in ("orientation","rotational"):
+                        if list(sublist.keys())[subsublist_counter] not in to_skip:
                             for value in sublist.values():
                                 boundary_values_list.append(value)
             sublist_counter += 1
             subsublist_counter = 0
 
         if self.first_window and not initial_values:
-            self.solution,initvals_dict = generate_initvals_from_bounds(boundary_constraints, np.size(invariant_model,0))
+            self.solution,initvals_dict = generate_initvals_from_constraints(boundary_constraints, np.size(invariant_model,0), to_skip)
             self.first_window = False
         elif self.first_window:
             self.solution = [initial_values["invariants"]["translational"][:N-1,:].T, initial_values["trajectory"]["position"][:N,:].T, initial_values["moving-frame"]["translational"][:N].T.transpose(1,2,0).reshape(3,3*N)]
