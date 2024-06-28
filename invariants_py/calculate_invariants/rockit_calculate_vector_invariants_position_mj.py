@@ -329,20 +329,40 @@ class OCP_calc_pos:
     #     return invariants, calculated_trajectory, calculated_movingframe
 
 if __name__ == "__main__":
-    # Example data for measured positions and the stepsize
-    measured_positions = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12], [13, 14, 15], [16, 17, 18]])
-    stepsize = 0.05
+    import matplotlib.pyplot as plt
+
+    # Example data for measured positions and stepsize
+    N = 100
+    t = np.linspace(0, 4, N)
+    measured_positions = np.column_stack((1 * np.cos(t), 1 * np.sin(t), 0.1 * t))
+    stepsize = t[1]-t[0]
 
     # Test the functionalities of the class
-    OCP = OCP_calc_pos(nb_samples=np.size(measured_positions,0),fatrop_solver=False)
- 
-    # Call the calculate_invariants_online function
-    calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants_online(measured_positions, stepsize)
+    OCP = OCP_calc_pos(nb_samples=N, fatrop_solver=True)
 
-    # Print the results
-    print("Calculated invariants:")
-    print(calc_invariants)
-    print("Calculated Moving Frame:")
-    print(calc_movingframes)
-    print("Calculated Trajectory:")
-    print(calc_trajectory)
+    # Call the calculate_invariants_global function and measure the elapsed time
+    #start_time = time.time()
+    calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants_online(measured_positions, stepsize)
+    #elapsed_time = time.time() - start_time
+
+    ocp_helper.solution_check_pos(measured_positions,calc_trajectory,rms = 10**-3)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(measured_positions[:, 0], measured_positions[:, 1], measured_positions[:, 2],'b.-')
+    ax.plot(calc_trajectory[:, 0], calc_trajectory[:, 1], calc_trajectory[:, 2],'r--')
+
+    fig = plt.figure()
+    plt.plot(calc_invariants)
+    plt.show()
+
+    #plt.plot(calc_trajectory)
+    #plt.show()
+    # # Print the results and elapsed time
+    # print("Calculated invariants:")
+    # print(calc_invariants)
+    # print("Calculated Moving Frame:")
+    # print(calc_movingframes)
+    # print("Calculated Trajectory:")
+    # print(calc_trajectory)
+    # print("Elapsed Time:", elapsed_time, "seconds")

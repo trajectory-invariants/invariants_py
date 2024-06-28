@@ -33,14 +33,9 @@ class OCP_calc_rot:
         invars = ocp.control(3) # three invariants [angular velocity | curvature rate | torsion rate]
 
         # Define system parameters P (known values in optimization that need to be set right before solving)
-        # R_obj_m = ocp.parameter(3,3,grid='control+') # measured object orientation
-        R_obj_m_vec = ocp.parameter(9,grid='control+') # measured object orientation, first axis
-        # R_obj_m_y = ocp.parameter(3,1,grid='control+') # measured object orientation, second axis
-        # R_obj_m_z = ocp.parameter(3,1,grid='control+') # measured object orientation, third axis
+        R_obj_m_vec = ocp.parameter(9,grid='control+') # measured object orientation
         R_obj_m = cas.reshape(R_obj_m_vec,(3,3)) # reshape vector to 3x3 rotation matrix 
-        # # ocp.parameter(3,3,grid='control',include_last=True)#
-        # R_r_0 = ocp.parameter(3,3) # THIS IS COMMENTED OUT IN MATLAB, WHY?
-        
+        # R_r_0 = ocp.parameter(3,3) # initial moving frame to enforce continuity constraints
         h = ocp.parameter(1) # stepsize
         
         # Define system discrete dynamics (integrate current state + controls to obtain next state)
@@ -65,17 +60,15 @@ class OCP_calc_rot:
         running_ek = ocp.state() # running sum of squared error
         ocp.subject_to(ocp.at_t0(running_ek == 0))
         ocp.set_next(running_ek, running_ek + ek)
-        ocp.subject_to(ocp.at_tf(1000*running_ek/N < 1000*rms_error_traj**2))
+        #ocp.subject_to(ocp.at_tf(1000*running_ek/N < 1000*rms_error_traj**2))
 
-        # total_ek = ocp.state() # total sum of squared error
-        # ocp.set_next(total_ek, total_ek)
-        # ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
+        total_ek = ocp.state() # total sum of squared error
+        ocp.set_next(total_ek, total_ek)
+        ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
         
         # #total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
-        # ocp.subject_to(1000*total_ek/N < 1000*rms_error_traj**2) # scaled total error
+        ocp.subject_to(1000*total_ek/N < 1000*rms_error_traj**2) # scaled total error
         # #ocp.subject_to(total_ek_scaled < 1)
-
-        # # opti.subject_to(U[1,-1] == U[1,-2]); # Last sample has no impact on RMS error ##### HOW TO ACCESS U[1,-2] IN ROCKIT
 
         #%% Specifying the objective
 

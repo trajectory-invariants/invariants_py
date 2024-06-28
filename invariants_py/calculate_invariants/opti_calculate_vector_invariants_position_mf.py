@@ -12,22 +12,18 @@ class OCP_calc_pos:
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
 
         # Define system states X (unknown object pose + moving frame pose at every time step) 
-        p_obj = []
-        R_t = []
-        X = []
-        for k in range(window_len):
-            p_obj.append(opti.variable(3,1)) # object position
-            R_t.append(opti.variable(3,3)) # translational Frenet-Serret frame
-            X.append(cas.vertcat(cas.vec(R_t[k]), cas.vec(p_obj[k])))
+        p_obj = [opti.variable(3,1) for _ in range(window_len)] # object position
+        R_t = [opti.variable(3,3) for _ in range(window_len)] # translational Frenet-Serret frame
+        X = [cas.vertcat(cas.vec(R_t[k]), cas.vec(p_obj[k])) for k in range(window_len)]
 
         # Define system controls (invariants at every time step)
         U = opti.variable(3,window_len-1)
 
         # Define system parameters P (known values in optimization that need to be set right before solving)
         p_obj_m = [] # measured object positions
-        R_t_0 = opti.parameter(3,3) # initial translational Frenet-Serret frame at first sample of window
         for k in range(window_len):
             p_obj_m.append(opti.parameter(3,1)) # object position
+        R_t_0 = opti.parameter(3,3) # initial translational Frenet-Serret frame at first sample of window
 
         h = opti.parameter(1,1)
         
@@ -75,7 +71,7 @@ class OCP_calc_pos:
                 err_deriv = U[:,k] - U[:,k-1] # first-order finite backwards derivative (noise smoothing effect)
             else:
                 err_deriv = 0
-            err_abs = U[[1,2],k] # absolute value invariants (force arbitrary invariants to zero)
+            err_abs = U[[1,2],k] # absolute value invariants (force arbitrary invariants in singularities to zero)
 
             ##Check that obj function is correctly typed in !!!
             objective_reg = objective_reg \
