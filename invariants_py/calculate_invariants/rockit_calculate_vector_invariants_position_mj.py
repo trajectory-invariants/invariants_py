@@ -8,7 +8,7 @@ from invariants_py.ocp_helper import check_solver
 
 class OCP_calc_pos:
 
-    def __init__(self, window_len = 100, w_pos = 1, w_regul_jerk = 10**-6 , bool_unsigned_invariants = False, w_regul_invars = 10**-10, fatrop_solver = False, planar_task = False, solver_options = {}):
+    def __init__(self, window_len = 100, w_pos = 1, w_regul_jerk = 10**-5 , bool_unsigned_invariants = False, w_regul_invars = 0, fatrop_solver = False, planar_task = False, solver_options = {}):
         fatrop_solver = check_solver(fatrop_solver)               
 
         # Set solver options
