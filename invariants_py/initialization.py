@@ -3,6 +3,7 @@ import invariants_py.kinematics.orientation_kinematics as SO3
 from invariants_py.reparameterization import interpR
 
 def FSr_init(R_obj_start,R_obj_end,N=100):
+
     skew_angle = SO3.logm(R_obj_start.T @ R_obj_end)
     angle_vec_in_body = np.array([skew_angle[2,1],skew_angle[0,2],skew_angle[1,0]])
     angle_vec_in_world = R_obj_start@angle_vec_in_body
@@ -132,7 +133,7 @@ def calculate_velocity_from_discrete_rotations(R, timestamps):
     return rot_velocity
 
 
-def estimate_first_axis(vector_traj):
+def calculate_tangent(vector_traj):
     """
     Estimate the first axis of the moving frame based on the given trajectory.
     The first axis is calculated by normalizing the trajectory vector.
@@ -157,6 +158,7 @@ def estimate_first_axis(vector_traj):
     first_nonzero_norm_index = np.where(~np.isclose(norm_vector, 0))[0]
     
     if first_nonzero_norm_index.size == 0:
+        # If all norms are zero, set the tangent to [1, 0, 0] for all samples
         tangent[:, 0] = 1 # corresponds to [1, 0, 0] for all rows
     else:
         first_nonzero_norm_index = first_nonzero_norm_index[0]
@@ -174,10 +176,80 @@ def estimate_first_axis(vector_traj):
 
     return tangent
 
-def estimate_initial_frames2(vector_traj):
-    ex = estimate_first_axis(vector_traj)
-    ey = estimate_second_axis(vector_traj)
-    ez = np.cross(ex, ey)
+def calculate_binormal(vector_traj,tangent):
+    """
+    Estimate the second axis of the moving frame based on the given trajectory.
+    The second axis is calculated by normalizing the cross product of the trajectory vector and the tangent.
+    For vectors with a norm close to zero, the binormal of the previous vector is used.
+    For vectors before the first non-zero norm, the binormal of the first non-zero norm is used.
+    If no non-zero norm is found, all binormals are initialized with [0, 1, 0].
+
+    Input:
+        vector_traj: trajectory vector          (Nx3)
+        tangent: first axis of the moving frame (Nx3)
+    Output:
+        binormal: second axis of the moving frame (Nx3)
+    """
+    N = np.size(vector_traj, 0)
+    binormal = np.zeros((N, 3))
+
+    # Calculate cross vector
+    N = np.size(vector_traj, 0)
+    binormal_vec = np.zeros((N,3))
+    for i in range(N-1):
+        binormal_vec[i,:] = np.cross(vector_traj[i,:],vector_traj[i+1,:])
+    binormal_vec[-1,:] = binormal_vec[-2,:]
+
+    norm_binormal_vec = np.linalg.norm(binormal_vec, axis=1)
+
+    # Find the index of the first non-zero norm using np.isclose to account for numerical precision issues
+    first_nonzero_norm_index = np.where(~np.isclose(norm_binormal_vec, 0))[0]
+    if first_nonzero_norm_index.size == 0:
+        # choose a non-collinear vector
+        a = np.array([0, 1, 0]) if not np.isclose(tangent[1], 0) else np.array([0, 0, 1])
+
+        # take cross-product to get perpendicular
+        perp = np.cross(tangent[0,:], a, axis=0)
+
+        # normalize
+        binormal = perp / np.linalg.norm(perp)
+    else:
+        first_nonzero_norm_index = first_nonzero_norm_index[0]
+
+        # For each sample starting from the first non-zero norm index
+        for i in range(first_nonzero_norm_index, N):
+            if not np.isclose(norm_binormal_vec[i], 0):
+                binormal[i, :] = binormal_vec[i,:] / np.linalg.norm(binormal_vec[i,:])
+            else:
+                binormal[i, :] = binormal[i-1, :]
+
+        # For each sample before the first non-zero norm index
+        for i in range(first_nonzero_norm_index):
+            binormal[i, :] = binormal[first_nonzero_norm_index, :]
+
+    return binormal
+
+def estimate_movingframes(vector_traj):
+
+    # Calculate 
+
+    # Estimate first axis
+    e_tangent = calculate_tangent(vector_traj)
+
+    # Calculate binormal vector
+    N = np.size(vector_traj, 0)
+    binormal_vec = np.zeros((N,3))
+    for i in range(N-1):
+        binormal_vec[i,:] = np.cross(vector_traj[i,:],vector_traj[i+1,:])
+    binormal_vec[-1,:] = binormal_vec[-2,:]
+
+    # Estimate second axis
+    e_binormal = calculate_binormal(vector_traj,e_tangent)
+
+    # Calculate third axis
+    e_normal = np.array([ np.cross(e_binormal[i,:],e_tangent[i,:]) for i in range(N) ])
+
+    return e_tangent, e_binormal, e_normal
 
 def estimate_initial_frames(vector_traj):    
     # Estimate initial moving frames based on measurements

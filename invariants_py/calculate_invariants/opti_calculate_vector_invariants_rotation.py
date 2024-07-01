@@ -118,11 +118,11 @@ class OCP_calc_rot:
         #Pdiff_cross = np.cross(Pdiff[0:-1],Pdiff[1:])
         #ey = Pdiff_cross / np.linalg.norm(Pdiff_cross,axis=1).reshape(N-2,1)
         
-        from invariants_py.initialization import calculate_velocity_from_discrete_rotations, estimate_initial_frames
+        from invariants_py.initialization import calculate_velocity_from_discrete_rotations, estimate_initial_frames, estimate_movingframes
 
         Rdiff = calculate_velocity_from_discrete_rotations(measured_orientation,timestamps=np.arange(N))
         #print(Rdiff)
-        [ex,ey,ez] = estimate_initial_frames(Rdiff)
+        [ex,ey,ez] = estimate_movingframes(Rdiff)
 
         for k in range(N):
             self.opti.set_initial(self.R_r[k], np.array([ex[k,:], ey[k,:], ez[k,:]]).T ) #construct_init_FS_from_traj(meas_traj.Obj_location)
