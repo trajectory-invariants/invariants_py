@@ -144,6 +144,9 @@ def estimate_first_axis(vector_traj):
         vector_traj: trajectory vector          (Nx3)
     Output:
         tangent: first axis of the moving frame (Nx3)
+
+    TODO: you can do the same for the second axis based on binormal_vector_traj
+    angle between vectors in stable way:  atan2(norm(cross(u,v)),dot(u,v))*180/pi
     """
     
     N = np.size(vector_traj, 0)
