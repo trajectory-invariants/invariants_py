@@ -19,8 +19,8 @@ class OCP_calc_rot:
 
         ocp = rockit.Ocp(T=1.0) # create optimization problem
         N = window_len # number of samples in the window
-
-        fatrop_solver = check_solver(fatrop_solver)       
+        fatrop_solver = check_solver(fatrop_solver)    
+           
         #%% Create decision variables and parameters for the optimization problem
         
         # Define system states X (unknown object orientation + moving frame orientation at every time step) 
@@ -60,7 +60,7 @@ class OCP_calc_rot:
         if not fatrop_solver:
             # sum of squared position errors in the window should be less than the specified tolerance rms_error_traj
             total_ek = ocp.sum(ek,grid='control',include_last=True)
-            ocp.subject_to(total_ek/N < rms_error_traj**2)
+            ocp.subject_to(1000*total_ek/N < 1000*rms_error_traj**2)
         else:
             running_ek = ocp.state() # running sum of squared error
             ocp.subject_to(ocp.at_t0(running_ek == 0))
@@ -152,29 +152,22 @@ class OCP_calc_rot:
         return invariants, calculated_trajectory, calculated_movingframe
 
 if __name__ == "__main__":
-
     from invariants_py.reparameterization import interpR
 
     # Test data    
     R_start = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])  # Rotation matrix 1
     R_mid = np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])  # Rotation matrix 3
     R_end = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])  # Rotation matrix 2
+    N = 100
 
     # Interpolate between R_start and R_end
-    measured_orientations = interpR(np.linspace(0, 1, 100), np.array([0,0.8,1]), np.stack([R_start, R_mid, R_end],0))
+    measured_orientations = interpR(np.linspace(0, 1, N), np.array([0,0.5,1]), np.stack([R_start, R_mid, R_end],0))
     timestep = 0.001
     
+    # Specify OCP symbolically
+    OCP = OCP_calc_rot(window_len=N,fatrop_solver=False, rms_error_traj=5*pi/180)
 
-    # TODO fix problem with logm theta=pi
-    print((np.array([R_start,R_mid,R_end])))
-    
-    print(measured_orientations)
-
-    # # Specify OCP symbolically
-    # N = np.size(measured_orientations,0)
-    # OCP = OCP_calc_rot(window_len=N,fatrop_solver=False, rms_error_traj=1*pi/180)
-
-    # # Solve the OCP using the specified data
-    # calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_orientations, timestep)
-    # #print(calc_invariants)
+    # Solve the OCP using the specified data
+    calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_orientations, timestep)
+    print(calc_invariants)
 

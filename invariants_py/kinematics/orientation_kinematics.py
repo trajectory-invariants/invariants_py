@@ -252,12 +252,13 @@ def logm(R):
     
     # Special case rotation angle = pi or -pi
     if np.isclose(ca,-1):
-        _,_,VT = np.linalg.svd(R-np.eye(3))
+        _,_,VT = np.linalg.svd(R - np.eye(3)) # R*v = v --> (R-I)*v = 0
         rotation_vec = VT[-1,:]
         rotation_vec = rotation_vec/np.linalg.norm(rotation_vec)
         alpha = np.pi
         return crossmat(rotation_vec)*alpha
 
+    # General case
     else:
         axis = crossvec(R)
         sa = norm(axis)

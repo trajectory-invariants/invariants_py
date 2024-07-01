@@ -131,6 +131,51 @@ def calculate_velocity_from_discrete_rotations(R, timestamps):
 
     return rot_velocity
 
+
+def estimate_first_axis(vector_traj):
+    """
+    Estimate the first axis of the moving frame based on the given trajectory.
+    The first axis is calculated by normalizing the trajectory vector.
+    For vectors with a norm close to zero, the tangent of the previous vector is used.
+    For vectors before the first non-zero norm, the tangent of the first non-zero norm is used.
+    If no non-zero norm is found, all tangents are initialized with [1, 0, 0].
+
+    Input:
+        vector_traj: trajectory vector          (Nx3)
+    Output:
+        tangent: first axis of the moving frame (Nx3)
+    """
+    
+    N = np.size(vector_traj, 0)
+    tangent = np.zeros((N, 3))
+    norm_vector = np.linalg.norm(vector_traj, axis=1)
+
+    # Find the index of the first non-zero norm using np.isclose to account for numerical precision issues
+    first_nonzero_norm_index = np.where(~np.isclose(norm_vector, 0))[0]
+    
+    if first_nonzero_norm_index.size == 0:
+        tangent[:, 0] = 1 # corresponds to [1, 0, 0] for all rows
+    else:
+        first_nonzero_norm_index = first_nonzero_norm_index[0]
+
+        # For each sample starting from the first non-zero norm index
+        for i in range(first_nonzero_norm_index, N):
+            if not np.isclose(norm_vector[i], 0):
+                tangent[i, :] = vector_traj[i, :] / norm_vector[i]
+            else:
+                tangent[i, :] = tangent[i-1, :]
+
+        # For each sample before the first non-zero norm index
+        for i in range(first_nonzero_norm_index):
+            tangent[i, :] = tangent[first_nonzero_norm_index, :]
+
+    return tangent
+
+def estimate_initial_frames2(vector_traj):
+    ex = estimate_first_axis(vector_traj)
+    ey = estimate_second_axis(vector_traj)
+    ez = np.cross(ex, ey)
+
 def estimate_initial_frames(vector_traj):    
     # Estimate initial moving frames based on measurements
     
