@@ -19,3 +19,12 @@ def robot_forward_kinematics(q, path_to_urdf, root = 'world', tip = 'tool0'):
     R_obj = T_rob[:3,:3]
 
     return p_obj, R_obj
+
+
+if __name__ == "__main__":
+    import numpy as np
+    q = np.array([-2.46888802,-0.42693144,-0.02180152, -0.433554,   -2.14098558,  1.77062242])
+    path_to_urdf = "/home/riccardo/code/invariants_py/invariants_py/data/robot/ur10.urdf"
+    tip = "TCP_frame"
+    pos, R = robot_forward_kinematics(q,path_to_urdf,tip=tip)
+    print(pos)
