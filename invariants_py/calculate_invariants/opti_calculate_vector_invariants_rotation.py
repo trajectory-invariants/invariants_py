@@ -8,12 +8,12 @@ class OCP_calc_rot:
 
     def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180, solver_options = {}):
        
-        #%% Create decision variables and parameters for the optimization problem
-
-        # Set solver options
+        # Get solver options
         tolerance = solver_options.get('tol',1e-4) # tolerance for the solver
         max_iter = solver_options.get('max_iter',500) # maximum number of iterations
         print_level = solver_options.get('print_level',5) # 5 prints info, 0 prints nothing
+        
+        ''' Create decision variables and parameters for the optimization problem '''
 
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
 
@@ -30,10 +30,9 @@ class OCP_calc_rot:
         R_r_0 = opti.parameter(3,3) # THIS IS COMMENTED OUT IN MATLAB, WHY?
         h = opti.parameter(1,1)
         
-        #%% Specifying the constraints
+        ''' Specifying the constraints '''
         
         # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
-        #opti.subject_to( R_t[-1].T @ R_t[-1] == np.eye(3))
         opti.subject_to(tril_vec(R_r[0].T @ R_r[0] - np.eye(3)) == 0)
         opti.subject_to(tril_vec(R_obj[0].T @ R_obj[0] - np.eye(3)) == 0)
 
@@ -51,14 +50,14 @@ class OCP_calc_rot:
             opti.subject_to(U[0,:]>=0) # lower bounds on control
             #opti.subject_to(U[1,:]>=0) # lower bounds on control
 
-        #%% Specifying the objective
-
         # Fitting constraint to remain close to measurements
         objective_fit = 0
         for k in range(window_len):
             err_rot = tril_vec(R_obj_m[k].T @ R_obj[k] - np.eye(3)) # orientation error
             objective_fit = objective_fit + cas.dot(err_rot,err_rot)
-        opti.subject_to(1000*objective_fit/window_len < 1000*rms_error_traj**2)
+        opti.subject_to(objective_fit/window_len < rms_error_traj**2)
+
+        ''' Specifying the objective '''
 
         # Regularization constraints to deal with singularities and noise
         objective_reg = 0
@@ -77,8 +76,9 @@ class OCP_calc_rot:
             #                + cas.dot(w_abs**(0.5)*err_abs, w_abs**(0.5)*err_abs)
 
         objective = objective_reg/(window_len-1) #+ objective_fit/window_len
-
         #opti.subject_to(U[1,-1] == U[1,-2]); # Last sample has no impact on RMS error
+
+        ''' Define solver '''
 
         #%% Define solver and save variables
         opti.minimize(objective)
@@ -107,7 +107,7 @@ class OCP_calc_rot:
 
         '''Choose initialization'''
         if choice_initialization == 0:
-            # Initialization of tangent using data
+            # Initialization of tangent moving frame using data
             Rdiff = calculate_velocity_from_discrete_rotations(measured_orientation,timestamps=np.arange(N))
             ex = Rdiff / np.linalg.norm(Rdiff,axis=1).reshape(N,1)
             ex = np.vstack((ex,[ex[-1,:]]))
@@ -248,10 +248,10 @@ if __name__ == "__main__":
 
     # Interpolate between R_start and R_end
     measured_orientations = interpR(np.linspace(0,1,N), np.array([0,0.5,1]), np.stack([R_start, R_mid, R_end],0))
-    timestep = 0.1
+    timestep = 0.01
 
     # Create an instance of OCP_calc_rot
-    ocp = OCP_calc_rot(window_len=N, rms_error_traj=0.05*pi/180, solver_options={'print_level':5})
+    ocp = OCP_calc_rot(window_len=N, rms_error_traj=0.05*pi/180, solver_options={'print_level':5,'max_iter':100})
     
     # Calculate invariants using the calculate_invariants method
     invariants_global, calculated_trajectory_global, calculated_movingframe_global = ocp.calculate_invariants(measured_orientations, timestep, choice_initialization=3)
@@ -263,5 +263,3 @@ if __name__ == "__main__":
     # print(calculated_trajectory_global)
     #print("Global Calculated Moving Frame:")
     #print(calculated_movingframe_global)
-
-    

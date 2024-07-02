@@ -17,22 +17,16 @@ class OCP_calc_pos:
         #%% Decision variables and parameters
         
         # Define system states X (unknown object pose + moving frame pose at every time step)
-        p_obj = []
-        R_t = []
-        X = []
-        for k in range(window_len): 
-            p_obj.append(opti.variable(3,1)) # object position
-            R_t.append(opti.variable(3,3)) # Frenet-Serret frame
-            X.append(cas.vertcat(cas.vec(R_t[k]), cas.vec(p_obj[k])))
+        p_obj = [opti.variable(3,1) for _ in range(window_len)] # object position
+        R_t = [opti.variable(3,3) for _ in range(window_len)] # Frenet-Serret frame
+        X = [cas.vertcat(cas.vec(R_t[k]), cas.vec(p_obj[k])) for k in range(window_len)]
 
         # Define system controls U (invariants at every time step)
         U = opti.variable(3,window_len-1)
 
         # Define system parameters P (known values in optimization that need to be set right before solving)
-        p_obj_m = [] # measured object positions
+        p_obj_m = [opti.parameter(3,1) for _ in range(window_len)] # measured object positions
         R_t_0 = opti.parameter(3,3) # initial translational Frenet-Serret frame at first sample of window
-        for k in range(window_len):
-            p_obj_m.append(opti.parameter(3,1)) # object position
         h = opti.parameter(1,1) # step size for integration of dynamic equations
         
         #%% Constraints
@@ -64,8 +58,8 @@ class OCP_calc_pos:
             for k in range(window_len-2):
                 opti.subject_to(U[0,k+1] == U[0,k])
     
-        opti.subject_to(p_obj[0] == p_obj_m[0]) # Fix first measurement
-        opti.subject_to(p_obj[-1] == p_obj_m[-1]) # Fix last measurement
+        #opti.subject_to(p_obj[0] == p_obj_m[0]) # Fix first measurement
+        #opti.subject_to(p_obj[-1] == p_obj_m[-1]) # Fix last measurement
 
         # Measurement fitting constraint
         trajectory_error = 0

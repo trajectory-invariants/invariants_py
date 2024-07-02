@@ -352,7 +352,7 @@ if __name__ == "__main__":
 
     # Call the calculate_invariants function and measure the elapsed time
     #start_time = time.time()
-    calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants_online(measured_positions, stepsize)
+    calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_positions, stepsize)
     #elapsed_time = time.time() - start_time
 
     ocp_helper.solution_check_pos(measured_positions,calc_trajectory,rms = 10**-3)

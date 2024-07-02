@@ -87,8 +87,7 @@ class OCP_calc_rot:
         if fatrop_solver:
             ocp.method(rockit.external_method('fatrop', N=N-1))
             ocp._method.set_name("/codegen/rotation") # pick a unique name when using multiple OCP specifications in the same script
-            self.ocp._transcribe()
-            self.ocp._method.set_option("iterative_refinement", False)
+            
         else:
             ocp.method(rockit.MultipleShooting(N=N-1))
             #ocp.solver('ipopt', {'expand':True})
@@ -107,6 +106,7 @@ class OCP_calc_rot:
             ocp._method.set_option("tol",tolerance)
             ocp._method.set_option("print_level",print_level)
             ocp._method.set_option("max_iter",max_iter)
+            #ocp._method.set_option("iterative_refinement", False)
         self.first_time = True
         
         # Encapsulate whole rockit specification in a casadi function
@@ -125,6 +125,8 @@ class OCP_calc_rot:
         )
 
     def calculate_invariants(self,R_meas,stepsize): 
+
+        N = R_meas.shape[0] # number of samples in the window
 
         if not R_meas.shape[1] == 3:
             R_meas = R_meas[:,:3,:3]
@@ -161,11 +163,11 @@ if __name__ == "__main__":
     N = 100
 
     # Interpolate between R_start and R_end
-    measured_orientations = interpR(np.linspace(0, 1, N), np.array([0,0.5,1]), np.stack([R_start, R_mid, R_end],0))
+    measured_orientations = interpR(np.linspace(0,1,N), np.array([0,0.5,1]), np.stack([R_start, R_mid, R_end],0))
     timestep = 0.001
     
     # Specify OCP symbolically
-    OCP = OCP_calc_rot(window_len=N,fatrop_solver=False, rms_error_traj=5*pi/180)
+    OCP = OCP_calc_rot(window_len=N,fatrop_solver=True, rms_error_traj=5*pi/180)
 
     # Solve the OCP using the specified data
     calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_orientations, timestep)
