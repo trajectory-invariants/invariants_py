@@ -292,9 +292,6 @@ def  initialize_VI_pos(input_trajectory):
 
 def  initialize_VI_pos2(measured_positions):
     
-    if not measured_positions.shape[1] == 3:
-        measured_positions = measured_positions[:,:3,3]
-
     N = np.size(measured_positions,0)
     Pdiff = np.diff(measured_positions, axis=0)
     Pdiff = np.vstack((Pdiff, Pdiff[-1]))

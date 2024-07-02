@@ -127,7 +127,6 @@ class OCP_calc_rot:
     def calculate_invariants(self,R_meas,stepsize): 
 
         N = R_meas.shape[0] # number of samples in the window
-
         if not R_meas.shape[1] == 3:
             R_meas = R_meas[:,:3,:3]
 

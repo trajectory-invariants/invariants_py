@@ -185,6 +185,10 @@ class OCP_calc_pos:
         - calculated_movingframes (numpy.ndarray of shape (N, 3, 3)): moving frames corresponding to invariants
         """
 
+        if not measured_positions.shape[1] == 3:
+            measured_positions = measured_positions[:,:3,3]
+
+
         # Check if this is the first function call
         if not use_previous_solution or self.first_time:
             # Initialize states and controls using measurements
