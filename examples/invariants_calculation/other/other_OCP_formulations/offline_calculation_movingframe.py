@@ -30,7 +30,7 @@ Example calculation invariants using the full horizon
 FS_calculation_problem = OCP_calc_pos(window_len=nb_samples)
 
 # calculate invariants given measurements
-result = FS_calculation_problem.calculate_invariants_global(trajectory_geom,stepsize=stepsize)
+result = FS_calculation_problem.calculate_invariants(trajectory_geom,stepsize=stepsize)
 invariants = result[0]
 
 plt.figure()

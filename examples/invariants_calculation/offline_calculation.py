@@ -32,7 +32,7 @@ Old optimization problem
 FS_calculation_problem = FS1.OCP_calc_pos(window_len=nb_samples, bool_unsigned_invariants = True, w_pos = 100, w_deriv = (10**-7)*np.array([1.0, 1.0, 1.0]), w_abs = (10**-5)*np.array([1.0, 1.0]))
 
 # calculate invariants given measurements
-invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
+invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants(trajectory,stepsize)
 
 # figures
 plt.figure(figsize=(14,6))
@@ -70,7 +70,7 @@ if plt.get_backend() != 'agg':
 # FS_calculation_problem = FS3.OCP_calc_pos(window_len=nb_samples, w_pos = 100, w_regul = 10**-9)
 
 # # calculate invariants given measurements
-# invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
+# invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants(trajectory,stepsize)
 
 # # figures
 # plt.figure(figsize=(14,6))
@@ -106,7 +106,7 @@ Reformulated optimization problem
 FS_calculation_problem = FS2.OCP_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.001)
 
 # calculate invariants given measurements
-invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
+invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants(trajectory,stepsize)
 
 # figures
 plt.figure(figsize=(14,6))

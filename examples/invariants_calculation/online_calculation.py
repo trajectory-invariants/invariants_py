@@ -23,7 +23,7 @@ plt.plot(trajectory[:,0],trajectory[:,1],'.-')
 FS_calculation_problem = OCP_calc_pos(window_len=nb_samples, bool_unsigned_invariants = True, w_pos = 100, w_deriv = (10**-12)*np.array([1.0, 1.0, 1.0]), w_abs = (10**-5)*np.array([1.0, 1.0]))
 
 # calculate invariants given measurements
-invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
+invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants(trajectory,stepsize)
 
 #%%
 plt.figure(figsize=(8,3))

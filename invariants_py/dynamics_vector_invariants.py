@@ -156,6 +156,21 @@ def reconstruct_offset_invariants(invariants, h):
             = integrate_vector_invariants_pose(R_t_0, R_r_0, R_offset, p_offset, invariants[:,i], h)
     return (R_offset, p_offset)
 
+def reconstruct_rotation_traj(invariants,h,R_r,R_obj):
+    """Reconstruct the rotation trajectory from the invariants starting from an initial object orientation and moving frame"""
+
+    R_r_traj = np.zeros((np.shape(invariants)[0]+1,3,3))
+    R_obj_traj = np.zeros((np.shape(invariants)[0]+1,3,3))
+    R_r_traj[0,:,:] = R_r
+    R_obj_traj[0,:,:] = R_obj
+    
+    for i in range(1,np.shape(invariants)[0]+1):
+        (R_r, R_obj) = integrate_vector_invariants_rotation(R_r, R_obj, invariants[i-1,:], h)
+        R_r_traj[i,:,:] = R_r
+        R_obj_traj[i,:,:] = R_obj
+
+    return R_obj_traj, R_r_traj
+
 def define_integrator_invariants_position(h):
     """Define a CasADi function that integrates the vector invariants for rotation over a time interval h."""
 

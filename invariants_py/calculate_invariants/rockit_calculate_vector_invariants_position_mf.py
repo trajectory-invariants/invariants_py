@@ -276,7 +276,7 @@ if __name__ == "__main__":
     # Test the functionalities of the class
     OCP = OCP_calc_pos(window_len=N, rms_error_traj=10**-3, fatrop_solver=True)
 
-    # Call the calculate_invariants_global function and measure the elapsed time
+    # Call the calculate_invariants function and measure the elapsed time
     #start_time = time.time()
     calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants_OLD(measured_positions, stepsize)
     #elapsed_time = time.time() - start_time

@@ -19,7 +19,7 @@ from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotatio
 import invariants_py.plotting_functions.plotters as pl
 import invariants_py.collision_detection_bottle as cd
 from invariants_py.reparameterization import interpR
-from invariants_py.initialization import FSr_init
+from invariants_py.initialization import initial_trajectory_movingframe_rotation
 import random
 
 #%%
@@ -132,7 +132,7 @@ optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], 
 R_obj_init = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end]))
 # R_r_init = interpR(np.linspace(0, 1, len(optim_calc_results.FSr_frames)), [0,1], np.array([FSr_start, FSr_end]))
 
-R_r_init, R_r_init_array, invars_init = FSr_init(R_obj_start, R_obj_end)
+R_r_init, R_r_init_array, invars_init = initial_trajectory_movingframe_rotation(R_obj_start, R_obj_end)
 
 boundary_constraints = {
     "position": {

@@ -105,7 +105,7 @@ class OCP_calc_pos:
         self.first_window = True
         self.h = h
          
-    def calculate_invariants_global(self,trajectory_meas,stepsize):
+    def calculate_invariants(self,trajectory_meas,stepsize):
         #%% 
 
         if trajectory_meas.shape[1] == 3:
@@ -163,7 +163,7 @@ class OCP_calc_pos:
         #%%
         if self.first_window:
             # Calculate invariants in first window
-            invariants, calculated_trajectory, calculated_movingframe = self.calculate_invariants_global(trajectory_meas,stepsize)
+            invariants, calculated_trajectory, calculated_movingframe = self.calculate_invariants(trajectory_meas,stepsize)
             self.first_window = False
             
             
@@ -239,9 +239,9 @@ if __name__ == "__main__":
     # Test the functionalities of the class
     OCP = OCP_calc_pos(window_len=np.size(measured_positions,0), rms_error_traj=10**-3)
 
-    # Call the calculate_invariants_global function and measure the elapsed time
+    # Call the calculate_invariants function and measure the elapsed time
     #start_time = time.time()
-    calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants_global(measured_positions, stepsize)
+    calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_positions, stepsize)
     #elapsed_time = time.time() - start_time
 
     fig = plt.figure()

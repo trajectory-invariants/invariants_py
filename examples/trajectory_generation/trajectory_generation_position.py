@@ -26,7 +26,7 @@ ax.plot(trajectory[:,0],trajectory[:,1],trajectory[:,2],'.-')
 FS_calculation_problem = OCP_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.001)
 
 # calculate invariants given measurements
-invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
+invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants(trajectory,stepsize)
 
 init_vals_calculate_trajectory = calculate_trajectory
 init_vals_movingframes = movingframes

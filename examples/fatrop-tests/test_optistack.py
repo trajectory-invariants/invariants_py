@@ -36,7 +36,7 @@ FS_calculation_problem = FS3.OCP_calc_pos(window_len=nb_samples, w_pos = weight_
 
 # calculate invariants given measurements
 start_time = time.time()
-invariants, trajectory_recon, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
+invariants, trajectory_recon, movingframes = FS_calculation_problem.calculate_invariants(trajectory,stepsize)
 end_time = time.time()
 print('')
 print("Total time solving + sampling overhead: ")

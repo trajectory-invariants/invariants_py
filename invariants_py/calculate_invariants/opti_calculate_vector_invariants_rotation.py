@@ -58,7 +58,7 @@ class OCP_calc_rot:
         for k in range(window_len):
             err_rot = tril_vec(R_obj_m[k].T @ R_obj[k] - np.eye(3)) # orientation error
             objective_fit = objective_fit + cas.dot(err_rot,err_rot)
-        opti.subject_to(objective_fit/window_len < rms_error_traj**2)
+        opti.subject_to(1000*objective_fit/window_len < 1000*rms_error_traj**2)
 
         # Regularization constraints to deal with singularities and noise
         objective_reg = 0
@@ -76,15 +76,16 @@ class OCP_calc_rot:
             #                + cas.dot(w_deriv**(0.5)*err_deriv,w_deriv**(0.5)*err_deriv) \
             #                + cas.dot(w_abs**(0.5)*err_abs, w_abs**(0.5)*err_abs)
 
-        objective = objective_reg/(window_len-1)# + objective_fit/window_len
+        objective = objective_reg/(window_len-1) #+ objective_fit/window_len
 
         #opti.subject_to(U[1,-1] == U[1,-2]); # Last sample has no impact on RMS error
 
         #%% Define solver and save variables
         opti.minimize(objective)
         opti.solver('ipopt',
-                    {"print_time":True,"expand":True},{'gamma_theta':1e-12,'max_iter':max_iter,'tol':tolerance,'print_level':print_level,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
-        
+                    {"print_time":True,"expand":True},{'max_iter':max_iter,'tol':tolerance,'print_level':print_level,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
+        #'gamma_theta':1e-12
+
         # Save variables
         self.R_r = R_r
         self.R_obj = R_obj
@@ -96,57 +97,64 @@ class OCP_calc_rot:
         self.first_window = True
         self.h = h
          
-    def calculate_invariants_global(self,trajectory_meas,stepsize): 
+    def calculate_invariants(self,trajectory_meas,stepsize): 
         #%%
+        from invariants_py.initialization import calculate_velocity_from_discrete_rotations, estimate_initial_frames, estimate_movingframes
+        from invariants_py.dynamics_vector_invariants import reconstruct_rotation_traj
 
         measured_orientation = trajectory_meas[:,:3,:3]
         N = self.window_len
         
         # Initialize states
         # TODO  this is not correct yet, ex not perpendicular to ey
-        # Pdiff = np.diff(measured_orientation,axis=0)
-        # ex = Pdiff / np.linalg.norm(Pdiff,axis=1).reshape(N-1,1)
-        # ex = np.vstack((ex,[ex[-1,:]]))
-        # ey = np.tile( np.array((0,0,1)), (N,1) )
-        # ez = np.array([np.cross(ex[i,:],ey[i,:]) for i in range(N)])
-        
-        #JUST TESTING
-        ex = np.tile( np.array((1,0,0)), (N,1) )
-        ey = np.tile( np.array((0,1,0)), (N,1) )
-        ez = np.array([np.cross(ex[i,:],ey[i,:]) for i in range(N)])
-        
-        #Pdiff_cross = np.cross(Pdiff[0:-1],Pdiff[1:])
-        #ey = Pdiff_cross / np.linalg.norm(Pdiff_cross,axis=1).reshape(N-2,1)
-        
-        from invariants_py.initialization import calculate_velocity_from_discrete_rotations, estimate_initial_frames, estimate_movingframes
-
         Rdiff = calculate_velocity_from_discrete_rotations(measured_orientation,timestamps=np.arange(N))
-        #print(Rdiff)
-        [ex,ey,ez] = estimate_movingframes(Rdiff)
+        ex = Rdiff / np.linalg.norm(Rdiff,axis=1).reshape(N,1)
+        ex = np.vstack((ex,[ex[-1,:]]))
+        ez = np.tile( np.array((0,0,1)), (N,1) )
+        ey = np.array([np.cross(ez[i,:],ex[i,:]) for i in range(N)])
+        invariants = np.hstack((1*np.ones((N-1,1)),1e-1*np.ones((N-1,2))))
+        R_obj_traj = measured_orientation
+        R_r_traj = np.zeros((N,3,3))
+        for i in range(N):
+            R_r_traj[i,:,:] = np.column_stack((ex[i,:],ey[i,:],ez[i,:]))
 
+        '''Initialization with identity matrix for the moving frame'''
+        # ex = np.tile( np.array((1,0,0)), (N,1) )
+        # ey = np.tile( np.array((0,1,0)), (N,1) )
+        # ez = np.array([np.cross(ex[i,:],ey[i,:]) for i in range(N)])
+        # invariants = np.hstack((1*np.ones((N-1,1)),1e-1*np.ones((N-1,2))))
+        # R_obj_traj = measured_orientation
+        # R_r_traj = np.zeros((N,3,3))
+        # for i in range(N):
+        #     R_r_traj[i,:,:] = np.column_stack((ex[i,:],ey[i,:],ez[i,:]))
+            
+        '''Initialization by estimating moving frames with discrete analytical equations'''
+        # Rdiff = calculate_velocity_from_discrete_rotations(measured_orientation,timestamps=np.arange(N))
+        # invariants = np.hstack((1*np.ones((N-1,1)),1e-1*np.ones((N-1,2))))
+        # R_r_traj = estimate_movingframes(Rdiff)
+        # R_obj_traj = measured_orientation
+
+        '''Initialization by reconstructing a trajectory from initial invariants (makes dynamic constraints satisfied)'''
+        # from invariants_py.dynamics_vector_invariants import reconstruct_rotation_traj
+        # R_r_0 = np.eye(3,3)
+        # R_obj_0 = np.eye(3,3)
+        # invariants = np.hstack((1*np.ones((N-1,1)),1e-1*np.ones((N-1,2))))
+        # R_obj_traj, R_r_traj = reconstruct_rotation_traj(invariants, stepsize, R_r_0, R_obj_0)
+        # print(R_r_traj)
+
+        # Initialize states
         for k in range(N):
-            self.opti.set_initial(self.R_r[k], np.array([ex[k,:], ey[k,:], ez[k,:]]).T ) #construct_init_FS_from_traj(meas_traj.Obj_location)
-            self.opti.set_initial(self.R_obj[k], measured_orientation[k])
+            self.opti.set_initial(self.R_r[k],  R_r_traj[k,:,:]) 
+            self.opti.set_initial(self.R_obj[k], R_obj_traj[k,:,:])
             
         # Initialize controls
         for k in range(N-1):    
-            self.opti.set_initial(self.U[:,k], np.array([1,1e-1,1e-1]))
+            self.opti.set_initial(self.U[:,k], invariants[k,:])
             
         # Set values parameters
-        self.opti.set_value(self.R_r_0, np.eye(3,3)) # THIS IS COMMENTED OUT IN MATLAB, WHY?
         for k in range(N):
             self.opti.set_value(self.R_obj_m[k], measured_orientation[k])       
-        
         self.opti.set_value(self.h,stepsize)
-
-        # ######################
-        # ##  DEBUGGING: check integrator in initial values, time step 0 to 1
-        # x0 = cas.vertcat(cas.vec(np.eye(3,3)), cas.vec(measured_positions[0]))
-        # u0 = 1e-8*np.ones((3,1))
-        # integrator = dynamics.define_integrator_invariants_position(self.stepsize)
-        # x1 = integrator(x0,u0)
-        # print(x1)
-        # ######################
 
         # Solve the NLP
         sol = self.opti.solve_limited()
@@ -157,14 +165,13 @@ class OCP_calc_rot:
         invariants =  np.vstack((invariants,[invariants[-1,:]]))
         calculated_trajectory = np.array([sol.value(i) for i in self.R_obj])
         calculated_movingframe = np.array([sol.value(i) for i in self.R_r])
-        
         return invariants, calculated_trajectory, calculated_movingframe
 
     def calculate_invariants_online(self,trajectory_meas,stepsize,sample_jump):
         #%%
         if self.first_window:
             # Calculate invariants in first window
-            invariants, calculated_trajectory, calculated_movingframe = self.calculate_invariants_global(trajectory_meas,stepsize)
+            invariants, calculated_trajectory, calculated_movingframe = self.calculate_invariants(trajectory_meas,stepsize)
             self.first_window = False
             
             
@@ -237,13 +244,13 @@ if __name__ == "__main__":
 
     # Interpolate between R_start and R_end
     measured_orientations = interpR(np.linspace(0, 1, N), np.array([0,0.5,1]), np.stack([R_start, R_mid, R_end],0))
-    timestep = 0.001
+    timestep = 0.1
 
     # Create an instance of OCP_calc_rot
     ocp = OCP_calc_rot(window_len=N, rms_error_traj=0.05*pi/180, solver_options={'print_level':5})
     
-    # Calculate invariants using the calculate_invariants_global method
-    invariants_global, calculated_trajectory_global, calculated_movingframe_global = ocp.calculate_invariants_global(measured_orientations, timestep)
+    # Calculate invariants using the calculate_invariants method
+    invariants_global, calculated_trajectory_global, calculated_movingframe_global = ocp.calculate_invariants(measured_orientations, timestep)
     
     # Print the results
     #print("Global Invariants:")

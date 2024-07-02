@@ -48,7 +48,7 @@ class TestOCPcalcpos(unittest.TestCase):
 
         # Solve optistack problem with ipopt
         ocp_with_fatrop = optistack_ocp(window_len=100, rms_error_traj=10**-3, solver_options={"print_level": 0, "tol": 1e-10})
-        calc_invariants_with_fatrop, _, _ = ocp_with_fatrop.calculate_invariants_global(self.measured_positions, self.stepsize)
+        calc_invariants_with_fatrop, _, _ = ocp_with_fatrop.calculate_invariants(self.measured_positions, self.stepsize)
 
         # Compare the results
         np.testing.assert_allclose(calc_invariants_without_fatrop, calc_invariants_with_fatrop, rtol=1e-5, atol=1e-8, err_msg="Invariants should be the same for both solver configurations")

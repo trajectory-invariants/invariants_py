@@ -215,7 +215,7 @@ class OCP_calc_pos:
 
         
     #%%     
-    # def calculate_invariants_global_old(self,trajectory_meas,stepsize):
+    # def calculate_invariants_old(self,trajectory_meas,stepsize):
     #     """
     #     !! OLD AND OUTDATED !!
     #     """
@@ -297,7 +297,7 @@ class OCP_calc_pos:
         
     #     if self.first_window:
     #         # Calculate invariants in first window
-    #         invariants, calculated_trajectory, calculated_movingframe = self.calculate_invariants_global_old(measured_positions,stepsize)
+    #         invariants, calculated_trajectory, calculated_movingframe = self.calculate_invariants_old(measured_positions,stepsize)
     #         self.first_window = False
                     
     #         #self.opti.subject_to( self.R_t[0] == self.R_t_0 ) # Add continuity constraints on first sample
@@ -350,7 +350,7 @@ if __name__ == "__main__":
     # Test the functionalities of the class
     OCP = OCP_calc_pos(window_len=N, fatrop_solver=True)
 
-    # Call the calculate_invariants_global function and measure the elapsed time
+    # Call the calculate_invariants function and measure the elapsed time
     #start_time = time.time()
     calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants_online(measured_positions, stepsize)
     #elapsed_time = time.time() - start_time

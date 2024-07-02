@@ -2,7 +2,7 @@ import numpy as np
 import invariants_py.kinematics.orientation_kinematics as SO3
 from invariants_py.reparameterization import interpR
 
-def FSr_init(R_obj_start,R_obj_end,N=100):
+def initial_trajectory_movingframe_rotation(R_obj_start,R_obj_end,N=100):
 
     skew_angle = SO3.logm(R_obj_start.T @ R_obj_end)
     angle_vec_in_body = np.array([skew_angle[2,1],skew_angle[0,2],skew_angle[1,0]])
@@ -70,7 +70,7 @@ def generate_initvals_from_constraints(boundary_constraints,N, skip = {}, q_init
         # Linear initialization
         initial_trajectory = interpR(np.linspace(0, 1, N), [0,1], np.array([R0, R1]))
 
-        _, R_r, initial_invariants = FSr_init(R0, R1, N)
+        _, R_r, initial_invariants = initial_trajectory_movingframe_rotation(R0, R1, N)
         
         R_r_sol = np.zeros((3,3*N))
         R_obj_sol = np.zeros((3,3*N))
@@ -249,7 +249,10 @@ def estimate_movingframes(vector_traj):
     # Calculate third axis
     e_normal = np.array([ np.cross(e_binormal[i,:],e_tangent[i,:]) for i in range(N) ])
 
-    return e_tangent, e_binormal, e_normal
+    R = np.zeros((N,3,3))
+    for i in range(N):
+        R[i,:,:] = np.column_stack((e_tangent[i,:],e_normal[i,:],e_binormal[i,:]))
+    return R
 
 def estimate_initial_frames(vector_traj):    
     # Estimate initial moving frames based on measurements

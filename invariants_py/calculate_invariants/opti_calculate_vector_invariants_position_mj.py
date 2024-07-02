@@ -102,7 +102,7 @@ class OCP_calc_pos:
         for var in variables:
             setattr(self, var, locals()[var])
 
-    def calculate_invariants_global(self,trajectory_meas,stepsize):
+    def calculate_invariants(self,trajectory_meas,stepsize):
         #%%
 
         if trajectory_meas.shape[1] == 3:
@@ -169,7 +169,7 @@ class OCP_calc_pos:
         #%%
         if self.first_window:
             # Calculate invariants in first window
-            invariants, calculated_trajectory, calculated_movingframe = self.calculate_invariants_global(trajectory_meas,stepsize)
+            invariants, calculated_trajectory, calculated_movingframe = self.calculate_invariants(trajectory_meas,stepsize)
             self.first_window = False
                     
             # Add continuity constraints on first sample
