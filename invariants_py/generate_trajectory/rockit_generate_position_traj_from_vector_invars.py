@@ -77,12 +77,12 @@ class OCP_gen_pos:
         ocp.add_objective(objective)
         if fatrop_solver:
             ocp.method(rockit.external_method('fatrop' , N=window_len-1))
-
-            import random, string
-            ocp._method.set_name("/codegen/generation_position" + random.choice(string.ascii_lowercase))
+            ocp._method.set_expand(True) 
+            ocp._method.set_name("/codegen/generation_position")
         else:
             ocp.method(rockit.MultipleShooting(N=window_len-1))
             ocp.solver('ipopt', {'expand':True})
+            
             # ocp.solver('ipopt',{"print_time":True,"expand":True},{'tol':1e-4,'print_level':0,'ma57_automatic_scaling':'no','linear_solver':'mumps','max_iter':100})
 
         # Solve already once with dummy measurements

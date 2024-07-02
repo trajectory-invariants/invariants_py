@@ -95,6 +95,7 @@ class OCP_calc_pos:
         if fatrop_solver: 
             method = rockit.external_method('fatrop', N=self.N_controls)
             self.ocp.method(method)
+            self.ocp.set_expand(True)
         else:
             self.ocp.method(rockit.MultipleShooting(N=self.N_controls))
             #ocp.solver('ipopt', {'expand':True})

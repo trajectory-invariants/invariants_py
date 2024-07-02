@@ -87,7 +87,8 @@ class OCP_calc_rot:
         if fatrop_solver:
             ocp.method(rockit.external_method('fatrop', N=N-1))
             ocp._method.set_name("/codegen/rotation") # pick a unique name when using multiple OCP specifications in the same script
-            
+            ocp._method.set_expand(True)
+            #ocp._method.set_option("expand",True)
         else:
             ocp.method(rockit.MultipleShooting(N=N-1))
             #ocp.solver('ipopt', {'expand':True})
@@ -170,5 +171,5 @@ if __name__ == "__main__":
 
     # Solve the OCP using the specified data
     calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_orientations, timestep)
-    print(calc_invariants)
+    #print(calc_invariants)
 

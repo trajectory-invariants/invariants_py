@@ -137,7 +137,8 @@ class OCP_calc_pos:
 
         if check_solver(fatrop_solver):
             ocp.method(rockit.external_method('fatrop',N=N-1))
-            ocp._method.set_name("/codegen/calculate_position")   
+            ocp._method.set_name("/codegen/calculate_position") 
+            ocp._method.set_expand(True)   
         else:
             ocp.method(rockit.MultipleShooting(N=N-1))
             ocp.solver('ipopt', {'expand':True, 'ipopt.tol':tolerance,'ipopt.print_info_string':'yes', 'ipopt.max_iter':max_iter,'ipopt.print_level':print_level, 'ipopt.ma57_automatic_scaling':'no', 'ipopt.linear_solver':'mumps'})
