@@ -168,7 +168,7 @@ if __name__ == "__main__":
     timestep = 0.001
     
     # Specify OCP symbolically
-    OCP = OCP_calc_rot(window_len=N,fatrop_solver=True, rms_error_traj=5*pi/180)
+    OCP = OCP_calc_rot(window_len=N, fatrop_solver=True, rms_error_traj=1*pi/180)
 
     # Solve the OCP using the specified data
     calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_orientations, timestep)

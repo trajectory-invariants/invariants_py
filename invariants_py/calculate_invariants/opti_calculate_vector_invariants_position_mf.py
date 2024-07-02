@@ -215,3 +215,35 @@ class OCP_calc_pos:
             calculated_movingframe = np.array([sol.value(i) for i in self.R_t])
             
             return invariants, calculated_trajectory, calculated_movingframe
+        
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+
+    # Example data for measured positions and the stepsize
+    N = 100
+    t = np.linspace(0, 4, N)
+    measured_positions = np.column_stack((1 * np.cos(t), 1 * np.sin(t), 0.1 * t))
+    stepsize = t[1]-t[0]
+
+    # Test the functionalities of the class
+    OCP = OCP_calc_pos(window_len=np.size(measured_positions,0))
+
+    # Call the calculate_invariants function and measure the elapsed time
+    #start_time = time.time()
+    calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_positions, stepsize)
+    #elapsed_time = time.time() - start_time
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(measured_positions[:, 0], measured_positions[:, 1], measured_positions[:, 2],'b.-')
+    ax.plot(calc_trajectory[:, 0], calc_trajectory[:, 1], calc_trajectory[:, 2],'r--')
+    plt.show()
+
+    # # Print the results and elapsed time
+    # print("Calculated invariants:")
+    #print(calc_invariants)
+    # print("Calculated Moving Frame:")
+    # print(calc_movingframes)
+    # print("Calculated Trajectory:")
+    # print(calc_trajectory)
+    # print("Elapsed Time:", elapsed_time, "seconds")

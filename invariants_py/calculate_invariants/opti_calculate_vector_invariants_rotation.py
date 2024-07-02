@@ -251,11 +251,11 @@ if __name__ == "__main__":
     timestep = 0.01
 
     # Create an instance of OCP_calc_rot
-    ocp = OCP_calc_rot(window_len=N, rms_error_traj=0.05*pi/180, solver_options={'print_level':5,'max_iter':100})
+    ocp = OCP_calc_rot(window_len=N, rms_error_traj=0.0001*pi/180, solver_options={'print_level':5,'max_iter':200})
     
     # Calculate invariants using the calculate_invariants method
-    invariants_global, calculated_trajectory_global, calculated_movingframe_global = ocp.calculate_invariants(measured_orientations, timestep, choice_initialization=3)
-    
+    invars, calc_trajectory, calc_movingframes = ocp.calculate_invariants(measured_orientations, timestep, choice_initialization=3)
+
     # Print the results
     #print("Global Invariants:")
     #print(invariants_global)
