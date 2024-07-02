@@ -137,7 +137,7 @@ class OCP_calc_rot:
             R_r_traj = estimate_movingframes(Rdiff)
             R_obj_traj = measured_orientation
 
-        else:
+        elif choice_initialization == 3:
             # Initialization by reconstructing a trajectory from initial invariants (makes dynamic constraints satisfied)
             R_r_0 = np.eye(3,3)
             R_obj_0 = np.eye(3,3)
@@ -254,7 +254,7 @@ if __name__ == "__main__":
     ocp = OCP_calc_rot(window_len=N, rms_error_traj=0.05*pi/180, solver_options={'print_level':5})
     
     # Calculate invariants using the calculate_invariants method
-    invariants_global, calculated_trajectory_global, calculated_movingframe_global = ocp.calculate_invariants(measured_orientations, timestep, choice_initialization=1)
+    invariants_global, calculated_trajectory_global, calculated_movingframe_global = ocp.calculate_invariants(measured_orientations, timestep, choice_initialization=3)
     
     # Print the results
     #print("Global Invariants:")
