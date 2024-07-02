@@ -97,57 +97,60 @@ class OCP_calc_rot:
         self.first_window = True
         self.h = h
          
-    def calculate_invariants(self,trajectory_meas,stepsize): 
+    def calculate_invariants(self,trajectory_meas,stepsize, choice_initialization=0): 
         #%%
-        from invariants_py.initialization import calculate_velocity_from_discrete_rotations, estimate_initial_frames, estimate_movingframes
+        from invariants_py.initialization import calculate_velocity_from_discrete_rotations, estimate_movingframes
         from invariants_py.dynamics_vector_invariants import reconstruct_rotation_traj
 
         measured_orientation = trajectory_meas[:,:3,:3]
         N = self.window_len
-        
-        # Initialize states
-        # TODO  this is not correct yet, ex not perpendicular to ey
-        Rdiff = calculate_velocity_from_discrete_rotations(measured_orientation,timestamps=np.arange(N))
-        ex = Rdiff / np.linalg.norm(Rdiff,axis=1).reshape(N,1)
-        ex = np.vstack((ex,[ex[-1,:]]))
-        ez = np.tile( np.array((0,0,1)), (N,1) )
-        ey = np.array([np.cross(ez[i,:],ex[i,:]) for i in range(N)])
-        invariants = np.hstack((1*np.ones((N-1,1)),1e-1*np.ones((N-1,2))))
-        R_obj_traj = measured_orientation
-        R_r_traj = np.zeros((N,3,3))
-        for i in range(N):
-            R_r_traj[i,:,:] = np.column_stack((ex[i,:],ey[i,:],ez[i,:]))
 
-        '''Initialization with identity matrix for the moving frame'''
-        # ex = np.tile( np.array((1,0,0)), (N,1) )
-        # ey = np.tile( np.array((0,1,0)), (N,1) )
-        # ez = np.array([np.cross(ex[i,:],ey[i,:]) for i in range(N)])
-        # invariants = np.hstack((1*np.ones((N-1,1)),1e-1*np.ones((N-1,2))))
-        # R_obj_traj = measured_orientation
-        # R_r_traj = np.zeros((N,3,3))
-        # for i in range(N):
-        #     R_r_traj[i,:,:] = np.column_stack((ex[i,:],ey[i,:],ez[i,:]))
-            
-        '''Initialization by estimating moving frames with discrete analytical equations'''
-        # Rdiff = calculate_velocity_from_discrete_rotations(measured_orientation,timestamps=np.arange(N))
-        # invariants = np.hstack((1*np.ones((N-1,1)),1e-1*np.ones((N-1,2))))
-        # R_r_traj = estimate_movingframes(Rdiff)
-        # R_obj_traj = measured_orientation
+        '''Choose initialization'''
+        if choice_initialization == 0:
+            # Initialization of tangent using data
+            Rdiff = calculate_velocity_from_discrete_rotations(measured_orientation,timestamps=np.arange(N))
+            ex = Rdiff / np.linalg.norm(Rdiff,axis=1).reshape(N,1)
+            ex = np.vstack((ex,[ex[-1,:]]))
+            ez = np.tile( np.array((0,0,1)), (N,1) )
+            ey = np.array([np.cross(ez[i,:],ex[i,:]) for i in range(N)])
+            invariants = np.hstack((1*np.ones((N-1,1)),1e-1*np.ones((N-1,2))))
+            R_obj_traj = measured_orientation
+            R_r_traj = np.zeros((N,3,3))
+            for i in range(N):
+                R_r_traj[i,:,:] = np.column_stack((ex[i,:],ey[i,:],ez[i,:]))            
 
-        '''Initialization by reconstructing a trajectory from initial invariants (makes dynamic constraints satisfied)'''
-        # from invariants_py.dynamics_vector_invariants import reconstruct_rotation_traj
-        # R_r_0 = np.eye(3,3)
-        # R_obj_0 = np.eye(3,3)
-        # invariants = np.hstack((1*np.ones((N-1,1)),1e-1*np.ones((N-1,2))))
-        # R_obj_traj, R_r_traj = reconstruct_rotation_traj(invariants, stepsize, R_r_0, R_obj_0)
-        # print(R_r_traj)
+        elif choice_initialization == 1:
+            # Initialization with identity matrix for the moving frame
+            ex = np.tile( np.array((1,0,0)), (N,1) )
+            ey = np.tile( np.array((0,1,0)), (N,1) )
+            ez = np.array([np.cross(ex[i,:],ey[i,:]) for i in range(N)])
+            invariants = np.hstack((1*np.ones((N-1,1)),1e-1*np.ones((N-1,2))))
+            R_obj_traj = measured_orientation
+            R_r_traj = np.zeros((N,3,3))
+            for i in range(N):
+                R_r_traj[i,:,:] = np.column_stack((ex[i,:],ey[i,:],ez[i,:]))
 
-        # Initialize states
+        elif choice_initialization == 2:
+            # Initialization by estimating moving frames with discrete analytical equations
+            Rdiff = calculate_velocity_from_discrete_rotations(measured_orientation,timestamps=np.arange(N))
+            invariants = np.hstack((1*np.ones((N-1,1)),1e-1*np.ones((N-1,2))))
+            R_r_traj = estimate_movingframes(Rdiff)
+            R_obj_traj = measured_orientation
+
+        else:
+            # Initialization by reconstructing a trajectory from initial invariants (makes dynamic constraints satisfied)
+            R_r_0 = np.eye(3,3)
+            R_obj_0 = np.eye(3,3)
+            invariants = np.hstack((1*np.ones((N-1,1)),1e-1*np.ones((N-1,2))))
+            R_obj_traj, R_r_traj = reconstruct_rotation_traj(invariants, stepsize, R_r_0, R_obj_0)
+
+        ''' Set values '''
+        # Set initial values states
         for k in range(N):
             self.opti.set_initial(self.R_r[k],  R_r_traj[k,:,:]) 
             self.opti.set_initial(self.R_obj[k], R_obj_traj[k,:,:])
             
-        # Initialize controls
+        # Set initial values controls
         for k in range(N-1):    
             self.opti.set_initial(self.U[:,k], invariants[k,:])
             
@@ -156,11 +159,12 @@ class OCP_calc_rot:
             self.opti.set_value(self.R_obj_m[k], measured_orientation[k])       
         self.opti.set_value(self.h,stepsize)
 
+        ''' Solve and return solutation '''
         # Solve the NLP
         sol = self.opti.solve_limited()
         self.sol = sol
         
-        # Extract the solved variables
+        # Extract and return the solved variables
         invariants = sol.value(self.U).T
         invariants =  np.vstack((invariants,[invariants[-1,:]]))
         calculated_trajectory = np.array([sol.value(i) for i in self.R_obj])
@@ -232,25 +236,25 @@ class OCP_calc_rot:
             
             return invariants, calculated_trajectory, calculated_movingframe
         
-
 if __name__ == "__main__":
     from invariants_py.reparameterization import interpR
+    import invariants_py.kinematics.orientation_kinematics as SO3
 
     # Test data    
-    R_start = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])  # Rotation matrix 1
-    R_mid = np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])  # Rotation matrix 3
-    R_end = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])  # Rotation matrix 2
+    R_start = np.eye(3)  # Rotation matrix 1
+    R_mid = SO3.rotate_z(np.pi)  # Rotation matrix 3
+    R_end = SO3.RPY(np.pi/2,0,np.pi/2)  # Rotation matrix 2
     N = 100
 
     # Interpolate between R_start and R_end
-    measured_orientations = interpR(np.linspace(0, 1, N), np.array([0,0.5,1]), np.stack([R_start, R_mid, R_end],0))
+    measured_orientations = interpR(np.linspace(0,1,N), np.array([0,0.5,1]), np.stack([R_start, R_mid, R_end],0))
     timestep = 0.1
 
     # Create an instance of OCP_calc_rot
     ocp = OCP_calc_rot(window_len=N, rms_error_traj=0.05*pi/180, solver_options={'print_level':5})
     
     # Calculate invariants using the calculate_invariants method
-    invariants_global, calculated_trajectory_global, calculated_movingframe_global = ocp.calculate_invariants(measured_orientations, timestep)
+    invariants_global, calculated_trajectory_global, calculated_movingframe_global = ocp.calculate_invariants(measured_orientations, timestep, choice_initialization=1)
     
     # Print the results
     #print("Global Invariants:")
