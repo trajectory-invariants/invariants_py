@@ -29,7 +29,7 @@ class OCP_gen_pose:
         if include_robot_model:
             robot = urdf.URDF.load(path_to_urdf)
             nb_joints = robot_params.get('joint_number', robot.num_actuated_joints)
-            q_limits = robot_params.get('q_lim', [robot._actuated_joints[i].limit.upper for i in range(robot.num_actuated_joints)])
+            q_limits = robot_params.get('q_lim', np.array([robot._actuated_joints[i].limit.upper for i in range(robot.num_actuated_joints)]))
             root = robot_params.get('root', robot.base_link)
             tip = robot_params.get('tip', 'tool0')
             q_init = robot_params.get('q_init', np.zeros(nb_joints))
@@ -245,20 +245,21 @@ class OCP_gen_pose:
             ocp.sample(R_t, grid='control')[1], # sampled translational FS frame
             ocp.sample(R_r, grid='control')[1], # sampled rotational FS frame
             ocp.sample(R_obj, grid='control')[1]] # sampled object orientation
+        input_params_labels = ["invars","w_invars","stepsize"] # input labels for debugging
+        input_sol_labels = ["invars1","p_obj1","R_t1","R_r1","R_obj1"] # labels for debugging
+        solution_labels = ["invars2","p_obj2","R_t2","R_r2","R_obj2"] # output labels for debugging
         if include_robot_model:
             solution.append(ocp.sample(q, grid='control')[1]) # sampled joint values
-            inputs_labels = ["invars","w_invars","stepsize","q_lim","invars1","p_obj1","R_t1","R_r1","R_obj1","q1"] # input labels for debugging
-            solution_labels = ["invars2","p_obj2","R_t2","R_r2","R_obj2","q2"] # output labels for debugging
-        else:
-            inputs_labels = ["invars","w_invars","stepsize","invars1","p_obj1","R_t1","R_r1","R_obj1"] # input labels for debugging
-            solution_labels = ["invars2","p_obj2","R_t2","R_r2","R_obj2"] # output labels for debugging
+            input_params_labels.append("q_lim")
+            input_sol_labels.append("q1")
+            solution_labels.append("q2")
 
         self.ocp = ocp # save the optimization problem locally, avoids problems when multiple rockit ocp's are created
 
         self.ocp_function = self.ocp.to_function('ocp_function', 
             [*input_params,*solution,*bounds], # inputs
             [*solution], # outputs
-            [*inputs_labels,*bounds_labels], # input labels for debugging
+            [*input_params_labels,*input_sol_labels,*bounds_labels], # input labels for debugging
             [*solution_labels], # output labels for debugging
         )
 
@@ -300,7 +301,8 @@ class OCP_gen_pose:
             self.q = q
             self.qdot = qdot
             self.q_init = q_init
-            self.q_lim = q_limits
+            self.q_lim = q_lim
+            self.q_limits = q_limits
 
     def generate_trajectory(self, invariant_model, boundary_constraints, step_size, weights_params = {}, initial_values = {}):
 
@@ -319,7 +321,7 @@ class OCP_gen_pose:
             w_invars[:, w_high_start:w_high_end+1] = w_high_invars.reshape(-1, 1)
 
         if self.include_robot_model:
-            input_params = [invariant_model.T,w_invars,step_size,self.q_lim]
+            input_params = [invariant_model.T,w_invars,step_size,self.q_limits]
         else:
             input_params = [invariant_model.T,w_invars,step_size]
 
