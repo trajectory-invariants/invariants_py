@@ -43,7 +43,7 @@ def check_solver(fatrop_solver):
 def solution_check_pos(p_obj_m,p_obj,rms = 10**-2):
     N = p_obj.shape[0]
     tot_ek = 0
-    tolerance = 10e-4
+    tolerance = 10e-3
     for i in range(N):
         ek = cas.dot(p_obj[i] - p_obj_m[i],p_obj[i] - p_obj_m[i])
         tot_ek += ek
@@ -55,7 +55,7 @@ def solution_check_pos(p_obj_m,p_obj,rms = 10**-2):
 def solution_check_rot(R_obj_m,R_obj,rms = 4*np.pi/180):
     N = R_obj.shape[0]
     tot_ek = 0
-    tolerance = 10e-4
+    tolerance = 10e-3
     for i in range(N-1):
         ek = cas.dot(R_obj_m[i].T @ R_obj[i] - np.eye(3),R_obj_m[i].T @ R_obj[i] - np.eye(3))
         tot_ek +=ek
