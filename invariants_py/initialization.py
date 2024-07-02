@@ -333,14 +333,13 @@ def initialize_VI_rot2(measured_orientation):
     N = np.size(measured_orientation,0)
     Rdiff = calculate_velocity_from_discrete_rotations(measured_orientation,timestamps=np.arange(N))
 
-    print(Rdiff)
+    #print(Rdiff)
 
     [ex,ey,ez] = estimate_initial_frames(Rdiff)
 
     # R_t_init = np.zeros((9,N))
     # for i in range(N):
     #     R_t_init[:,i] = np.hstack([ex[i,:],ey[i,:],ez[i,:]])   
-
 
     R_r = np.zeros((9,N))
     R_obj = np.zeros((9,N))

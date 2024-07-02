@@ -55,12 +55,13 @@ class OCP_calc_rot:
             #ocp.subject_to(invars[1,:]>=0) # lower bounds on control
 
         # Measurement fitting constraint
-        ek = cas.dot(R_obj_m.T @ R_obj - np.eye(3), R_obj_m.T @ R_obj - np.eye(3)) # squared rotation error
+        rot_error = tril_vec(R_obj_m.T @ R_obj - np.eye(3)) # rotation error
+        ek = cas.dot(rot_error, rot_error) # squared rotation error
         
         if not fatrop_solver:
             # sum of squared position errors in the window should be less than the specified tolerance rms_error_traj
             total_ek = ocp.sum(ek,grid='control',include_last=True)
-            ocp.subject_to(1000*total_ek/N < 1000*rms_error_traj**2)
+            ocp.subject_to(total_ek/N < rms_error_traj**2)
         else:
             running_ek = ocp.state() # running sum of squared error
             ocp.subject_to(ocp.at_t0(running_ek == 0))
@@ -72,7 +73,7 @@ class OCP_calc_rot:
             ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
             
             # #total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
-            ocp.subject_to(1000*total_ek/N < 1000*rms_error_traj**2) # scaled total error
+            ocp.subject_to(total_ek/N < rms_error_traj**2) # scaled total error
             # #ocp.subject_to(total_ek_scaled < 1)
 
         #%% Specifying the objective
