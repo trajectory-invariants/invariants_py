@@ -12,22 +12,18 @@ class OCP_calc_pos:
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
 
         # Define system states X (unknown object pose + moving frame pose at every time step) 
-        p_obj = []
-        R_t = []
-        X = []
-        for k in range(window_len):
-            p_obj.append(opti.variable(3,1)) # object position
-            R_t.append(opti.variable(3,3)) # translational Frenet-Serret frame
-            X.append(cas.vertcat(cas.vec(R_t[k]), cas.vec(p_obj[k])))
+        p_obj = [opti.variable(3,1) for _ in range(window_len)] # object position
+        R_t = [opti.variable(3,3) for _ in range(window_len)] # translational Frenet-Serret frame
+        X = [cas.vertcat(cas.vec(R_t[k]), cas.vec(p_obj[k])) for k in range(window_len)]
 
         # Define system controls (invariants at every time step)
         U = opti.variable(3,window_len-1)
 
         # Define system parameters P (known values in optimization that need to be set right before solving)
         p_obj_m = [] # measured object positions
-        R_t_0 = opti.parameter(3,3) # initial translational Frenet-Serret frame at first sample of window
         for k in range(window_len):
             p_obj_m.append(opti.parameter(3,1)) # object position
+        R_t_0 = opti.parameter(3,3) # initial translational Frenet-Serret frame at first sample of window
 
         h = opti.parameter(1,1)
         
@@ -48,12 +44,12 @@ class OCP_calc_pos:
         # Lower bounds on controls
         if bool_unsigned_invariants:
             opti.subject_to(U[0,:]>=0) # lower bounds on control
-            opti.subject_to(U[1,:]>=0) # lower bounds on control
+            #opti.subject_to(U[1,:]>=0) # lower bounds on control
 
         # 2D contour   
         if planar_task:
             for k in range(window_len):
-                opti.subject_to( cas.dot(R_t[k][:,1],np.array([0,0,1])) > 0)
+                opti.subject_to( cas.dot(R_t[k][:,2],np.array([0,0,1])) > 0)
             
         # Additional constraint: First invariant remains constant throughout the window
         if geometric:
@@ -75,7 +71,7 @@ class OCP_calc_pos:
                 err_deriv = U[:,k] - U[:,k-1] # first-order finite backwards derivative (noise smoothing effect)
             else:
                 err_deriv = 0
-            err_abs = U[[1,2],k] # absolute value invariants (force arbitrary invariants to zero)
+            err_abs = U[[1,2],k] # absolute value invariants (force arbitrary invariants in singularities to zero)
 
             ##Check that obj function is correctly typed in !!!
             objective_reg = objective_reg \
@@ -86,7 +82,7 @@ class OCP_calc_pos:
 
         #%% Define solver and save variables
         opti.minimize(objective)
-        opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':1000,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
+        opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':1000,'tol':1e-4,'print_level':0,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
         
         # Save variables
         self.R_t = R_t
@@ -99,7 +95,7 @@ class OCP_calc_pos:
         self.first_window = True
         self.h = h
          
-    def calculate_invariants_global(self,trajectory_meas,stepsize):
+    def calculate_invariants(self,trajectory_meas,stepsize):
         #%%
 
         if trajectory_meas.shape[1] == 3:
@@ -113,8 +109,8 @@ class OCP_calc_pos:
         Pdiff = np.diff(measured_positions,axis=0)
         ex = Pdiff / np.linalg.norm(Pdiff,axis=1).reshape(N-1,1)
         ex = np.vstack((ex,[ex[-1,:]]))
-        ey = np.tile( np.array((0,0,1)), (N,1) )
-        ez = np.array([np.cross(ex[i,:],ey[i,:]) for i in range(N)])
+        ez = np.tile( np.array((0,0,1)), (N,1) )
+        ey = np.array([np.cross(ez[i,:],ex[i,:]) for i in range(N)])
         
         for k in range(N):
             self.opti.set_initial(self.R_t[k], np.array([ex[k,:], ey[k,:], ez[k,:]]).T ) #construct_init_FS_from_traj(meas_traj.Obj_location)
@@ -156,7 +152,7 @@ class OCP_calc_pos:
         #%%
         if self.first_window:
             # Calculate invariants in first window
-            invariants, calculated_trajectory, calculated_movingframe = self.calculate_invariants_global(trajectory_meas,stepsize)
+            invariants, calculated_trajectory, calculated_movingframe = self.calculate_invariants(trajectory_meas,stepsize)
             self.first_window = False
             
             

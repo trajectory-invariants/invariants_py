@@ -150,12 +150,8 @@ class OCP_gen_pose:
         ocp.add_objective(objective)
         if fatrop_solver:
             ocp.method(rockit.external_method('fatrop' , N=window_len-1))
-            # ocp._method.set_name("generation_pose")
-            # TEMPORARY SOLUTION TO HAVE ONLINE GENERATION
-            import random
-            import string
-            rand = "".join(random.choices(string.ascii_lowercase))
-            ocp._method.set_name("/codegen/generation_pose_"+rand)
+            ocp._method.set_expand(True) 
+            ocp._method.set_name("/codegen/generation_pose")
         else:
             ocp.method(rockit.MultipleShooting(N=window_len-1))
             ocp.solver('ipopt', {'expand':True})

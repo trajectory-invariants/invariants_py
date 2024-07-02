@@ -11,13 +11,9 @@ before_script:
   - python -V  # Print out python version for debugging
 
 run_examples:
-  rules:
-    - changes:
-        - "**/*.md"
-      when: never
-    - changes:
-        - "**/*"
-      when: always
+  except:
+    changes:
+      - "**/*.md"  # do not run a pipeline if only markdown files are changed
   script:
     # install invariants_py
     - pip install --upgrade pip
@@ -34,10 +30,10 @@ run_examples:
     - cd ../..
 
     # install rockit and rockit-fatrop plugin
-    - git clone -b acados_codegen https://gitlab.kuleuven.be/meco-software/rockit.git
-    - git clone -b fatropy https://gitlab.kuleuven.be/u0110259/rockit_fatrop_plugin.git ./rockit/rockit/external/fatrop
-    #- git clone https://gitlab.kuleuven.be/meco-software/rockit.git
-    #- git clone https://gitlab.kuleuven.be/u0110259/rockit_fatrop_plugin.git ./rockit/rockit/external/fatrop
+    # - git clone -b acados_codegen https://gitlab.kuleuven.be/meco-software/rockit.git
+    # - git clone -b fatropy https://gitlab.kuleuven.be/u0110259/rockit_fatrop_plugin.git ./rockit/rockit/external/fatrop
+    - git clone https://gitlab.kuleuven.be/meco-software/rockit.git
+    - git clone https://gitlab.kuleuven.be/u0110259/rockit_fatrop_plugin.git ./rockit/rockit/external/fatrop
     - cd rockit
     - pip install .
     - cd ..

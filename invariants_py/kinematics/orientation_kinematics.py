@@ -238,22 +238,32 @@ def logm(R):
     ----------
     R : a (3,3) numpy array
         orthonormal rotation matrix
+
     Returns
     -------
-    A skew symmetric matrix corresponding to the displacement rotation
+    A (3x3) skew-symmetric matrix corresponding to the displacement rotation
     """
-    axis = crossvec(R)
-    sa   = norm(axis)
-    ca   = (trace(R)-1)/2.0
-    if ca<-1:
-        ca=-1
-    if ca>1:
-        ca=1
-    if sa<1E-17:
-        alpha=1/2.0
+    # Cosine of the rotation angle
+    ca = (trace(R)-1)/2.0
+
+    # Special case rotation angle = 0
+    if np.isclose(ca,1):
+        return np.zeros((3,3))
+    
+    # Special case rotation angle = pi or -pi
+    if np.isclose(ca,-1):
+        _,_,VT = np.linalg.svd(R - np.eye(3)) # R*v = v --> (R-I)*v = 0
+        rotation_vec = VT[-1,:]
+        rotation_vec = rotation_vec/np.linalg.norm(rotation_vec)
+        alpha = np.pi
+        return crossmat(rotation_vec)*alpha
+
+    # General case
     else:
+        axis = crossvec(R)
+        sa = norm(axis)
         alpha = math.atan2(sa,ca)/sa/2.0   
-    return (R-R.T)*alpha
+        return (R-R.T)*alpha
 
 def rotate_x(alpha):
     """Returns orthonormal rotation matrix corresponding to rotating around X by alpha"""

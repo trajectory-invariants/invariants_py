@@ -24,7 +24,7 @@ plotters.plot_trajectory_test(trajectory)
 FS_calculation_problem = OCP_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, w_pos = 1, w_deriv = (10**-5)*np.array([1.0, 1.0, 1.0]), w_abs = (10**-6)*np.array([1.0, 1.0]))
 
 # Calculate invariants given measurements
-invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
+invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants(trajectory,stepsize)
 
 init_vals_calculate_trajectory = calculate_trajectory
 init_vals_movingframes = movingframes

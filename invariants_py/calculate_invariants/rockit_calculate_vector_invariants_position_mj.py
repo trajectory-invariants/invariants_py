@@ -8,8 +8,13 @@ from invariants_py.ocp_helper import check_solver
 
 class OCP_calc_pos:
 
-    def __init__(self, nb_samples = 100, w_pos = 1, w_regul_jerk = 10**-6 , w_regul_invars = 10**-10, fatrop_solver = False, planar_task = False):
+    def __init__(self, window_len = 100, w_pos = 1, w_regul_jerk = 10**-5 , bool_unsigned_invariants = False, w_regul_invars = 0, fatrop_solver = False, planar_task = False, solver_options = {}):
         fatrop_solver = check_solver(fatrop_solver)               
+
+        # Set solver options
+        tolerance = solver_options.get('tol',1e-4) # tolerance for the solver
+        max_iter = solver_options.get('max_iter',500) # maximum number of iterations
+        print_level = solver_options.get('print_level',5) # 5 prints info, 0 prints nothing
 
         #%% Decision variables and parameters for the optimization problem 
         self.ocp = rockit.Ocp(T=1.0)        
@@ -61,8 +66,13 @@ class OCP_calc_pos:
             # a . b < 0 -> a and b are pointing in the opposite direction 
             self.ocp.subject_to(cas.dot( self.R_t_z , np.array([0,0,1]) ) > 0)  
 
+        # Lower bounds on controls
+        if bool_unsigned_invariants:
+            self.ocp.subject_to(self.i1 >= 0) # velocity always positive
+            #ocp.subject_to(invars[1,:]>=0) # curvature rate always positive
+
         #%% Objective function
-        self.N_controls = nb_samples-1
+        self.N_controls = window_len-1
 
         # Term 1: Measurement fitting constraint
         obj_fit = self.ocp.sum(1/self.N_controls*w_pos*cas.dot(self.p_obj-self.p_obj_m,self.p_obj-self.p_obj_m))
@@ -83,16 +93,16 @@ class OCP_calc_pos:
         #%% Solver options
         
         if fatrop_solver: 
-            method = rockit.external_method('fatrop', N=self.N_controls)
-            self.ocp.method(method)
+            self.ocp.method(rockit.external_method('fatrop',N=self.N_controls))
+            self.ocp._method.set_expand(True)
         else:
             self.ocp.method(rockit.MultipleShooting(N=self.N_controls))
             #ocp.solver('ipopt', {'expand':True})
-            silent_ipopt_options = {"print_time":False,"expand":True,"ipopt.print_level":0,'ipopt.max_iter':200,'ipopt.tol':1e-8}
+            silent_ipopt_options = {"print_time":False,"expand":True,"ipopt.print_level":print_level,'ipopt.max_iter':max_iter,'ipopt.tol':tolerance}
             self.ocp.solver('ipopt', silent_ipopt_options)
         
         # Solve already once with dummy measurements
-        self.initialize_solver(nb_samples)
+        self.initialize_solver(window_len)
         if fatrop_solver:
             self.ocp._method.set_option("print_level",0)
             self.ocp._method.set_option("tol",1e-12)
@@ -143,7 +153,7 @@ class OCP_calc_pos:
         self.ocp.set_value(self.h,1)
         self.ocp.solve_limited()
         
-    def calculate_invariants_online(self,measured_positions,stepsize,window_step=1):
+    def calculate_invariants(self,measured_positions,stepsize,window_step=1):
         #%%
         use_previous_solution = False 
         # ---> Added by Arno, it might not be the best way to always use the previous solution as initialisation for the next window. 
@@ -205,7 +215,7 @@ class OCP_calc_pos:
 
         
     #%%     
-    # def calculate_invariants_global_old(self,trajectory_meas,stepsize):
+    # def calculate_invariants_old(self,trajectory_meas,stepsize):
     #     """
     #     !! OLD AND OUTDATED !!
     #     """
@@ -287,7 +297,7 @@ class OCP_calc_pos:
         
     #     if self.first_window:
     #         # Calculate invariants in first window
-    #         invariants, calculated_trajectory, calculated_movingframe = self.calculate_invariants_global_old(measured_positions,stepsize)
+    #         invariants, calculated_trajectory, calculated_movingframe = self.calculate_invariants_old(measured_positions,stepsize)
     #         self.first_window = False
                     
     #         #self.opti.subject_to( self.R_t[0] == self.R_t_0 ) # Add continuity constraints on first sample
@@ -329,20 +339,40 @@ class OCP_calc_pos:
     #     return invariants, calculated_trajectory, calculated_movingframe
 
 if __name__ == "__main__":
-    # Example data for measured positions and the stepsize
-    measured_positions = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12], [13, 14, 15], [16, 17, 18]])
-    stepsize = 0.05
+    import matplotlib.pyplot as plt
+
+    # Example data for measured positions and stepsize
+    N = 100
+    t = np.linspace(0, 4, N)
+    measured_positions = np.column_stack((1 * np.cos(t), 1 * np.sin(t), 0.1 * t))
+    stepsize = t[1]-t[0]
 
     # Test the functionalities of the class
-    OCP = OCP_calc_pos(nb_samples=np.size(measured_positions,0),fatrop_solver=False)
- 
-    # Call the calculate_invariants_online function
-    calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants_online(measured_positions, stepsize)
+    OCP = OCP_calc_pos(window_len=N, fatrop_solver=True)
 
-    # Print the results
-    print("Calculated invariants:")
-    print(calc_invariants)
-    print("Calculated Moving Frame:")
-    print(calc_movingframes)
-    print("Calculated Trajectory:")
-    print(calc_trajectory)
+    # Call the calculate_invariants function and measure the elapsed time
+    #start_time = time.time()
+    calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_positions, stepsize)
+    #elapsed_time = time.time() - start_time
+
+    ocp_helper.solution_check_pos(measured_positions,calc_trajectory,rms = 10**-3)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(measured_positions[:, 0], measured_positions[:, 1], measured_positions[:, 2],'b.-')
+    ax.plot(calc_trajectory[:, 0], calc_trajectory[:, 1], calc_trajectory[:, 2],'r--')
+
+    fig = plt.figure()
+    plt.plot(calc_invariants)
+    plt.show()
+
+    #plt.plot(calc_trajectory)
+    #plt.show()
+    # # Print the results and elapsed time
+    # print("Calculated invariants:")
+    # print(calc_invariants)
+    # print("Calculated Moving Frame:")
+    # print(calc_movingframes)
+    # print("Calculated Trajectory:")
+    # print(calc_trajectory)
+    # print("Elapsed Time:", elapsed_time, "seconds")

@@ -56,7 +56,9 @@ class OCP_calc_pos:
         p_obj = ocp.state(3) # position trajectory (xyz-coordinates)
         R_t_vec = ocp.state(9) # moving frame (Frenet-Serret frame) as a 9x1 vector
         R_t = cas.reshape(R_t_vec,(3,3)) # reshape vector to 3x3 rotation matrix
-        invars = ocp.control(3) # invariants (velocity, curvature rate, torsion rate)
+        invars = ocp.state(3) # invariants (velocity, curvature rate, torsion rate)
+
+        invars_deriv = ocp.control(3) # invariants derivatives
 
         # Parameters
         p_obj_m = ocp.parameter(3,grid='control+') # measured position trajectory (xyz-coordinates)
@@ -68,6 +70,7 @@ class OCP_calc_pos:
         (R_t_plus1, p_obj_plus1) = integrate_vector_invariants_position(R_t, p_obj, invars, h)
         ocp.set_next(p_obj,p_obj_plus1)
         ocp.set_next(R_t,R_t_plus1)
+        ocp.set_next(invars,invars + h*invars_deriv)
 
         """ Constraints """
 
@@ -86,22 +89,24 @@ class OCP_calc_pos:
             # sum of squared position errors in the window should be less than the specified tolerance rms_error_traj
             total_ek = ocp.sum(ek,grid='control',include_last=True)
             ocp.subject_to(total_ek/N < rms_error_traj**2)
-        else:
-            # Fatrop does not support summing over grid points inside the constraint, so we implement it differently to achieve the same result
-            running_ek = ocp.state() # running sum of squared error
-            ocp.subject_to(ocp.at_t0(running_ek == 0))
-            ocp.set_next(running_ek, running_ek + ek)
-            #ocp.subject_to(ocp.at_tf(1000*running_ek/N < 1000*rms_error_traj**2)) # scaling to avoid numerical issues in fatrop
+        #else:
+            # # Fatrop does not support summing over grid points inside the constraint, so we implement it differently to achieve the same result
+            # running_ek = ocp.state() # running sum of squared error
+            # ocp.subject_to(ocp.at_t0(running_ek == 0))
+            # ocp.set_next(running_ek, running_ek + ek)
+            # ocp.subject_to(ocp.at_tf(1000*running_ek/N < 1000*rms_error_traj**2)) # scaling to avoid numerical issues in fatrop
             
-            # TODO this is still needed because last sample is not included in the sum now
-            total_ek = ocp.state() # total sum of squared error
-            ocp.set_next(total_ek, total_ek)
-            ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
-            # total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
-            ocp.subject_to(total_ek/N < rms_error_traj**2)
-            #total_ek_scaled = running_ek/N/rms_error_traj**2 # scaled total error
-            #ocp.subject_to(ocp.at_tf(total_ek_scaled < 1))
+            # # TODO this is still needed because last sample is not included in the sum now
+            # total_ek = ocp.state() # total sum of squared error
+            # ocp.set_next(total_ek, total_ek)
+            # ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
+            # # total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
+            # ocp.subject_to(1000*total_ek/N < 1000*rms_error_traj**2)
+            # #total_ek_scaled = running_ek/N/rms_error_traj**2 # scaled total error
+            # #ocp.subject_to(ocp.at_tf(total_ek_scaled < 1))
             
+            #ocp.subject_to(ek < rms_error_traj**2)
+
         # Boundary conditions (optional, but may help to avoid straight line fits)
         #ocp.subject_to(ocp.at_t0(p_obj == p_obj_m)) # fix first position to measurement
         #ocp.subject_to(ocp.at_tf(p_obj == p_obj_m)) # fix last position to measurement
@@ -118,15 +123,22 @@ class OCP_calc_pos:
 
         # Minimize moving frame invariants to deal with singularities and noise
         objective_reg = ocp.sum(cas.dot(invars[1:3],invars[1:3]))
-        objective = objective_reg/(N-1)
+        objective = 0.000001*objective_reg/(N-1)
         ocp.add_objective(objective)
+
+        objective_reg2 = ocp.sum(cas.dot(invars_deriv,invars_deriv))
+        objective_reg2_scaled = 0.000001*objective_reg2/(N-1)  
+        ocp.add_objective(objective_reg2_scaled)
+
+        objective_fit = ocp.sum(ek, include_last=True)
+        ocp.add_objective(objective_fit)
 
         """ Solver definition """
 
         if check_solver(fatrop_solver):
             ocp.method(rockit.external_method('fatrop',N=N-1))
-            ocp._method.set_name("/codegen/calculate_position")  
-            ocp._method.set_expand(True) 
+            ocp._method.set_name("/codegen/calculate_position") 
+            ocp._method.set_expand(True)   
         else:
             ocp.method(rockit.MultipleShooting(N=N-1))
             ocp.solver('ipopt', {'expand':True, 'ipopt.tol':tolerance,'ipopt.print_info_string':'yes', 'ipopt.max_iter':max_iter,'ipopt.print_level':print_level, 'ipopt.ma57_automatic_scaling':'no', 'ipopt.linear_solver':'mumps'})
@@ -185,10 +197,6 @@ class OCP_calc_pos:
         - calculated_trajectory (numpy.ndarray of shape (N, 3)): fitted trajectory corresponding to invariants
         - calculated_movingframes (numpy.ndarray of shape (N, 3, 3)): moving frames corresponding to invariants
         """
-
-        if not measured_positions.shape[1] == 3:
-            measured_positions = measured_positions[:,:3,3]
-
 
         # Check if this is the first function call
         if not use_previous_solution or self.first_time:
