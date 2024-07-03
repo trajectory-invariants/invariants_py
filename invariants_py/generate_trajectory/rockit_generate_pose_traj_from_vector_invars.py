@@ -1,9 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Mar  22 2024
 
-@author: Riccardo
-"""
 
 import numpy as np
 import casadi as cas

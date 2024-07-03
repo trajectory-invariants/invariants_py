@@ -1,4 +1,4 @@
-r"""
+"""
 The SE3 module provides operations on objects relevant in SE3, such as
 homogeneous transformation matrices and screws. 
 
@@ -11,7 +11,6 @@ exponential/logarithms and transformation. Specialized routines for exponential
 and logarithms in SE3 are provided that deliver better performance and accuracy
 than the general purpose routines in e.g. SciPy. 
 
-*Erwin Aertbelien, 2021*
 """
 
 
@@ -60,7 +59,7 @@ def orthonormalize_rotation( T ):
     return T
 
 def frame( rot=None, p=None):
-    r"""
+    """
     Creates a 4x4 homogeneous transformation matrix (in SE3)
 
     Parameters
@@ -81,19 +80,19 @@ def frame( rot=None, p=None):
     return F
 
 def orient(F):
-    r"""
+    """
     orient(F) returns the rotation matrix part of a homegenous tf F.
     """
     return F[:3,:3]
 
 def origin(F):
-    r"""
+    """
     origin(F) returns the origin of a homegenous transformation matrix F.
     """
     return F[:3,3]
 
 def screw_transform(T):
-    r"""
+    """
     screw_transform(T) and screw_transform_se3(T) return a screw transformation
     matrix corresponding to the homegeneous transformation matrix T in se3.
 
@@ -105,7 +104,7 @@ def screw_transform(T):
     return S
 
 def screw_transform_se2(T):
-    r"""
+    """
     screw_transform_se2(T) returns a screw transformation
     matrix corresponding to the homegeneous transformation matrix T in se2.
 
@@ -116,7 +115,7 @@ def screw_transform_se2(T):
     return S
 
 def screw_orient_transform(T):
-    r"""
+    """
     screw_orient_transform returns a screw transformation in se3
     matrix corresponding to the rotation matrix T.
 
@@ -128,7 +127,7 @@ def screw_orient_transform(T):
     return S
 
 def screw_pos_transform(p):
-    r"""
+    """
     screw_pos_transform returns a screw transformation in se3
     matrix corresponding to the position vector p.
     """
@@ -138,7 +137,7 @@ def screw_pos_transform(p):
     return S
 
 def crossmat(v):
-    r"""
+    """
     crossmat_se3  return a 4x4 matrix corresponding the 6x1 screw vector v  
     
     (3 dof rotation + 3 dof translation) in se3.
@@ -153,7 +152,7 @@ def crossmat(v):
     )
 
 def crossmat_spatial(v):
-    r"""
+    """
     returns Featherstone's spatial cross matrix corresponding to a screw in se3.
 
     Parameters
@@ -180,7 +179,7 @@ def crossmat_spatial(v):
     return np.block( [[OMEGA, ZERO],[VEL, OMEGA]])
 
 def crossvec(M):
-    r"""
+    """
     Returns the vector corresponding to a matrix in se3
     (also sometimes called the "vee" operator)
     (inverse of crossmat_se3)    
@@ -209,7 +208,7 @@ def crossvec(M):
     return result
 
 def expm(M):
-    r"""
+    """
     Matrix exponential in se3 of a 4x4  matrix
 
     Parameters
@@ -246,7 +245,7 @@ def expm(M):
     return result
 
 def logm(T):
-    r"""
+    """
     Matrix logarithm of a homogeneous transformation matrix in SE3
 
     Parameters

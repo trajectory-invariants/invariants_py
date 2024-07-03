@@ -5,7 +5,6 @@ Note: This class has been deprecated.
 Implementation of extended Frenet-Serret invariants:
 optimization problems for calculating invariants and generating new trajectories
 
-@author: Zeno Gillis, Victor Van Wymeersch, Maxim Vochten
 
 """
 

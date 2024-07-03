@@ -1,13 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Mar 6 2024
-
-note: urdf2casadi is not included in the invariants_py installation
-install separately using pip install urdf2casadi or include it in the pyproject.toml file
-
-@author: Riccardo
-"""
-
 import numpy as np
 import casadi as cas
 import rockit

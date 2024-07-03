@@ -1,11 +1,10 @@
-r"""
+"""
 The frames module provides relevant operations on SO3: operations on rotation
 matrices and rotational velocities.
 
 * **SO3/so3** : rotation matrices in 3-dof Euclidean space (3x3 orthonormal matrix)
   / rotational velocity (3-vector consisting of 3-dof rotational velocity)
 
-*Erwin Aertbelien, 2021*
 """
 
 #from numba import jit
@@ -51,13 +50,13 @@ def rot2quat(R_all):
     """
     Transform a 3x3 rotational matrix into the corresponding unit quaternion
 
-        Parameters 
-        ----------
-        R_all : a (3,3) numpy array describing a rotational matrix (or a series of rotational matrices)
+    Parameters 
+    ----------
+    R_all : a (3,3) numpy array describing a rotational matrix (or a series of rotational matrices)
 
-        Returns
-        ----------
-        The corresposing unit quaternion of the form [qx,qy,qz,qw]
+    Returns
+    ----------
+    The corresposing unit quaternion of the form [qx,qy,qz,qw]
 
     Note: one rotation matrix may correspond to two quaternions: +q and -q.
     This ambiguity is normally solved by assuming the scalar part positive.
@@ -118,7 +117,7 @@ def rot2quat(R_all):
     return q_all
 
 def crossmat(v):
-    r"""
+    """
     Returns a 3x3 skew symmetric matrix corresponding the the 3D vector v.
     (in so3).  (also called the "hat"-operator in so3).
     
@@ -127,7 +126,7 @@ def crossmat(v):
                       [v[2], 0, -v[0]],
                       [-v[1],v[0],0] ])
 def crossvec(M):
-    r"""
+    """
     Returns the vector corresponding to the skew symmetric matrix in so3
     (also sometimes called the "vee" operator)
     
@@ -145,7 +144,7 @@ def crossvec(M):
     return np.array([ M[2,1]-M[1,2], M[0,2]-M[2,0], M[1,0] - M[0,1] ])/2.0
 
 def rot(rotvec,angle):
-    r"""
+    """
     Returns a rotation matrix in SO3 corresponding to rotating
     around the (NORMALIZED) vector "rotvec" with a given angle "angle"
 
@@ -188,7 +187,7 @@ def rot(rotvec,angle):
 
 
 def expm(M):
-    r"""
+    """
     Matrix exponential in so3 of a 3x3 skew symmetric matrix
 
     Parameters
@@ -210,7 +209,7 @@ def expm(M):
         return rot(rotvec/n,n)
 
 def getRot(R):
-    r"""
+    """
     gets the rotation axis corresponding to an orthonormal matrix.
 
     Parameters
@@ -231,7 +230,7 @@ def getRot(R):
         return axis*alpha
     
 def logm(R):
-    r"""
+    """
     Matrix logarithm of an orthonormal matrix
 
     Parameters
@@ -302,12 +301,6 @@ def RPY(roll,pitch,yaw):
             "pitch" around original Y and "yaw"  around original Z.
             This is exactly the same as rotating around "yaw" around the Z-axis, with "pitch"
             around the NEW Y-axis and "roll" around the NEW X-axis.
-
-    notes
-    -----
-    from my KDL implementation.
-
-    E. Aertbelien sept 2021
     """
     ca1 = math.cos(yaw)
     sa1 = math.sin(yaw)
@@ -334,12 +327,6 @@ def getRPY(R):
             "pitch" around original Y and "yaw"  around original Z.
             This is exactly the same as rotating around "yaw" around the Z-axis, with "pitch"
             around the NEW Y-axis and "roll" around the NEW X-axis.
-    
-    Notes
-    -----
-    from my KDL implementation.
-
-    E. Aertbelien sept 2021
     """
     data=R.flatten()
     epsilon=1E-12;
