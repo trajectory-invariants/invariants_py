@@ -263,7 +263,7 @@ if __name__ == "__main__":
     timestep = 0.01
 
     # Create an instance of OCP_calc_rot
-    ocp = OCP_calc_rot(window_len=N, rms_error_traj=0.00001*pi/180, solver_options={'print_level':5,'max_iter':200})
+    ocp = OCP_calc_rot(window_len=N, rms_error_traj=0.000000001*pi/180, solver_options={'print_level':5,'max_iter':100})
     
     # Calculate invariants using the calculate_invariants method
     invars, calc_trajectory, calc_movingframes = ocp.calculate_invariants(measured_orientations, timestep, choice_initialization=2)
