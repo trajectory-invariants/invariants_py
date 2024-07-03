@@ -80,7 +80,7 @@ class OCP_calc_rot:
 
         ''' Define solver '''
 
-        #%% Define solver and save variables
+        ''' Define solver and save variables '''
         opti.minimize(objective)
         opti.solver('ipopt',
                     {"print_time":True,"expand":True},{'max_iter':max_iter,'tol':tolerance,'print_level':print_level,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
@@ -98,7 +98,7 @@ class OCP_calc_rot:
         self.h = h
          
     def calculate_invariants(self,trajectory_meas,stepsize, choice_initialization=0): 
-        #%%
+        
         from invariants_py.initialization import calculate_velocity_from_discrete_rotations, estimate_movingframes
         from invariants_py.dynamics_vector_invariants import reconstruct_rotation_traj
 
@@ -172,7 +172,7 @@ class OCP_calc_rot:
         return invariants, calculated_trajectory, calculated_movingframe
 
     def calculate_invariants_online(self,trajectory_meas,stepsize,sample_jump):
-        #%%
+        
         if self.first_window:
             # Calculate invariants in first window
             invariants, calculated_trajectory, calculated_movingframe = self.calculate_invariants(trajectory_meas,stepsize)
@@ -189,7 +189,7 @@ class OCP_calc_rot:
             measured_orientation = trajectory_meas[:,:3,:3]
             N = self.window_len
             
-            #%% Set values parameters
+            ''' Set values parameters '''
             #for k in range(1,N):
             #    self.opti.set_value(self.p_obj_m[k], measured_positions[k-1])   
             
@@ -202,7 +202,7 @@ class OCP_calc_rot:
             
             self.opti.set_value(self.h,stepsize)
         
-            #%% First part of window initialized using results from earlier solution
+            ''' First part of window initialized using results from earlier solution '''
             # Initialize states
             for k in range(N-sample_jump-1):
                 self.opti.set_initial(self.R_r[k], self.sol.value(self.R_r[sample_jump+k]))
@@ -212,7 +212,7 @@ class OCP_calc_rot:
             for k in range(N-sample_jump-1):    
                 self.opti.set_initial(self.U[:,k], self.sol.value(self.U[:,sample_jump+k]))
                 
-            #%% Second part of window initialized uses default initialization
+            ''' Second part of window initialized uses default initialization '''
             # Initialize states
             for k in range(N-sample_jump,N):
                 self.opti.set_initial(self.R_r[k], self.sol.value(self.R_r[-1]))
@@ -224,7 +224,7 @@ class OCP_calc_rot:
 
             #print(self.sol.value(self.R_t[-1]))
 
-            #%% Solve the NLP
+            ''' Solve the NLP '''
             sol = self.opti.solve_limited()
             self.sol = sol
             

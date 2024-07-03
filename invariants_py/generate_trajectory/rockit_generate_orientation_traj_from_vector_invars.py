@@ -14,7 +14,7 @@ class OCP_gen_rot:
         
         fatrop_solver = check_solver(fatrop_solver)               
        
-        #%% Create decision variables and parameters for the optimization problem
+        ''' Create decision variables and parameters for the optimization problem '''
         
         ocp = rockit.Ocp(T=1.0)
 
@@ -42,7 +42,7 @@ class OCP_gen_rot:
         
         w_invars = ocp.parameter(3,grid='control',include_last=True) # weights for invariants
 
-        #%% Specifying the constraints
+        ''' Specifying the constraints '''
         
         # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
         ocp.subject_to(ocp.at_t0(tril_vec(R_r.T @ R_r - np.eye(3))==0.))
@@ -74,12 +74,12 @@ class OCP_gen_rot:
         ocp.set_next(R_obj,R_obj_plus1)
         ocp.set_next(R_r,R_r_plus1)
             
-        #%% Specifying the objective
+        ''' Specifying the objective '''
 
         # Fitting constraint to remain close to measurements
         objective = ocp.sum(1/window_len*cas.dot(w_invars*(invars - invars_demo),w_invars*(invars - invars_demo)),include_last=True)
 
-        #%% Define solver and save variables
+        ''' Define solver and save variables '''
         ocp.add_objective(objective)
         if fatrop_solver:
             ocp.method(rockit.external_method('fatrop' , N=window_len-1))

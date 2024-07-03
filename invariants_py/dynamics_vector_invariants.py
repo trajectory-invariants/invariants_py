@@ -204,7 +204,7 @@ def define_integrator_invariants_position_jerkmodel(h):
     i3 = cas.MX.sym('i3')
     u = cas.vertcat(i1ddot,i2dot,i3)
 
-    #%% Define geometric integrator
+    ''' Define geometric integrator '''
     ## Define a geometric integrator for eFSI, (meaning rigid-body motion is perfectly integrated assuming constant invariants)
     invariants = cas.vertcat(i1,i2,i3)
     (R_t_plus1, p_obj_plus1) = integrate_vector_invariants_position(R_t, p_obj, invariants, h)

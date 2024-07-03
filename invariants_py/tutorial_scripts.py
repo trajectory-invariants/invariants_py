@@ -26,7 +26,7 @@ class OCP_results:
         self.Obj_pos = Obj_pos
         self.Obj_frames = Obj_frames
         self.invariants = invariants
-#%%
+
 def calculate_invariants(data_location, plot_demo = True, use_fatrop_solver = False, plot_inv = True, traj_type = "position"):
     trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
     pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
@@ -45,7 +45,6 @@ def calculate_invariants(data_location, plot_demo = True, use_fatrop_solver = Fa
         for i in indx:
             pl.plot_3d_frame(trajectory_position[i,:],trajectory_orientation[i,:,:],1,0.01,['red','green','blue'],ax)
 
-    #%%
     optim_calc_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((len(trajectory),6)))
 
     
@@ -90,7 +89,7 @@ def calculate_invariants(data_location, plot_demo = True, use_fatrop_solver = Fa
 
     return optim_calc_results
 
-#%%
+
 def generate_trajectory(data_location, optim_calc_results, p_obj_end, rotate, use_fatrop_solver = False, plot_new_trajectory = True, traj_type = "position"):
     trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
     pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
@@ -108,8 +107,7 @@ def generate_trajectory(data_location, optim_calc_results, p_obj_end, rotate, us
         
         resampled_invariants[:,0] = resampled_invariants[:,0] *  (progress_values[-1] - progress_values[0])
         return resampled_invariants, new_stepsize
-
-    #%% 
+ 
     current_progress = 0
     number_samples = 100
 

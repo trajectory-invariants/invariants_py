@@ -22,7 +22,7 @@ from invariants_py.reparameterization import interpR
 from invariants_py.initialization import initial_trajectory_movingframe_rotation
 import random
 
-#%%
+
 data_location = dh.find_data_path('beer_1.txt')
 trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
@@ -45,7 +45,7 @@ for i in indx:
     pl.plot_3d_frame(trajectory_position[i,:],trajectory_orientation[i,:,:],1,0.01,['red','green','blue'],ax)
     pl.plot_stl(opener_location,trajectory_position[i,:],trajectory_orientation[i,:,:],colour="c",alpha=0.2,ax=ax)    
 
-#%%
+
 # define class for OCP results
 class OCP_results:
 
@@ -89,7 +89,7 @@ pl.plot_invariants(optim_calc_results.invariants,[],arclength_n)
 if plt.get_backend() != 'agg':
     plt.show()
 
-#%%
+
 # Spline of model
 knots = np.concatenate(([arclength_n[0]],[arclength_n[0]],arclength_n,[arclength_n[-1]],[arclength_n[-1]]))
 degree = 3
@@ -103,7 +103,7 @@ def interpolate_model_invariants(demo_invariants, progress_values):
     resampled_invariants[:,0] = resampled_invariants[:,0] *  (progress_values[-1] - progress_values[0])
     return resampled_invariants, new_stepsize
 
-#%% 
+ 
 current_progress = 0
 number_samples = 100
 
