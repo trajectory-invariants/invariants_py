@@ -1,5 +1,5 @@
 import numpy as np
-from orientation_kinematics import crossmat
+from invariants_py.kinematics.orientation_kinematics import crossmat
 
 def average_screw_intersection_point(screw_set, p0=np.array([0,0,0]), regul=1E-6, bool_calc_uncertainty=False):
     """
