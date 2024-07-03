@@ -441,7 +441,7 @@ def plot_stl(stl_file_location,pos,R,colour,alpha,ax):
 
     """
     stl_mesh = mesh.Mesh.from_file(stl_file_location)
-    R = orthonormalize_rotation(R)
+    R = orthonormalize_rotation(R) # avoids "AssertionError: Rotation matrix has not a unit determinant"
     Tr  = np.vstack((np.hstack((R,np.array([pos]).T)), [0,0,0,1]))
     stl_mesh.transform(Tr)
     collection = mplot3d.art3d.Poly3DCollection(stl_mesh.vectors)
