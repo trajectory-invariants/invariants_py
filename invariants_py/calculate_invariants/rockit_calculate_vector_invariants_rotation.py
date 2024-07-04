@@ -21,7 +21,7 @@ class OCP_calc_rot:
         N = window_len # number of samples in the window
         fatrop_solver = check_solver(fatrop_solver)    
            
-        #%% Create decision variables and parameters for the optimization problem
+        ''' Create decision variables and parameters for the optimization problem '''
         
         # Define system states X (unknown object orientation + moving frame orientation at every time step) 
         R_obj_vec = ocp.state(9) # object orientation
@@ -43,7 +43,7 @@ class OCP_calc_rot:
         ocp.set_next(R_obj,R_obj_plus1)
         ocp.set_next(R_r,R_r_plus1)
             
-        #%% Specifying the constraints
+        ''' Specifying the constraints '''
         
         # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
         ocp.subject_to(ocp.at_t0(tril_vec(R_obj.T @ R_obj - np.eye(3))==0.))
@@ -76,14 +76,14 @@ class OCP_calc_rot:
             ocp.subject_to(total_ek/N < rms_error_traj**2) # scaled total error
             # #ocp.subject_to(total_ek_scaled < 1)
 
-        #%% Specifying the objective
+        ''' Specifying the objective '''
 
         # Minimize moving frame invariants to deal with singularities and noise
         objective_reg = ocp.sum(cas.dot(invars[1:3],invars[1:3]))
         objective = objective_reg/(N-1)
         ocp.add_objective(objective)
 
-        #%% Define solver and save variables
+        ''' Define solver and save variables '''
         
         if fatrop_solver:
             ocp.method(rockit.external_method('fatrop', N=N-1))
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     timestep = 0.001
     
     # Specify OCP symbolically
-    OCP = OCP_calc_rot(window_len=N,fatrop_solver=True, rms_error_traj=5*pi/180)
+    OCP = OCP_calc_rot(window_len=N, fatrop_solver=True, rms_error_traj=1*pi/180)
 
     # Solve the OCP using the specified data
     calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_orientations, timestep)

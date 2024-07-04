@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Mar 19 2024
-
-@author: Riccardo
-"""
 import os
 import urdf2casadi.urdfparser as u2c
 from invariants_py.kinematics.rigidbody_kinematics import rotate_z

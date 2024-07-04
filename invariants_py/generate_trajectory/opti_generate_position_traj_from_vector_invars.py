@@ -8,7 +8,7 @@ from invariants_py import spline_handler as sh
 class OCP_gen_pos:
 
     def __init__(self, N = 40, w_invars = (10**-3)*np.array([1.0, 1.0, 1.0])):  
-        #%% Create decision variables and parameters for the optimization problem
+        ''' Create decision variables and parameters for the optimization problem '''
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables 
 
         # Define system states X (unknown object pose + moving frame pose at every time step) 
@@ -29,7 +29,7 @@ class OCP_gen_pos:
         p_obj_start = opti.parameter(3,1)
         p_obj_end = opti.parameter(3,1)
 
-        #%% Specifying the constraints
+        ''' Specifying the constraints '''
         
         # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
         opti.subject_to(ocp_helper.tril_vec(R_t[0].T @ R_t[0] - np.eye(3)) == 0)
@@ -49,7 +49,7 @@ class OCP_gen_pos:
             # Gap closing constraint
             opti.subject_to(Xk_end==X[k+1])
             
-        #%% Specifying the objective
+        ''' Specifying the objective '''
 
         # Fitting constraint to remain close to measurements
         objective_fit = 0
@@ -58,7 +58,7 @@ class OCP_gen_pos:
             objective_fit = objective_fit + 1/N*cas.dot(err_invars,err_invars)
         objective = objective_fit
 
-        #%% Define solver and save variables
+        ''' Define solver and save variables '''
         opti.minimize(objective)
         opti.solver('ipopt',{"print_time":True},{'print_level':5,'max_iter':100})
         #opti.solver('ipopt',{"print_time":True,"expand":True},{'gamma_theta':1e-12,'tol':1e-6,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','max_iter':100})
@@ -78,7 +78,7 @@ class OCP_gen_pos:
         
          
     def generate_trajectory(self,U_demo,p_obj_init,R_t_init,R_t_start,R_t_end,p_obj_start,p_obj_end,step_size):
-        #%%
+        
 
         N = self.N
         
@@ -124,7 +124,7 @@ class OCP_gen_pos:
         return invariants, calculated_trajectory, calculated_movingframe
     
     def generate_trajectory_global(self,U_demo,initial_values,boundary_constraints,step_size):
-        #%%
+        
         N = self.N
         
         # Initialize states

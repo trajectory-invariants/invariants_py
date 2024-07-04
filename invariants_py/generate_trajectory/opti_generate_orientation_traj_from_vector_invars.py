@@ -6,7 +6,7 @@ class OCP_gen_rot:
 
     def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, w_invars = (10**-3)*np.array([1.0, 1.0, 1.0]), max_iters = 300):
        
-        #%% Create decision variables and parameters for the optimization problem
+        ''' Create decision variables and parameters for the optimization problem '''
         
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
 
@@ -34,7 +34,7 @@ class OCP_gen_rot:
         U_demo = opti.parameter(3,window_len-1) # model invariants
         
 
-        #%% Specifying the constraints
+        ''' Specifying the constraints '''
         
         # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
         opti.subject_to( R_r[0].T @ R_r[0] == np.eye(3))
@@ -55,7 +55,7 @@ class OCP_gen_rot:
             # Gap closing constraint
             opti.subject_to(Xk_end==X[k+1])
             
-        #%% Specifying the objective
+        ''' Specifying the objective '''
 
         # Fitting constraint to remain close to measurements
         objective_fit = 0
@@ -66,7 +66,7 @@ class OCP_gen_rot:
 
         objective = objective_fit
 
-        #%% Define solver and save variables
+        ''' Define solver and save variables '''
         opti.minimize(objective)
         opti.solver('ipopt',{"print_time":True,"expand":True},{'tol':1e-4,'print_level':0,'ma57_automatic_scaling':'no','linear_solver':'mumps','max_iter':100})
         
@@ -85,7 +85,7 @@ class OCP_gen_rot:
         
          
     def generate_trajectory(self,U_demo,R_obj_init,R_r_init,R_r_start,R_r_end,R_obj_start,R_obj_end,step_size):
-        #%%
+        
 
         N = self.window_len
         

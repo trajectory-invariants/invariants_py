@@ -14,7 +14,7 @@ class OCP_calc_pos:
 
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
         
-        #%% Decision variables and parameters
+        ''' Decision variables and parameters '''
         
         # Define system states X (unknown object pose + moving frame pose at every time step)
         p_obj = [opti.variable(3,1) for _ in range(window_len)] # object position
@@ -29,7 +29,7 @@ class OCP_calc_pos:
         R_t_0 = opti.parameter(3,3) # initial translational Frenet-Serret frame at first sample of window
         h = opti.parameter(1,1) # step size for integration of dynamic equations
         
-        #%% Constraints
+        ''' Constraints '''
         
         # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
         opti.subject_to(ocp_helper.tril_vec(R_t[0].T @ R_t[0] - np.eye(3)) == 0)
@@ -73,7 +73,7 @@ class OCP_calc_pos:
         #opti.subject_to(self.p_obj[N-1] == self.p_obj_m[N-1]) # Fix last measurement
         #opti.subject_to(U[1,-1] == U[1,-2]) # Last sample has no impact on RMS error
 
-        #%% Objective function
+        ''' Objective function '''
 
         # Minimize moving frame invariants to deal with singularities and noise
         objective_reg = 0
@@ -82,7 +82,7 @@ class OCP_calc_pos:
             objective_reg = objective_reg + cas.dot(err_abs,err_abs) # cost term
         objective = objective_reg/(window_len-1) # normalize with window length
 
-        #%% Solver
+        ''' Solver '''
         opti.minimize(objective)
         opti.solver('ipopt',{"print_time":False,"expand":True},{
             #'gamma_theta':1e-12,
@@ -99,9 +99,7 @@ class OCP_calc_pos:
         self.first_window = True
         self.h = h
          
-    def calculate_invariants(self,trajectory_meas,stepsize):
-        #%% 
-
+    def calculate_invariants(self,trajectory_meas,stepsize): 
         if trajectory_meas.shape[1] == 3:
             measured_positions = trajectory_meas
         else:
@@ -154,7 +152,7 @@ class OCP_calc_pos:
         return calculate_invariants, calculated_trajectory, calculated_movingframe
 
     def calculate_invariants_online(self,trajectory_meas,stepsize,sample_jump):
-        #%%
+        
         if self.first_window:
             # Calculate invariants in first window
             invariants, calculated_trajectory, calculated_movingframe = self.calculate_invariants(trajectory_meas,stepsize)
@@ -174,7 +172,7 @@ class OCP_calc_pos:
                 measured_positions = trajectory_meas[:,:3,3]
             N = self.window_len
             
-            #%% Set values parameters
+            ''' Set values parameters '''
             #for k in range(1,N):
             #    self.opti.set_value(self.p_obj_m[k], measured_positions[k-1])   
             
@@ -187,7 +185,7 @@ class OCP_calc_pos:
             
             self.opti.set_value(self.h,stepsize);
         
-            #%% First part of window initialized using results from earlier solution
+            ''' First part of window initialized using results from earlier solution '''
             # Initialize states
             for k in range(N-sample_jump-1):
                 self.opti.set_initial(self.R_t[k], self.sol.value(self.R_t[sample_jump+k]))
@@ -197,7 +195,7 @@ class OCP_calc_pos:
             for k in range(N-sample_jump-1):    
                 self.opti.set_initial(self.U[:,k], self.sol.value(self.U[:,sample_jump+k]));
                 
-            #%% Second part of window initialized uses default initialization
+            ''' Second part of window initialized uses default initialization '''
             # Initialize states
             for k in range(N-sample_jump,N):
                 self.opti.set_initial(self.R_t[k], self.sol.value(self.R_t[-1]))
@@ -209,7 +207,7 @@ class OCP_calc_pos:
 
             #print(self.sol.value(self.R_t[-1]))
 
-            #%% Solve the NLP
+            ''' Solve the NLP '''
             sol = self.opti.solve_limited()
             self.sol = sol
             

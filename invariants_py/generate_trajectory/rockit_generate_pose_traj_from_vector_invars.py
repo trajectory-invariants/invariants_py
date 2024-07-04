@@ -1,16 +1,11 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Mar  22 2024
 
-@author: Riccardo
-"""
 
 import numpy as np
 import casadi as cas
 import rockit
 import invariants_py.dynamics_vector_invariants as dynamics
 from invariants_py.kinematics.robot_forward_kinematics import robot_forward_kinematics
-from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag, diffR, diag
+from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag
 from invariants_py.kinematics.orientation_kinematics import rotate_x
 from invariants_py.initialization import generate_initvals_from_constraints
 import invariants_py.data_handler as dh
@@ -34,7 +29,7 @@ class OCP_gen_pose:
             tip = robot_params.get('tip', 'tool0')
             q_init = robot_params.get('q_init', np.zeros(nb_joints))
 
-        #%% Create decision variables and parameters for the optimization problem
+        ''' Create decision variables and parameters for the optimization problem '''
         
         ocp = rockit.Ocp(T=1.0)
         
@@ -82,7 +77,7 @@ class OCP_gen_pose:
         
         w_invars = ocp.parameter(6,grid='control',include_last=True) # weights for invariants
                 
-        #%% Specifying the constraints
+        ''' Specifying the constraints '''
         
         # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
         ocp.subject_to(ocp.at_t0(tril_vec(R_t.T @ R_t - np.eye(3))==0.))
@@ -133,7 +128,7 @@ class OCP_gen_pose:
             ocp.subject_to(invars[0,:]>=0) # lower bounds on control
             ocp.subject_to(invars[1,:]>=0) # lower bounds on control
             
-        #%% Specifying the objective
+        ''' Specifying the objective '''
         # Fitting constraint to remain close to measurements
 
         if include_robot_model:
@@ -146,7 +141,7 @@ class OCP_gen_pose:
         else:
             objective = ocp.sum(1/window_len*cas.dot(w_invars*(invars - invars_demo),w_invars*(invars - invars_demo)),include_last=True)
 
-        #%% Define solver and save variables
+        ''' Define solver and save variables '''
         ocp.add_objective(objective)
         if fatrop_solver:
             ocp.method(rockit.external_method('fatrop' , N=window_len-1))
@@ -364,7 +359,6 @@ class OCP_gen_pose:
     
 
     def generate_trajectory_OLD(self,invars_demo,p_obj_init,R_obj_init,R_t_init,R_r_init,q_init,q_lim,R_t_start,R_r_start,R_t_end,R_r_end,p_obj_start,R_obj_start,p_obj_end,R_obj_end, step_size, invars_init = None, w_invars = (10**-3)*np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), w_high_start = 1, w_high_end = 0, w_high_invars = (10**-3)*np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), w_high_active = 0):
-        #%%
         if invars_init is None:
             invars_init = invars_demo
 

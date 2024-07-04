@@ -122,7 +122,6 @@ class OCP_calc_pos:
         ocp.add_objective(objective)
 
         """ Solver definition """
-
         if check_solver(fatrop_solver):
             ocp.method(rockit.external_method('fatrop',N=N-1))
             ocp._method.set_name("/codegen/calculate_position")  

@@ -51,11 +51,11 @@ class OCP_calc_rot:
             #opti.subject_to(U[1,:]>=0) # lower bounds on control
 
         # Fitting constraint to remain close to measurements
-        objective_fit = 0
+        total_fitting_error = 0
         for k in range(window_len):
             err_rot = tril_vec(R_obj_m[k].T @ R_obj[k] - np.eye(3)) # orientation error
-            objective_fit = objective_fit + cas.dot(err_rot,err_rot)
-        opti.subject_to(objective_fit/window_len < rms_error_traj**2)
+            total_fitting_error = total_fitting_error + cas.dot(err_rot,err_rot)
+        opti.subject_to(total_fitting_error/window_len < rms_error_traj**2)
 
         ''' Specifying the objective '''
 
@@ -80,10 +80,10 @@ class OCP_calc_rot:
 
         ''' Define solver '''
 
-        #%% Define solver and save variables
+        ''' Define solver and save variables '''
         opti.minimize(objective)
         opti.solver('ipopt',
-                    {"print_time":True,"expand":True},{'max_iter':max_iter,'tol':tolerance,'print_level':print_level,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
+                    {"print_time":False,"expand":True},{'max_iter':max_iter,'tol':tolerance,'print_level':print_level,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
         #'gamma_theta':1e-12
 
         # Save variables
@@ -97,10 +97,11 @@ class OCP_calc_rot:
         self.first_window = True
         self.h = h
          
-    def calculate_invariants(self,trajectory_meas,stepsize, choice_initialization=0): 
-        #%%
-        from invariants_py.initialization import calculate_velocity_from_discrete_rotations, estimate_movingframes
+    def calculate_invariants(self,trajectory_meas,stepsize, choice_initialization=2): 
+        
+        from invariants_py.initialization import calculate_velocity_from_discrete_rotations, estimate_movingframes, estimate_rotational_invariants
         from invariants_py.dynamics_vector_invariants import reconstruct_rotation_traj
+        from invariants_py.kinematics.screw_kinematics import average_vector_orientation_frame
 
         measured_orientation = trajectory_meas[:,:3,:3]
         N = self.window_len
@@ -135,6 +136,7 @@ class OCP_calc_rot:
             Rdiff = calculate_velocity_from_discrete_rotations(measured_orientation,timestamps=np.arange(N))
             invariants = np.hstack((1*np.ones((N-1,1)),1e-1*np.ones((N-1,2))))
             R_r_traj = estimate_movingframes(Rdiff)
+            invariants = estimate_rotational_invariants(R_r_traj,Rdiff)
             R_obj_traj = measured_orientation
 
         elif choice_initialization == 3:
@@ -143,6 +145,16 @@ class OCP_calc_rot:
             R_obj_0 = np.eye(3,3)
             invariants = np.hstack((1*np.ones((N-1,1)),1e-1*np.ones((N-1,2))))
             R_obj_traj, R_r_traj = reconstruct_rotation_traj(invariants, stepsize, R_r_0, R_obj_0)
+
+        elif choice_initialization == 4:
+            # Initialization by estimating moving frames with average vector orientation frame
+            Rdiff = calculate_velocity_from_discrete_rotations(measured_orientation,timestamps=np.arange(N))
+            R_avof,_ = average_vector_orientation_frame(Rdiff)
+            # print(R_avof)
+            # print(R_avof.T @ R_avof)
+            R_r_traj = np.tile(R_avof,(N,1,1))
+            R_obj_traj = measured_orientation
+            invariants = np.hstack((1*np.ones((N-1,1)),1e-12*np.ones((N-1,2))))
 
         ''' Set values '''
         # Set initial values states
@@ -172,7 +184,7 @@ class OCP_calc_rot:
         return invariants, calculated_trajectory, calculated_movingframe
 
     def calculate_invariants_online(self,trajectory_meas,stepsize,sample_jump):
-        #%%
+        
         if self.first_window:
             # Calculate invariants in first window
             invariants, calculated_trajectory, calculated_movingframe = self.calculate_invariants(trajectory_meas,stepsize)
@@ -189,7 +201,7 @@ class OCP_calc_rot:
             measured_orientation = trajectory_meas[:,:3,:3]
             N = self.window_len
             
-            #%% Set values parameters
+            ''' Set values parameters '''
             #for k in range(1,N):
             #    self.opti.set_value(self.p_obj_m[k], measured_positions[k-1])   
             
@@ -202,7 +214,7 @@ class OCP_calc_rot:
             
             self.opti.set_value(self.h,stepsize)
         
-            #%% First part of window initialized using results from earlier solution
+            ''' First part of window initialized using results from earlier solution '''
             # Initialize states
             for k in range(N-sample_jump-1):
                 self.opti.set_initial(self.R_r[k], self.sol.value(self.R_r[sample_jump+k]))
@@ -212,7 +224,7 @@ class OCP_calc_rot:
             for k in range(N-sample_jump-1):    
                 self.opti.set_initial(self.U[:,k], self.sol.value(self.U[:,sample_jump+k]))
                 
-            #%% Second part of window initialized uses default initialization
+            ''' Second part of window initialized uses default initialization '''
             # Initialize states
             for k in range(N-sample_jump,N):
                 self.opti.set_initial(self.R_r[k], self.sol.value(self.R_r[-1]))
@@ -224,7 +236,7 @@ class OCP_calc_rot:
 
             #print(self.sol.value(self.R_t[-1]))
 
-            #%% Solve the NLP
+            ''' Solve the NLP '''
             sol = self.opti.solve_limited()
             self.sol = sol
             
@@ -251,15 +263,15 @@ if __name__ == "__main__":
     timestep = 0.01
 
     # Create an instance of OCP_calc_rot
-    ocp = OCP_calc_rot(window_len=N, rms_error_traj=0.05*pi/180, solver_options={'print_level':5,'max_iter':100})
+    ocp = OCP_calc_rot(window_len=N, rms_error_traj=0.000000001*pi/180, solver_options={'print_level':5,'max_iter':100})
     
     # Calculate invariants using the calculate_invariants method
-    invariants_global, calculated_trajectory_global, calculated_movingframe_global = ocp.calculate_invariants(measured_orientations, timestep, choice_initialization=3)
-    
+    invars, calc_trajectory, calc_movingframes = ocp.calculate_invariants(measured_orientations, timestep, choice_initialization=2)
+
     # Print the results
     #print("Global Invariants:")
-    #print(invariants_global)
-    # print("Global Calculated Trajectory:")
-    # print(calculated_trajectory_global)
+    #print(invars)
+    #print("Global Calculated Trajectory:")
+    # print(calc_trajectory)
     #print("Global Calculated Moving Frame:")
-    #print(calculated_movingframe_global)
+    #print(calc_movingframes)

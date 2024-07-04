@@ -16,7 +16,7 @@ class OCP_calc_pos:
         max_iter = solver_options.get('max_iter',500) # maximum number of iterations
         print_level = solver_options.get('print_level',5) # 5 prints info, 0 prints nothing
 
-        #%% Decision variables and parameters for the optimization problem 
+        ''' Decision variables and parameters for the optimization problem  '''
         self.ocp = rockit.Ocp(T=1.0)        
 
         # States
@@ -39,7 +39,7 @@ class OCP_calc_pos:
         self.p_obj_m = self.ocp.register_parameter(cas.MX.sym('p_obj_m',3),grid='control+')
         self.h = self.ocp.register_parameter(cas.MX.sym('step_size'))
 
-        #%% Constraints
+        ''' Constraints '''
 
         # test initial constraint on position
         self.ocp.subject_to(self.ocp.at_tf(self.p_obj == self.p_obj_m))
@@ -71,7 +71,7 @@ class OCP_calc_pos:
             self.ocp.subject_to(self.i1 >= 0) # velocity always positive
             #ocp.subject_to(invars[1,:]>=0) # curvature rate always positive
 
-        #%% Objective function
+        ''' Objective function '''
         self.N_controls = window_len-1
 
         # Term 1: Measurement fitting constraint
@@ -90,7 +90,7 @@ class OCP_calc_pos:
         self.ocp.add_objective(obj_reg_1)
         self.ocp.add_objective(obj_reg_2)
         
-        #%% Solver options
+        ''' Solver options '''
         
         if fatrop_solver: 
             self.ocp.method(rockit.external_method('fatrop',N=self.N_controls))
@@ -154,7 +154,7 @@ class OCP_calc_pos:
         self.ocp.solve_limited()
         
     def calculate_invariants(self,measured_positions,stepsize,window_step=1):
-        #%%
+        
         use_previous_solution = False 
         # ---> Added by Arno, it might not be the best way to always use the previous solution as initialisation for the next window. 
         # For example, if at one instance the solution does not converge, but instead diverges to a very nervous solution, 
@@ -214,7 +214,7 @@ class OCP_calc_pos:
         return invariants, calculated_trajectory, calculated_movingframe
 
         
-    #%%     
+         
     # def calculate_invariants_old(self,trajectory_meas,stepsize):
     #     """
     #     !! OLD AND OUTDATED !!

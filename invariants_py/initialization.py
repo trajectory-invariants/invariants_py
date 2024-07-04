@@ -146,8 +146,6 @@ def calculate_tangent(vector_traj):
     Output:
         tangent: first axis of the moving frame (Nx3)
 
-    TODO: you can do the same for the second axis based on binormal_vector_traj
-    angle between vectors in stable way:  atan2(norm(cross(u,v)),dot(u,v))*180/pi
     """
     
     N = np.size(vector_traj, 0)
@@ -253,6 +251,47 @@ def estimate_movingframes(vector_traj):
     for i in range(N):
         R[i,:,:] = np.column_stack((e_tangent[i,:],e_normal[i,:],e_binormal[i,:]))
     return R
+
+def angle_between_vectors(u, v):
+    """
+    Calculate the angle between two vectors.
+
+    Input:
+        u: first vector
+        v: second vector
+    Output:
+        angle: angle in rad between the two vectors
+    """
+    from math import atan2
+    angle = atan2(np.linalg.norm(np.cross(u,v)),np.dot(u,v))
+    
+    #angle = np.arccos(np.dot(u, v) / (np.linalg.norm(u) * np.linalg.norm(v)))
+    return angle
+
+def estimate_rotational_invariants(R_mf_traj,vector_traj):
+    '''
+    
+    '''
+
+    N = np.size(vector_traj,0)
+    invariants = np.zeros((N,3))
+    
+    # first invariant is the norm of the dot-product between the rotational velocity Rdiff and the first axis of the moving frame
+    for i in range(N):
+        invariants[i,0] = np.dot(vector_traj[i,:],R_mf_traj[i,:,0])
+        
+    # second invariant is the angle between successive first axes of the moving frame
+    for i in range(N-1):
+        invariants[i,1] = angle_between_vectors(R_mf_traj[i,:,0], R_mf_traj[i+1,:,0])
+    
+    # third invariant is the angle between successive third axes of the moving frame
+    for i in range(N-1):
+        invariants[i,2] = angle_between_vectors(R_mf_traj[i,:,2], R_mf_traj[i+1,:,2])
+        
+    invariants[-1,1:] = invariants[-2,1:] # copy last values
+    print(invariants)
+    
+    return invariants
 
 def estimate_initial_frames(vector_traj):    
     # Estimate initial moving frames based on measurements
