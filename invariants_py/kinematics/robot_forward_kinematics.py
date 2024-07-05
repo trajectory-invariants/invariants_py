@@ -1,6 +1,6 @@
 import os
 import urdf2casadi.urdfparser as u2c
-from rigidbody_kinematics import rotate_z
+from invariants_py.kinematics.rigidbody_kinematics import rotate_z
 from math import pi
 import invariants_py.data_handler as dh
 

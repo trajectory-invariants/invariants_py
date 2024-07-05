@@ -15,3 +15,4 @@ codegen/
 __pycache__/
 casadi_codegen.obj
 invariants_py/data/sine_wave_invariants.csv
+venv/
