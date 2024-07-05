@@ -1,7 +1,8 @@
 
 import numpy as np
 import invariants_py.kinematics.orientation_kinematics as SO3
-
+from invariants_py.kinematics.rigidbody_kinematics import inverse_T
+from scipy.linalg import expm, logm
 
 def interpR(x_n, x_p, R_p):
     """
@@ -53,8 +54,52 @@ def interpR(x_n, x_p, R_p):
             
     return R_n
 
-            
-    
+def interpT(x, T, xq):
+    """
+    Interpolates transformation matrices T at query points xq based on given sample points x.
+
+    Parameters:
+    x : 1D array of sample points, must be sorted in ascending order.
+    T : 3D array of shape (N, 4, 4), where N is the number of sample points.
+        Each T[i,:,:] is a 4x4 homogeneous transformation matrix corresponding at progress instance x[i].
+    xq : 1D array of query points, must be within the range of x.
+
+    Returns:
+    np.ndarray: numpy array of shape (M, 4, 4), where M is the number of query points.
+                Each entry is the interpolated 4x4 homogeneous transformation matrix at the corresponding query point.
+
+    Raises:
+    ValueError: If any value in xq is outside the range of x.
+    """
+
+    # Ensure the query points are within the range of sample points
+    if xq[0] < x[0] or xq[-1] > x[-1]:
+        raise ValueError('Cannot interpolate beyond the first or last sample!')
+
+    M = len(xq)  # Number of query points
+    T_interpolated = np.zeros((M, 4, 4))  # Initialize the result array
+
+    j = 0  # Initialize the index for the sample points
+
+    for i in range(M):
+        # Find the segment [x[j], x[j + 1]] that contains xq[i]
+        while xq[i] > x[j + 1]:
+            j += 1
+
+        x0, x1 = x[j], x[j + 1]
+        T0, T1 = T[j, :, :], T[j + 1, :, :]
+
+        if x1 - x0 != 0:
+            # Interpolate using the matrix logarithm and exponential
+            T_new = T0 @ expm((xq[i] - x0) / (x1 - x0) * logm(inverse_T(T0) @ T1))
+        else:
+            # Handle the case where x0 == x1 (should not occur if x is strictly increasing)
+            T_new = T0
+
+        T_interpolated[i, :, :] = T_new  # Store the interpolated matrix
+
+    return T_interpolated
+
 
 def reparameterize_trajectory_arclength(trajectory):
     """

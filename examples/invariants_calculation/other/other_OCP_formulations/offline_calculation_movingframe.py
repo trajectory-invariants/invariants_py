@@ -17,7 +17,7 @@ Load and reparameterize data
 """
 
 # load data
-trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
+trajectory,time = dh.read_pose_trajectory_from_data(data_location, dtype = 'txt')
 
 # reparameterization
 trajectory_geom,arclength,arclength_n,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)

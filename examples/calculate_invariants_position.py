@@ -10,7 +10,7 @@ path_data = dh.find_data_path("sine_wave.txt") # TODO convert sine_wave.txt to s
 
 # Load the trajectory data from the file
 # todo format of data
-trajectory, time = dh.read_pose_trajectory_from_txt(path_data)
+trajectory, time = dh.read_pose_trajectory_from_data(path_data,dtype = 'txt')
 
 # Calculate the invariants of the translation trajectory
 invariants, progress, calc_trajectory, movingframes = invariants_handler.calculate_invariants_translation(trajectory)
