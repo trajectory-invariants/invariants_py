@@ -5,8 +5,10 @@ from invariants_py import ocp_helper
 
 class OCP_calc_pose:    
 
-    def __init__(self, N = 100, bool_unsigned_invariants = False, rms_error_traj = 10**-2):
+    def __init__(self, T_input, bool_unsigned_invariants = False, rms_error_traj = 10**-2):
        
+        N = T_input.shape[0]
+        
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
         
         # Define system states X (unknown object pose + moving frame pose at every time step)
@@ -71,11 +73,15 @@ class OCP_calc_pose:
         self.U = U
 
     def calculate_invariants(self, T_obj_m, h):
-
+        
+        assert(self.N == T_obj_m.shape[0])
+        
         # Initial guess
         T_obj_init = T_obj_m
-        T_isa_init = np.tile(np.eye(4), (100, 1, 1)) # initial guess for moving frame poses
-
+        T_isa_init0 = np.vstack([[0, 0, 1, 0], [0, 1, 0, 0], [-1, 0, 0, 0], [0, 0, 0, 1]]).T
+        T_isa_init = np.tile(T_isa_init0, (self.N, 1, 1)) # initial guess for moving frame poses
+        
+            
         # Set initial guess
         for i in range(self.N):
             self.opti.set_value(self.T_obj_m[i], T_obj_m[i,:3])
