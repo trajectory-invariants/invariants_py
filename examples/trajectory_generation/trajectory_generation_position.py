@@ -11,7 +11,7 @@ from invariants_py.generate_trajectory.opti_generate_position_traj_from_vector_i
 from IPython.display import clear_output
 
 data_location = dh.find_data_path('beer_1.txt')
-trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
+trajectory,time = dh.read_pose_trajectory_from_data(data_location, dtype = 'txt')
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
 trajectory = pose[:,0:3,3]

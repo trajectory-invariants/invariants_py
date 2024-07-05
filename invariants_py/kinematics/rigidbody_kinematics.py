@@ -33,12 +33,22 @@ def random():
     Trand[:3,:3] = U;
     return Trand
 
-def inv(T):
-    Ti=np.zeros((4,4))
-    Ti[:3,:3] = T[:3,:3].transpose()
-    Ti[:3,3]  = - Ti[:3,:3] @ T[:3,3]
-    Ti[3,3] = 1
-    return Ti
+def inverse_T(T):
+    """
+    Computes the inverse of a transformation matrix T in SE(3).
+
+    Parameters:
+    T (array-like): A 4x4 homogenous transformation matrix.
+
+    Returns:
+    np.ndarray: The inverse of the homogeneous transformation matrix.
+    """
+    R = T[:3, :3]
+    t = T[:3, 3]
+    T_inv = np.eye(4)
+    T_inv[:3, :3] = R.T
+    T_inv[:3, 3] = -R.T @ t
+    return T_inv
 
 def orthonormalize_rotation( T ):
     """
@@ -207,7 +217,7 @@ def crossvec(M):
     result[3:] = M[:3,3]
     return result
 
-def expm(M):
+def expm_T(M):
     """
     Matrix exponential in se3 of a 4x4  matrix
 
@@ -244,33 +254,49 @@ def expm(M):
     result[:3,3]  = G @ v
     return result
 
-def logm(T):
+
+# TO DO: replace this function by the scipy.linalg.logm to further reduce out code base size
+def logm_T(T):
     """
-    Matrix logarithm of a homogeneous transformation matrix in SE3
+    Compute the matrix logarithm of a homogeneous transformation matrix in SE3.
+
+    This function calculates the matrix logarithm corresponding to the displacement twist
+    of a given homogeneous transformation matrix.
 
     Parameters
     ----------
-    T : a (4,4) numpy array
-        homogeneous transformation matrix in SE3 
+    T : numpy.ndarray
+        A (4,4) homogeneous transformation matrix in SE3.
 
     Returns
     -------
-    A matrix logarithm corresponding to the displacement twist.   
+    numpy.ndarray
+        A (4,4) matrix logarithm corresponding to the displacement twist.
     """
- 
-    R=T[:3,:3]
-    p=T[:3,3]
+    # Extract rotation matrix and position vector
+    R = T[:3, :3]
+    p = T[:3, 3]
+
+    # Compute the matrix logarithm of the rotation part
     omega_hat = SO3.logm(R)
-    omega     = SO3.crossvec(omega_hat)
-    theta     = norm(omega)
-    if math.fabs( theta )<1E-15:
-        result = np.zeros((4,4))
-        result[:3,3] = p 
+
+    # Extract the rotation vector from the skew-symmetric matrix
+    omega = SO3.crossvec(omega_hat)
+    theta = norm(omega)
+
+    # Initialize the result matrix
+    result = np.zeros((4, 4))
+
+    if math.isclose(theta, 0, abs_tol=1E-15):
+        result[:3, 3] = p
         return result
-    G = (np.eye(3)-R) @ omega_hat/theta + np.outer(omega,omega)/theta
-    result = np.zeros((4,4))
-    result[:3,:3] = omega_hat
-    result[:3,3]  = np.linalg.inv(G) @ p *theta
+
+    # Compute the matrix G used in the logarithm calculation
+    G = (np.eye(3) - R) @ omega_hat / theta + np.outer(omega, omega) / theta
+
+    result[:3, :3] = omega_hat
+    result[:3, 3] = np.linalg.solve(G, p) * theta
+
     return result
 
 def rotate_x(alpha):

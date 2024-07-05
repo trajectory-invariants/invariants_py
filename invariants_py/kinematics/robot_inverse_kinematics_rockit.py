@@ -75,7 +75,7 @@ def inv_kin(q_init, q_joint_lim, des_p_obj, des_R_obj, path_to_urdf, root = 'bas
 
 if __name__ == "__main__":
     data_location = dh.find_data_path('beer_1.txt')
-    trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
+    trajectory,time = dh.read_pose_trajectory_from_data(data_location, dtype = 'txt')
     pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
     N = 100
     root_link_name = "world"
