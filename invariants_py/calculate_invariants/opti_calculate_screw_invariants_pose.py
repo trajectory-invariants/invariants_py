@@ -105,10 +105,12 @@ class OCP_calc_pose:
           
 if __name__ == "__main__":
 
-    OCP = OCP_calc_pose(N=100, rms_error_traj=10**-3)
+    N=100
+    T_obj_m = np.tile(np.eye(4), (100, 1, 1)) # example: measured object poses
+    
+    OCP = OCP_calc_pose(T_obj_m, rms_error_traj=10**-3)
 
     # Example: calculate invariants for a given trajectory
-    T_obj_m = np.tile(np.eye(4), (100, 1, 1)) # example: measured object poses
     h = 0.01 # step size for integration of dynamic equations
 
     U, T_obj, T_isa = OCP.calculate_invariants(T_obj_m, h)
