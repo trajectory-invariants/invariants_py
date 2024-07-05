@@ -86,7 +86,7 @@ class OCP_calc_pos:
         opti.minimize(objective)
         opti.solver('ipopt',{"print_time":False,"expand":True},{
             #'gamma_theta':1e-12,
-            'max_iter':max_iter,'tol':tolerance,'print_level':print_level,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
+            'max_iter':max_iter,'tol':tolerance,'print_level':print_level,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'})
         
         # Save variables
         self.R_t = R_t
