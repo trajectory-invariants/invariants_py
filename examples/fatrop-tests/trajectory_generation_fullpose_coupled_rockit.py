@@ -158,7 +158,7 @@ boundary_constraints = {
 # Define robot parameters
 robot_params = {
     "urdf_file_name": 'ur10.urdf', # use None if do not want to include robot model
-    "q_init": [-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4] * np.ones((number_samples,6)), # Initial joint values
+    "q_init": np.array([-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4]), # Initial joint values
     "tip": 'TCP_frame' # Name of the robot tip (if empty standard 'tool0' is used)
     # "joint_number": 6, # Number of joints (if empty it is automatically taken from urdf file)
     # "q_lim": [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi], # Join limits (if empty it is automatically taken from urdf file)
@@ -200,6 +200,7 @@ if use_fatrop_solver:
 
 # print('Joint values:')
 # print(joint_values)
+# print(optim_gen_results.Obj_pos[-1])
 
 # optim_gen_results.Obj_frames = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end])) # JUST TO CHECK INITIALIZATION
 

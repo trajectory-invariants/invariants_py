@@ -132,12 +132,15 @@ class OCP_gen_pose:
         # Fitting constraint to remain close to measurements
 
         if include_robot_model:
-            objective_inv = ocp.sum(1/window_len*cas.dot(w_invars*(invars - invars_demo),w_invars*(invars - invars_demo)),include_last=True)
+            objective_invariants = ocp.sum(1/window_len*cas.dot(w_invars*(invars - invars_demo),w_invars*(invars - invars_demo)),include_last=True)
             # Objective for joint limits
             e_pos = cas.dot(p_obj_fwkin - p_obj,p_obj_fwkin - p_obj)
             e_rot = cas.dot(R_obj.T @ R_obj_fwkin - np.eye(3),R_obj.T @ R_obj_fwkin - np.eye(3))
-            objective_jointlim = ocp.sum(e_pos + e_rot + 0.001*cas.dot(qdot,qdot),include_last = True)
-            objective = ocp.sum(objective_inv + objective_jointlim, include_last = True)
+            objective_inverse_kin = ocp.sum(e_pos + e_rot + 0.001*cas.dot(qdot,qdot),include_last = True)
+            # ocp.subject_to(p_obj == p_obj_fwkin)
+            # ocp.subject_to(tril_vec_no_diag(R_obj.T @ R_obj_fwkin - np.eye(3)) == 0.)
+            # objective_inverse_kin = ocp.sum(0.001*cas.dot(qdot,qdot),include_last = True)
+            objective = ocp.sum(objective_invariants + objective_inverse_kin, include_last = True)
         else:
             objective = ocp.sum(1/window_len*cas.dot(w_invars*(invars - invars_demo),w_invars*(invars - invars_demo)),include_last=True)
 
@@ -161,7 +164,7 @@ class OCP_gen_pose:
         ocp.set_value(w_invars, 0.001+np.zeros((6,window_len)))
         ocp.set_value(h, 0.1)
         if include_robot_model:
-            p_obj_dummy, _ = robot_forward_kinematics(q_init[0],path_to_urdf,root,tip)
+            p_obj_dummy, _ = robot_forward_kinematics(q_init,path_to_urdf,root,tip)
             ocp.set_initial(q,q_init) 
             ocp.set_initial(qdot, 0.001*np.ones((nb_joints,window_len-1)))
             ocp.set_value(q_lim,q_limits)
@@ -487,7 +490,7 @@ if __name__ == "__main__":
         "urdf_file_name": urdf_file_name,
         "joint_number": 6, # Number of joints
     }
-    q_init = np.random.rand(window_len, robot_params["joint_number"])
+    q_init = np.random.rand(robot_params["joint_number"])
     q_lim = np.random.rand(robot_params["joint_number"])
 
     # Create OCP WITHOUT robot kinematic model
