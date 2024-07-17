@@ -95,7 +95,7 @@ class OCP_calc_pos:
 
         ''' Define solver and save variables '''
         opti.minimize(objective)
-        opti.solver('ipopt',{"print_time":True,"expand":False},{'max_iter':200,'tol':1e-8,'print_level':0,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
+        opti.solver('ipopt',{"print_time":True,"expand":False},{'max_iter':200,'tol':1e-8,'print_level':0,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'})
 
         # Set variables as attributes in clas
         first_window = True

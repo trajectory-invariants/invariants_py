@@ -93,7 +93,7 @@ class OCP_calc_rot:
         else:
             ocp.method(rockit.MultipleShooting(N=N-1))
             #ocp.solver('ipopt', {'expand':True})
-            ocp.solver('ipopt',{"print_time":True,"expand":False,'ipopt.gamma_theta':1e-12,'ipopt.max_iter':max_iter,'ipopt.tol':tolerance,'ipopt.print_level':print_level,'ipopt.ma57_automatic_scaling':'no','ipopt.linear_solver':'mumps'})
+            ocp.solver('ipopt',{"print_time":True,"expand":False,'ipopt.gamma_theta':1e-12,'ipopt.print_info_string':'yes','ipopt.max_iter':max_iter,'ipopt.tol':tolerance,'ipopt.print_level':print_level,'ipopt.ma57_automatic_scaling':'no','ipopt.linear_solver':'mumps'})
         
         # Solve already once with dummy values for code generation (TODO: can this step be avoided somehow?)
         ocp.set_initial(R_r, np.eye(3))
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     timestep = 0.001
     
     # Specify OCP symbolically
-    OCP = OCP_calc_rot(window_len=N, fatrop_solver=True, rms_error_traj=1*pi/180)
+    OCP = OCP_calc_rot(window_len=N, fatrop_solver=False, rms_error_traj=1*pi/180)
 
     # Solve the OCP using the specified data
     calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_orientations, timestep)
