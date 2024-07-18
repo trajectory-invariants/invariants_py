@@ -210,7 +210,7 @@ class OCP_calc_pos:
         """
         Calculate the invariants for the given measurements.
 
-        Note: This function is not recommended for repeated use due to overhead caused by sampling the solution.
+        ! WARNING: This function is not recommended for repeated use due to overhead caused by sampling the solution. !
 
         Parameters:
         - measured_positions (numpy.ndarray of shape (N, 3)): measured positions

@@ -340,9 +340,9 @@ def  initialize_VI_pos2(measured_positions):
     R_t_init2 = np.zeros((N,3,3))
     for i in range(N):
         R_t_init2[i,:,:] = np.column_stack((ex[i,:],ey[i,:],ez[i,:]))
-    #print(R_t_init2)
+    print(R_t_init2)
     invars = estimate_vector_invariants(R_t_init2,Pdiff) + 1e-12*np.ones((N,3))
-    #print(invars)
+    print(invars)
 
     R_t_init = np.zeros((9,N))
     for i in range(N):
