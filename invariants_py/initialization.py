@@ -268,7 +268,7 @@ def angle_between_vectors(u, v):
     #angle = np.arccos(np.dot(u, v) / (np.linalg.norm(u) * np.linalg.norm(v)))
     return angle
 
-def estimate_rotational_invariants(R_mf_traj,vector_traj):
+def estimate_vector_invariants(R_mf_traj,vector_traj):
     '''
     
     '''
@@ -276,7 +276,7 @@ def estimate_rotational_invariants(R_mf_traj,vector_traj):
     N = np.size(vector_traj,0)
     invariants = np.zeros((N,3))
     
-    # first invariant is the norm of the dot-product between the rotational velocity Rdiff and the first axis of the moving frame
+    # first invariant is the norm of the dot-product between the trajectory vector and the first axis of the moving frame
     for i in range(N):
         invariants[i,0] = np.dot(vector_traj[i,:],R_mf_traj[i,:,0])
         
@@ -289,7 +289,7 @@ def estimate_rotational_invariants(R_mf_traj,vector_traj):
         invariants[i,2] = angle_between_vectors(R_mf_traj[i,:,2], R_mf_traj[i+1,:,2])
         
     invariants[-1,1:] = invariants[-2,1:] # copy last values
-    print(invariants)
+    #print(invariants)
     
     return invariants
 
@@ -340,9 +340,9 @@ def  initialize_VI_pos2(measured_positions):
     R_t_init2 = np.zeros((N,3,3))
     for i in range(N):
         R_t_init2[i,:,:] = np.column_stack((ex[i,:],ey[i,:],ez[i,:]))
-    print(R_t_init2)
-    invars = estimate_rotational_invariants(R_t_init2,Pdiff) + 1e-12*np.ones((N,3))
-    print(invars)
+    #print(R_t_init2)
+    invars = estimate_vector_invariants(R_t_init2,Pdiff) + 1e-12*np.ones((N,3))
+    #print(invars)
 
     R_t_init = np.zeros((9,N))
     for i in range(N):
