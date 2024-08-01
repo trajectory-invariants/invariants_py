@@ -106,6 +106,27 @@ def integrate_vector_invariants_position(R_t, p_obj, u, h):
 
     return (R_t_plus1, p_obj_plus1)
 
+def integrate_vector_invariants_position_seq(R_t, p_obj, u, h):
+    """
+    Discrete dynamics of the vector invariants for position. Integrate invariants over interval h starting from a current state (object pose + moving frames)
+    
+    This function is used to integrate the invariants sequentially, i.e. one invariant at a time.
+    """
+    i_kappa = u[1]@h ; i_tau = u[2]@h ; i_vel = u[0]@h
+    
+    rot_z = cas.vcat([cas.hcat([cas.cos(i_kappa),-cas.sin(i_kappa),0]),\
+                     cas.hcat([cas.sin(i_kappa),cas.cos(i_kappa),0]),\
+                     cas.hcat([0,0,1])])
+        
+    rot_x = cas.vcat([cas.hcat([1,0,0]),\
+                      cas.hcat([0,cas.cos(i_tau),-cas.sin(i_tau)]),\
+                      cas.hcat([0,cas.sin(i_tau),cas.cos(i_tau)])])
+    
+    R_t_plus1 = R_t @ (rot_z @ rot_x)
+    p_obj_plus1 = R_t[:,0] * i_vel + p_obj
+
+    return (R_t_plus1, p_obj_plus1)
+
 def integrate_vector_invariants_rotation(R_r, R_obj, u, h):
     """Integrate invariants over interval h starting from a current state (object pose + moving frames)"""
     # Define a geometric integrator for eFSI,
