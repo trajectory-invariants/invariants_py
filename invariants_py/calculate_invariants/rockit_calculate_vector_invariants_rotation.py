@@ -87,8 +87,6 @@ class OCP_calc_rot:
         if fatrop_solver:
             ocp.method(rockit.external_method('fatrop', N=N-1))
             ocp._method.set_name("/codegen/rotation") # pick a unique name when using multiple OCP specifications in the same script
-            self.ocp._transcribe()
-            self.ocp._method.set_option("iterative_refinement", False)
         else:
             ocp.method(rockit.MultipleShooting(N=N-1))
             #ocp.solver('ipopt', {'expand':True})
@@ -107,6 +105,7 @@ class OCP_calc_rot:
             ocp._method.set_option("tol",tolerance)
             ocp._method.set_option("print_level",print_level)
             ocp._method.set_option("max_iter",max_iter)
+            #ocp._method.set_option("iterative_refinement", False)
         self.first_time = True
         
         # Encapsulate whole rockit specification in a casadi function
