@@ -11,7 +11,7 @@ requires-python = ">=3.8"
 keywords = ["trajectory analysis", "trajectory generation", "invariant", "coordinate-invariant", "trajectory representation", "trajectory optimization", "trajectory planning", "robotics", "dynamics", "kinematics", "screw theory", "optimal control", "geometric optimal control", "differential geometry", "optimization", "casadi", "python"]
 dependencies = [ # it is possible to have optional dependencies
     "scipy",
-    "casadi",
+    "casadi==3.6.6",
     "PyQt5",
     "matplotlib",
     "numpy",
