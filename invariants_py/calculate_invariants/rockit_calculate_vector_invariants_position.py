@@ -128,16 +128,17 @@ class OCP_calc_pos:
             ocp._method.set_expand(True) 
         else:
             ocp.method(rockit.MultipleShooting(N=N-1))
-            ocp.solver('ipopt', {'expand':True, 'ipopt.tol':tolerance,'ipopt.print_info_string':'yes', 'ipopt.max_iter':max_iter,'ipopt.print_level':print_level, 'ipopt.ma57_automatic_scaling':'no', 'ipopt.linear_solver':'mumps'})
+            ocp.solver('ipopt', {'expand':True, 'print_time':False, 'ipopt.tol':tolerance,'ipopt.print_info_string':'yes', 'ipopt.max_iter':max_iter,'ipopt.print_level':print_level, 'ipopt.ma57_automatic_scaling':'no', 'ipopt.linear_solver':'mumps'})
         
         """ Encapsulate solver in a casadi function so that it can be easily reused """
 
         # Solve already once with dummy values so that Fatrop can do code generation (Q: can this step be avoided somehow?)
         ocp.set_initial(R_t, np.eye(3))
-        ocp.set_initial(invars, np.array([1,0.01,0.01]))
-        ocp.set_value(p_obj_m, np.vstack((np.linspace(0, 1, N), np.ones((2, N)))))
+        ocp.set_initial(invars, np.array([1,0.00001,0.00001]))
+        ocp.set_initial(p_obj, np.vstack((np.linspace(1, 2, N), np.ones((2, N)))))
+        ocp.set_value(p_obj_m, np.vstack((np.linspace(1, 2, N), np.ones((2, N)))))
         ocp.set_value(h, 0.01)
-        ocp.solve_limited() # code generation
+        ocp.solve() # code generation
 
         # Set Fatrop solver options (Q: why can this not be done before solving?)
         if fatrop_solver:
@@ -170,7 +171,7 @@ class OCP_calc_pos:
         self.first_window = True
         self.h = h
 
-    def calculate_invariants(self, measured_positions, stepsize, use_previous_solution=True):
+    def calculate_invariants(self, measured_positions, stepsize, use_previous_solution=False):
         """
         Calculate the invariants for the given measurements.
 
@@ -265,15 +266,17 @@ if __name__ == "__main__":
     measured_positions = np.column_stack((1 * np.cos(t), 1 * np.sin(t), 0.1 * t))
     stepsize = t[1]-t[0]
 
+    rms_val = 10**-3
+
     # Test the functionalities of the class
-    OCP = OCP_calc_pos(window_len=N, rms_error_traj=10**-3, fatrop_solver=True)
+    OCP = OCP_calc_pos(window_len=N, rms_error_traj=rms_val, fatrop_solver=False, solver_options={'max_iter': 100})
 
     # Call the calculate_invariants function and measure the elapsed time
     #start_time = time.time()
     calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants_OLD(measured_positions, stepsize)
     #elapsed_time = time.time() - start_time
 
-    ocp_helper.solution_check_pos(measured_positions,calc_trajectory,rms = 10**-3)
+    ocp_helper.solution_check_pos(measured_positions,calc_trajectory,rms = rms_val)
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')

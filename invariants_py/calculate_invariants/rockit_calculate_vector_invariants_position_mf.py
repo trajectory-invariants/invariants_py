@@ -183,7 +183,7 @@ class OCP_calc_pos:
         self.first_window = True
         self.h = h
 
-    def calculate_invariants(self, measured_positions, stepsize, use_previous_solution=True):
+    def calculate_invariants(self, measured_positions, stepsize, use_previous_solution=False):
         """
         Calculate the invariants for the given measurements.
 
