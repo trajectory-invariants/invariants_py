@@ -85,7 +85,7 @@ class OCP_calc_pos:
         if not fatrop_solver:
             # sum of squared position errors in the window should be less than the specified tolerance rms_error_traj
             total_ek = ocp.sum(ek,grid='control',include_last=True)
-            ocp.subject_to(total_ek/N < rms_error_traj**2)
+            ocp.subject_to(total_ek/N/rms_error_traj**2 < 1)
         else:
             # Fatrop does not support summing over grid points inside the constraint, so we implement it differently to achieve the same result
             running_ek = ocp.state() # running sum of squared error
@@ -98,13 +98,13 @@ class OCP_calc_pos:
             ocp.set_next(total_ek, total_ek)
             ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
             # total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
-            ocp.subject_to(total_ek/N < rms_error_traj**2)
+            ocp.subject_to(total_ek/N/rms_error_traj**2 < 1)
             #total_ek_scaled = running_ek/N/rms_error_traj**2 # scaled total error
             #ocp.subject_to(ocp.at_tf(total_ek_scaled < 1))
             
         # Boundary conditions (optional, but may help to avoid straight line fits)
-        #ocp.subject_to(ocp.at_t0(p_obj == p_obj_m)) # fix first position to measurement
-        #ocp.subject_to(ocp.at_tf(p_obj == p_obj_m)) # fix last position to measurement
+        ocp.subject_to(ocp.at_t0(p_obj == p_obj_m)) # fix first position to measurement
+        ocp.subject_to(ocp.at_tf(p_obj == p_obj_m)) # fix last position to measurement
 
         if planar_task:
             # Constrain the binormal vector of the moving frame to point upwards
