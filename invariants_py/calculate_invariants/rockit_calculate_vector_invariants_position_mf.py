@@ -183,7 +183,7 @@ class OCP_calc_pos:
         self.first_window = True
         self.h = h
 
-    def calculate_invariants(self, measured_positions, stepsize, use_previous_solution=False):
+    def calculate_invariants(self, measured_positions, stepsize, use_previous_solution=False, init_values=None):
         """
         Calculate the invariants for the given measurements.
 
@@ -200,9 +200,23 @@ class OCP_calc_pos:
 
         # Check if this is the first function call
         if not use_previous_solution or self.first_time:
-            # Initialize states and controls using measurements
-            self.values_variables = initialization.initialize_VI_pos2(measured_positions)
-            self.first_time = False
+            
+            if init_values is not None:
+                    
+                temp0 = init_values[0][:-1,:].T
+                temp1 = init_values[1].T
+                temp2 = init_values[2]
+                N = np.size(temp2,0)
+                R_t_init = np.zeros((9,np.size(temp2,0)))
+                for i in range(N):
+                    R_t_init[:,i] = temp2[i,:,:].reshape(-1)
+                    
+                self.values_variables = [temp0,temp1,R_t_init]
+            else:  
+                
+                # Initialize states and controls using measurements
+                self.values_variables = initialization.initialize_VI_pos2(measured_positions)
+                self.first_time = False
 
         # Solve the optimization problem for the given measurements starting from previous solution
         self.values_variables = self.ocp_function(measured_positions.T, stepsize, *self.values_variables)
