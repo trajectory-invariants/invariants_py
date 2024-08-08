@@ -56,9 +56,9 @@ class TestOCPcalcpos(unittest.TestCase):
 if __name__ == '__main__':
     # Run all tests
     unittest.main()
-# 
+
     # Run a specifc test
     # loader = unittest.TestLoader()
-    # suite = loader.loadTestsFromName('test_compare_ipopt_fatrop_position.TestOCPcalcpos.test_fatrop_solver_comparison3')
+    # suite = loader.loadTestsFromName('test_compare_ipopt_fatrop_position.TestOCPcalcpos.test_fatrop_solver_comparison2')
     # runner = unittest.TextTestRunner()
     # runner.run(suite)

@@ -99,7 +99,7 @@ class OCP_calc_rot:
          
     def calculate_invariants(self,trajectory_meas,stepsize, choice_initialization=2): 
         
-        from invariants_py.initialization import calculate_velocity_from_discrete_rotations, estimate_movingframes, estimate_rotational_invariants
+        from invariants_py.initialization import calculate_velocity_from_discrete_rotations, estimate_movingframes, estimate_vector_invariants
         from invariants_py.dynamics_vector_invariants import reconstruct_rotation_traj
         from invariants_py.kinematics.screw_kinematics import average_vector_orientation_frame
 
@@ -136,7 +136,7 @@ class OCP_calc_rot:
             Rdiff = calculate_velocity_from_discrete_rotations(measured_orientation,timestamps=np.arange(N))
             invariants = np.hstack((1*np.ones((N-1,1)),1e-1*np.ones((N-1,2))))
             R_r_traj = estimate_movingframes(Rdiff)
-            invariants = estimate_rotational_invariants(R_r_traj,Rdiff)
+            invariants = estimate_vector_invariants(R_r_traj,Rdiff,stepsize)
             R_obj_traj = measured_orientation
 
         elif choice_initialization == 3:
