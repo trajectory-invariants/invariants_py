@@ -1,13 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Mar 6 2024
-
-note: urdf2casadi is not included in the invariants_py installation
-install separately using pip install urdf2casadi or include it in the pyproject.toml file
-
-@author: Riccardo
-"""
-
 import numpy as np
 import casadi as cas
 import rockit
@@ -128,7 +118,7 @@ def inv_kin(q_init, q_joint_lim, des_p_obj, des_R_obj, window_len = 100, fatrop_
 if __name__ == "__main__":
 
     data_location = dh.find_data_path('beer_1.txt')
-    trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
+    trajectory,time = dh.read_pose_trajectory_from_data(data_location, dtype = 'txt')
     pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
     startpos = [0.3056, 0.0635, 0.441]
     des_p_obj = pose[:,:3,3]  + startpos

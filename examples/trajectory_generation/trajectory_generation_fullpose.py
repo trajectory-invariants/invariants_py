@@ -19,7 +19,7 @@ import invariants_py.plotting_functions.plotters as pl
 data_location = dh.find_data_path('beer_1.txt')
 opener_location =  dh.find_data_path('opener.stl')
 
-trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
+trajectory,time = dh.read_pose_trajectory_from_data(data_location,dtype = 'txt')
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
 trajectory_position = pose[:,:3,3]
@@ -55,8 +55,8 @@ FS_calculation_problem_pos = OCP_calc_pos(window_len=nb_samples, bool_unsigned_i
 FS_calculation_problem_rot = OCP_calc_rot(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 10*pi/180) 
 
 # calculate invariants given measurements
-optim_calc_results.invariants[:,3:], optim_calc_results.Obj_pos, optim_calc_results.FSt_frames = FS_calculation_problem_pos.calculate_invariants_global(trajectory,stepsize)
-optim_calc_results.invariants[:,:3], optim_calc_results.Obj_frames, optim_calc_results.FSr_frames = FS_calculation_problem_rot.calculate_invariants_global(trajectory,stepsize)
+optim_calc_results.invariants[:,3:], optim_calc_results.Obj_pos, optim_calc_results.FSt_frames = FS_calculation_problem_pos.calculate_invariants(trajectory,stepsize)
+optim_calc_results.invariants[:,:3], optim_calc_results.Obj_frames, optim_calc_results.FSr_frames = FS_calculation_problem_rot.calculate_invariants(trajectory,stepsize)
 
 fig = plt.figure(figsize=(8,8))
 ax = fig.add_subplot(111, projection='3d')

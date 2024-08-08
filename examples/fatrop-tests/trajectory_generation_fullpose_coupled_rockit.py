@@ -19,12 +19,12 @@ from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotatio
 import invariants_py.plotting_functions.plotters as pl
 import invariants_py.collision_detection_bottle as cd
 from invariants_py.reparameterization import interpR
-from invariants_py.initialization import FSr_init
+from invariants_py.initialization import initial_trajectory_movingframe_rotation
 import random
 
-#%%
+
 data_location = dh.find_data_path('beer_1.txt')
-trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
+trajectory,time = dh.read_pose_trajectory_from_data(data_location, dtype = 'txt')
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
 home_pos = [0,0,0] # Use this if not considering the robot
@@ -45,7 +45,7 @@ for i in indx:
     pl.plot_3d_frame(trajectory_position[i,:],trajectory_orientation[i,:,:],1,0.01,['red','green','blue'],ax)
     pl.plot_stl(opener_location,trajectory_position[i,:],trajectory_orientation[i,:,:],colour="c",alpha=0.2,ax=ax)    
 
-#%%
+
 # define class for OCP results
 class OCP_results:
 
@@ -89,7 +89,7 @@ pl.plot_invariants(optim_calc_results.invariants,[],arclength_n)
 if plt.get_backend() != 'agg':
     plt.show()
 
-#%%
+
 # Spline of model
 knots = np.concatenate(([arclength_n[0]],[arclength_n[0]],arclength_n,[arclength_n[-1]],[arclength_n[-1]]))
 degree = 3
@@ -103,7 +103,7 @@ def interpolate_model_invariants(demo_invariants, progress_values):
     resampled_invariants[:,0] = resampled_invariants[:,0] *  (progress_values[-1] - progress_values[0])
     return resampled_invariants, new_stepsize
 
-#%% 
+ 
 current_progress = 0
 number_samples = 100
 
@@ -132,7 +132,7 @@ optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], 
 R_obj_init = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end]))
 # R_r_init = interpR(np.linspace(0, 1, len(optim_calc_results.FSr_frames)), [0,1], np.array([FSr_start, FSr_end]))
 
-R_r_init, R_r_init_array, invars_init = FSr_init(R_obj_start, R_obj_end)
+R_r_init, R_r_init_array, invars_init = initial_trajectory_movingframe_rotation(R_obj_start, R_obj_end)
 
 boundary_constraints = {
     "position": {
@@ -158,7 +158,7 @@ boundary_constraints = {
 # Define robot parameters
 robot_params = {
     "urdf_file_name": 'ur10.urdf', # use None if do not want to include robot model
-    "q_init": [-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4] * np.ones((number_samples,6)), # Initial joint values
+    "q_init": np.array([-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4]), # Initial joint values
     "tip": 'TCP_frame' # Name of the robot tip (if empty standard 'tool0' is used)
     # "joint_number": 6, # Number of joints (if empty it is automatically taken from urdf file)
     # "q_lim": [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi], # Join limits (if empty it is automatically taken from urdf file)
@@ -200,6 +200,7 @@ if use_fatrop_solver:
 
 # print('Joint values:')
 # print(joint_values)
+# print(optim_gen_results.Obj_pos[-1])
 
 # optim_gen_results.Obj_frames = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end])) # JUST TO CHECK INITIALIZATION
 

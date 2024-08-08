@@ -137,7 +137,8 @@ class OCP_calc_pos:
 
         if check_solver(fatrop_solver):
             ocp.method(rockit.external_method('fatrop',N=N-1))
-            ocp._method.set_name("/codegen/calculate_position")   
+            ocp._method.set_name("/codegen/calculate_position") 
+            ocp._method.set_expand(True)   
         else:
             ocp.method(rockit.MultipleShooting(N=N-1))
             ocp.solver('ipopt', {'expand':True, 'ipopt.tol':tolerance,'ipopt.print_info_string':'yes', 'ipopt.max_iter':max_iter,'ipopt.print_level':print_level, 'ipopt.ma57_automatic_scaling':'no', 'ipopt.linear_solver':'mumps'})
@@ -276,7 +277,7 @@ if __name__ == "__main__":
     # Test the functionalities of the class
     OCP = OCP_calc_pos(window_len=N, rms_error_traj=10**-3, fatrop_solver=True)
 
-    # Call the calculate_invariants_global function and measure the elapsed time
+    # Call the calculate_invariants function and measure the elapsed time
     #start_time = time.time()
     calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants_OLD(measured_positions, stepsize)
     #elapsed_time = time.time() - start_time

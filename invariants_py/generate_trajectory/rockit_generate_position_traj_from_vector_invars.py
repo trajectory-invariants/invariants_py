@@ -12,7 +12,7 @@ class OCP_gen_pos:
 
         fatrop_solver = check_solver(fatrop_solver)               
        
-        #%% Create decision variables and parameters for the optimization problem
+        ''' Create decision variables and parameters for the optimization problem '''
         
         ocp = rockit.Ocp(T=1.0)
         
@@ -39,7 +39,7 @@ class OCP_gen_pos:
         U_demo = ocp.parameter(3,grid='control+') # model invariants
         w_invars = ocp.parameter(3,grid='control+') # weights for invariants
 
-        #%% Specifying the constraints
+        ''' Specifying the constraints '''
         
         # Constrain moving frame to be orthogonal (only needed for one timestep, property is propagated by integrator)
         ocp.subject_to(ocp.at_t0(tril_vec(R_t.T @ R_t - np.eye(3))==0.))
@@ -54,8 +54,6 @@ class OCP_gen_pos:
         if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["translational"]:
             ocp.subject_to(ocp.at_tf(tril_vec_no_diag(R_t.T @ R_t_end - np.eye(3)) == 0.))
 
-
-
         # Dynamic constraints
         (R_t_plus1, p_obj_plus1) = dynamics.integrate_vector_invariants_position(R_t, p_obj, U, h)
 
@@ -68,18 +66,18 @@ class OCP_gen_pos:
             ocp.subject_to(U[0,:]>=0) # lower bounds on control
             ocp.subject_to(U[1,:]>=0) # lower bounds on control
             
-        #%% Specifying the objective
+        ''' Specifying the objective '''
 
         # Fitting constraint to remain close to invariant model
         objective = ocp.sum(1/window_len*cas.dot(w_invars*(U - U_demo),w_invars*(U - U_demo)),include_last=True)
 
-        #%% Define solver and save variables
+        ''' Define solver and save variables '''
+        
         ocp.add_objective(objective)
         if fatrop_solver:
             ocp.method(rockit.external_method('fatrop' , N=window_len-1))
-
-            import random, string
-            ocp._method.set_name("/codegen/generation_position" + random.choice(string.ascii_lowercase))
+            ocp._method.set_expand(True) 
+            ocp._method.set_name("/codegen/generation_position")
         else:
             ocp.method(rockit.MultipleShooting(N=window_len-1))
             ocp.solver('ipopt', {'expand':True})

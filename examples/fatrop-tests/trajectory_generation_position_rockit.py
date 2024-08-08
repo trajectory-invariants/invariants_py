@@ -22,7 +22,7 @@ ocp_to_func = True
 
 # Read trajectory data
 data_location = dh.find_data_path('beer_1.txt')
-trajectory, time = dh.read_pose_trajectory_from_txt(data_location)
+trajectory, time = dh.read_pose_trajectory_from_data(data_location, dtype = 'txt')
 pose, time_profile, arclength, nb_samples, stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength / arclength[-1]
 trajectory = pose[:, 0:3, 3]

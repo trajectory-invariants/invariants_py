@@ -1,13 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Mar 6 2024
-
-note: urdf2casadi is not included in the invariants_py installation
-install separately using pip install urdf2casadi or include it in the pyproject.toml file
-
-@author: Riccardo
-"""
-
 import numpy as np
 import casadi as cas
 import rockit
@@ -78,41 +68,46 @@ def inv_kin(q_init, q_joint_lim, des_p_obj, des_R_obj, path_to_urdf, root = 'bas
 
     # joint_val = sol.value(q)
     _,joint_val = sol.sample(q,grid='control')
+    _, p_sol = sol.sample(p_obj,grid='control')
 
-    return joint_val
+    return joint_val, p_sol
 
 
 if __name__ == "__main__":
     data_location = dh.find_data_path('beer_1.txt')
-    trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
+    trajectory,time = dh.read_pose_trajectory_from_data(data_location, dtype = 'txt')
     pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
     N = 100
     root_link_name = "world"
     tip_link_name = "TCP_frame"
     path_to_urdf = dh.find_data_path('robot/ur10.urdf')
     startpos = [0.3056, 0.0635, 0.441]
-    des_p_obj = pose[:,:3,3]  + startpos #[0.6818214 , 0.23448511, 0.39779707] * np.ones((N,3)) #
+    des_p_obj = [0.827,0.7144,0.552] * np.ones((N,3)) #pose[:,:3,3]  + startpos #[0.6818214 , 0.23448511, 0.39779707] * np.ones((N,3)) #
     des_R_obj = pose[:,:3,:3]
     # des_R_obj = np.zeros((N,3,3))
     # for i in range(N):
     #     des_R_obj[i] = pose[-1,:3,:3] #np.eye(3)
     q_init = [-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4] * np.ones((N,6))
     q_joint_lim = [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi]
-    q = inv_kin(q_init, q_joint_lim, des_p_obj, des_R_obj, path_to_urdf, root_link_name, tip_link_name, N)
+    q, p_sol = inv_kin(q_init, q_joint_lim, des_p_obj, des_R_obj, path_to_urdf, root_link_name, tip_link_name, N)
 
     print(q)
-
+    print(p_sol)
 # =======================================
 # Debugging =======================================
 # =======================================
-# p_obj, R_obj = robot_forward_kinematics(q,path_to_urdf,root_link_name,tip_link_name)
+    # p_obj, R_obj = robot_forward_kinematics(q[-1],path_to_urdf,root_link_name,tip_link_name)
 
-# for i in range(N):
-#     p_obj, R_obj = robot_forward_kinematics(q[i],path_to_urdf,root_link_name,tip_link_name)
+    # print(p_obj)
 
-#     #e_pos = cas.dot(p_obj - des_p_obj[i],p_obj - des_p_obj[i])
-#     e_rot = cas.dot(des_R_obj[i].T @ R_obj - np.eye(3),des_R_obj[i].T @ R_obj - np.eye(3))
-    
-#     #print(des_R_obj[0])
-#     #print(R_obj)
-#     print(e_rot)
+    for i in range(N):
+        p_obj, R_obj = robot_forward_kinematics(q[i],path_to_urdf,root_link_name,tip_link_name)
+
+        e_pos = cas.dot(p_obj - des_p_obj[i],p_obj - des_p_obj[i])
+        print(e_pos)
+        # e_rot = cas.dot(des_R_obj[i].T @ R_obj - np.eye(3),des_R_obj[i].T @ R_obj - np.eye(3))
+        
+        #print(des_R_obj[0])
+        #print(R_obj)
+        # print(e_rot)
+    print(p_obj)

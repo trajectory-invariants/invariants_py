@@ -1,4 +1,4 @@
-r"""
+"""
 The SE3 module provides operations on objects relevant in SE3, such as
 homogeneous transformation matrices and screws. 
 
@@ -11,7 +11,6 @@ exponential/logarithms and transformation. Specialized routines for exponential
 and logarithms in SE3 are provided that deliver better performance and accuracy
 than the general purpose routines in e.g. SciPy. 
 
-*Erwin Aertbelien, 2021*
 """
 
 
@@ -34,12 +33,22 @@ def random():
     Trand[:3,:3] = U;
     return Trand
 
-def inv(T):
-    Ti=np.zeros((4,4))
-    Ti[:3,:3] = T[:3,:3].transpose()
-    Ti[:3,3]  = - Ti[:3,:3] @ T[:3,3]
-    Ti[3,3] = 1
-    return Ti
+def inverse_T(T):
+    """
+    Computes the inverse of a transformation matrix T in SE(3).
+
+    Parameters:
+    T (array-like): A 4x4 homogenous transformation matrix.
+
+    Returns:
+    np.ndarray: The inverse of the homogeneous transformation matrix.
+    """
+    R = T[:3, :3]
+    t = T[:3, 3]
+    T_inv = np.eye(4)
+    T_inv[:3, :3] = R.T
+    T_inv[:3, 3] = -R.T @ t
+    return T_inv
 
 def orthonormalize_rotation( T ):
     """
@@ -60,7 +69,7 @@ def orthonormalize_rotation( T ):
     return T
 
 def frame( rot=None, p=None):
-    r"""
+    """
     Creates a 4x4 homogeneous transformation matrix (in SE3)
 
     Parameters
@@ -81,19 +90,19 @@ def frame( rot=None, p=None):
     return F
 
 def orient(F):
-    r"""
+    """
     orient(F) returns the rotation matrix part of a homegenous tf F.
     """
     return F[:3,:3]
 
 def origin(F):
-    r"""
+    """
     origin(F) returns the origin of a homegenous transformation matrix F.
     """
     return F[:3,3]
 
 def screw_transform(T):
-    r"""
+    """
     screw_transform(T) and screw_transform_se3(T) return a screw transformation
     matrix corresponding to the homegeneous transformation matrix T in se3.
 
@@ -105,7 +114,7 @@ def screw_transform(T):
     return S
 
 def screw_transform_se2(T):
-    r"""
+    """
     screw_transform_se2(T) returns a screw transformation
     matrix corresponding to the homegeneous transformation matrix T in se2.
 
@@ -116,7 +125,7 @@ def screw_transform_se2(T):
     return S
 
 def screw_orient_transform(T):
-    r"""
+    """
     screw_orient_transform returns a screw transformation in se3
     matrix corresponding to the rotation matrix T.
 
@@ -128,7 +137,7 @@ def screw_orient_transform(T):
     return S
 
 def screw_pos_transform(p):
-    r"""
+    """
     screw_pos_transform returns a screw transformation in se3
     matrix corresponding to the position vector p.
     """
@@ -138,7 +147,7 @@ def screw_pos_transform(p):
     return S
 
 def crossmat(v):
-    r"""
+    """
     crossmat_se3  return a 4x4 matrix corresponding the 6x1 screw vector v  
     
     (3 dof rotation + 3 dof translation) in se3.
@@ -153,7 +162,7 @@ def crossmat(v):
     )
 
 def crossmat_spatial(v):
-    r"""
+    """
     returns Featherstone's spatial cross matrix corresponding to a screw in se3.
 
     Parameters
@@ -180,7 +189,7 @@ def crossmat_spatial(v):
     return np.block( [[OMEGA, ZERO],[VEL, OMEGA]])
 
 def crossvec(M):
-    r"""
+    """
     Returns the vector corresponding to a matrix in se3
     (also sometimes called the "vee" operator)
     (inverse of crossmat_se3)    
@@ -208,8 +217,8 @@ def crossvec(M):
     result[3:] = M[:3,3]
     return result
 
-def expm(M):
-    r"""
+def expm_T(M):
+    """
     Matrix exponential in se3 of a 4x4  matrix
 
     Parameters
@@ -245,33 +254,49 @@ def expm(M):
     result[:3,3]  = G @ v
     return result
 
-def logm(T):
-    r"""
-    Matrix logarithm of a homogeneous transformation matrix in SE3
+
+# TO DO: replace this function by the scipy.linalg.logm to further reduce out code base size
+def logm_T(T):
+    """
+    Compute the matrix logarithm of a homogeneous transformation matrix in SE3.
+
+    This function calculates the matrix logarithm corresponding to the displacement twist
+    of a given homogeneous transformation matrix.
 
     Parameters
     ----------
-    T : a (4,4) numpy array
-        homogeneous transformation matrix in SE3 
+    T : numpy.ndarray
+        A (4,4) homogeneous transformation matrix in SE3.
 
     Returns
     -------
-    A matrix logarithm corresponding to the displacement twist.   
+    numpy.ndarray
+        A (4,4) matrix logarithm corresponding to the displacement twist.
     """
- 
-    R=T[:3,:3]
-    p=T[:3,3]
+    # Extract rotation matrix and position vector
+    R = T[:3, :3]
+    p = T[:3, 3]
+
+    # Compute the matrix logarithm of the rotation part
     omega_hat = SO3.logm(R)
-    omega     = SO3.crossvec(omega_hat)
-    theta     = norm(omega)
-    if math.fabs( theta )<1E-15:
-        result = np.zeros((4,4))
-        result[:3,3] = p 
+
+    # Extract the rotation vector from the skew-symmetric matrix
+    omega = SO3.crossvec(omega_hat)
+    theta = norm(omega)
+
+    # Initialize the result matrix
+    result = np.zeros((4, 4))
+
+    if math.isclose(theta, 0, abs_tol=1E-15):
+        result[:3, 3] = p
         return result
-    G = (np.eye(3)-R) @ omega_hat/theta + np.outer(omega,omega)/theta
-    result = np.zeros((4,4))
-    result[:3,:3] = omega_hat
-    result[:3,3]  = np.linalg.inv(G) @ p *theta
+
+    # Compute the matrix G used in the logarithm calculation
+    G = (np.eye(3) - R) @ omega_hat / theta + np.outer(omega, omega) / theta
+
+    result[:3, :3] = omega_hat
+    result[:3, 3] = np.linalg.solve(G, p) * theta
+
     return result
 
 def rotate_x(alpha):

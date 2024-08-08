@@ -4,7 +4,7 @@
 import numpy as np
 from mpl_toolkits import mplot3d
 from stl import mesh
-from invariants_py.kinematics.orientation_kinematics import rot2quat
+from invariants_py.kinematics.orientation_kinematics import rot2quat, orthonormalize_rotation
 from scipy import interpolate as ip
 #import PyQt5
 #sys.modules.get("PyQt5")
@@ -441,6 +441,7 @@ def plot_stl(stl_file_location,pos,R,colour,alpha,ax):
 
     """
     stl_mesh = mesh.Mesh.from_file(stl_file_location)
+    R = orthonormalize_rotation(R) # avoids "AssertionError: Rotation matrix has not a unit determinant"
     Tr  = np.vstack((np.hstack((R,np.array([pos]).T)), [0,0,0,1]))
     stl_mesh.transform(Tr)
     collection = mplot3d.art3d.Poly3DCollection(stl_mesh.vectors)

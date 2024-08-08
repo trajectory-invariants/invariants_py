@@ -15,7 +15,7 @@ from scipy.spatial.transform import Rotation as R
 from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize
 import invariants_py.plotting_functions.plotters as pl
 from invariants_py.reparameterization import interpR
-from invariants_py.initialization import FSr_init
+from invariants_py.initialization import initial_trajectory_movingframe_rotation
 
 # define class for OCP results
 class OCP_results:
@@ -26,9 +26,9 @@ class OCP_results:
         self.Obj_pos = Obj_pos
         self.Obj_frames = Obj_frames
         self.invariants = invariants
-#%%
+
 def calculate_invariants(data_location, plot_demo = True, use_fatrop_solver = False, plot_inv = True, traj_type = "position"):
-    trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
+    trajectory,time = dh.read_pose_trajectory_from_data(data_location, dtype = 'txt')
     pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
     arclength_n = arclength/arclength[-1]
     trajectory_position = pose[:,:3,3]
@@ -45,7 +45,6 @@ def calculate_invariants(data_location, plot_demo = True, use_fatrop_solver = Fa
         for i in indx:
             pl.plot_3d_frame(trajectory_position[i,:],trajectory_orientation[i,:,:],1,0.01,['red','green','blue'],ax)
 
-    #%%
     optim_calc_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((len(trajectory),6)))
 
     
@@ -90,9 +89,9 @@ def calculate_invariants(data_location, plot_demo = True, use_fatrop_solver = Fa
 
     return optim_calc_results
 
-#%%
+
 def generate_trajectory(data_location, optim_calc_results, p_obj_end, rotate, use_fatrop_solver = False, plot_new_trajectory = True, traj_type = "position"):
-    trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
+    trajectory,time = dh.read_pose_trajectory_from_data(data_location, dtype = 'txt')
     pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
     arclength_n = arclength/arclength[-1]
     n_frames = 10
@@ -108,8 +107,7 @@ def generate_trajectory(data_location, optim_calc_results, p_obj_end, rotate, us
         
         resampled_invariants[:,0] = resampled_invariants[:,0] *  (progress_values[-1] - progress_values[0])
         return resampled_invariants, new_stepsize
-
-    #%% 
+ 
     current_progress = 0
     number_samples = 100
 
@@ -136,7 +134,7 @@ def generate_trajectory(data_location, optim_calc_results, p_obj_end, rotate, us
     R_obj_init = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end]))
     
     if not traj_type == "position":
-        R_r_init, R_r_init_array, invars_init = FSr_init(R_obj_start, R_obj_end)
+        R_r_init, R_r_init_array, invars_init = initial_trajectory_movingframe_rotation(R_obj_start, R_obj_end)
 
     boundary_constraints = {
         "position": {

@@ -1,16 +1,12 @@
 """
-Created on Fri Sep 17 09:09:09 2021
-
-@author: Glenn Maes
 
 Example script of shape-preserving trajectory generation
+
+Note: this script has been deprecated
+
 """
 
-
-""" [Arno] This script seems incompatible with current invariants_py directory ...
-
-
-
+"""
 
 import sys
 sys.path.append('../implementation')

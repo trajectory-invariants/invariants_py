@@ -21,7 +21,7 @@ import invariants_py.plotting_functions.plotters as pl
 import random
 import invariants_py.collision_detection_bottle as cd
 from invariants_py.reparameterization import interpR
-from invariants_py.initialization import FSr_init
+from invariants_py.initialization import initial_trajectory_movingframe_rotation
 
 # choose solver
 use_fatrop_solver = True # True = fatrop, False = ipopt
@@ -29,7 +29,7 @@ show_plots = False
 
 #%%
 data_location = dh.find_data_path('beer_1.txt')
-trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
+trajectory,time = dh.read_pose_trajectory_from_data(data_location, dtype = 'txt')
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
 trajectory_position = pose[:,:3,3]
@@ -127,7 +127,7 @@ FSt_end = orthonormalize(rotate.as_matrix() @ optim_calc_results.FSt_frames[-1])
 # Linear initialization
 R_obj_init = interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end]))
 
-R_r_init, R_r_init_array, invars_init = FSr_init(R_obj_start,R_obj_end)
+R_r_init, R_r_init_array, invars_init = initial_trajectory_movingframe_rotation(R_obj_start,R_obj_end)
 
 boundary_constraints = {
     "position": {
@@ -303,7 +303,7 @@ while current_progress <= 1.0:
 
     R_obj_init = interpR(np.linspace(0, 1, len(trajectory)), [0,1], np.array([R_obj_start, R_obj_end]))
 
-    R_r_init, R_r_init_array, invars_init = FSr_init(R_obj_start, R_obj_end)
+    R_r_init, R_r_init_array, invars_init = initial_trajectory_movingframe_rotation(R_obj_start, R_obj_end)
     
     boundary_constraints = {
         "position": {
@@ -460,7 +460,7 @@ for k in range(len(targets)):
 
     R_obj_init = interpR(np.linspace(0, 1, len(trajectory)), [0,1], np.array([R_obj_start, R_obj_end]))
 
-    R_r_init, R_r_init_array, invars_init = FSr_init(R_obj_start, R_obj_end)
+    R_r_init, R_r_init_array, invars_init = initial_trajectory_movingframe_rotation(R_obj_start, R_obj_end)
 
     boundary_constraints["position"]["final"] = p_obj_end 
     boundary_constraints["orientation"]["final"] = R_obj_end

@@ -3,8 +3,6 @@ Note: this module has been deprecated
 
 Test to decouple the trajectory calculation from the ROS communication
 
-@author: Glenn Maes
-
 
 """
 

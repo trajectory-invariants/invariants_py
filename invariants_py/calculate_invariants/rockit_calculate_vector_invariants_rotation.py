@@ -19,9 +19,9 @@ class OCP_calc_rot:
 
         ocp = rockit.Ocp(T=1.0) # create optimization problem
         N = window_len # number of samples in the window
-
-        fatrop_solver = check_solver(fatrop_solver)       
-        #%% Create decision variables and parameters for the optimization problem
+        fatrop_solver = check_solver(fatrop_solver)    
+           
+        ''' Create decision variables and parameters for the optimization problem '''
         
         # Define system states X (unknown object orientation + moving frame orientation at every time step) 
         R_obj_vec = ocp.state(9) # object orientation
@@ -43,7 +43,7 @@ class OCP_calc_rot:
         ocp.set_next(R_obj,R_obj_plus1)
         ocp.set_next(R_r,R_r_plus1)
             
-        #%% Specifying the constraints
+        ''' Specifying the constraints '''
         
         # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
         ocp.subject_to(ocp.at_t0(tril_vec(R_obj.T @ R_obj - np.eye(3))==0.))
@@ -55,7 +55,8 @@ class OCP_calc_rot:
             #ocp.subject_to(invars[1,:]>=0) # lower bounds on control
 
         # Measurement fitting constraint
-        ek = cas.dot(R_obj_m.T @ R_obj - np.eye(3), R_obj_m.T @ R_obj - np.eye(3)) # squared rotation error
+        rot_error = tril_vec(R_obj_m.T @ R_obj - np.eye(3)) # rotation error
+        ek = cas.dot(rot_error, rot_error) # squared rotation error
         
         if not fatrop_solver:
             # sum of squared position errors in the window should be less than the specified tolerance rms_error_traj
@@ -72,25 +73,27 @@ class OCP_calc_rot:
             ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
             
             # #total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
-            ocp.subject_to(1000*total_ek/N < 1000*rms_error_traj**2) # scaled total error
+            ocp.subject_to(total_ek/N < rms_error_traj**2) # scaled total error
             # #ocp.subject_to(total_ek_scaled < 1)
 
-        #%% Specifying the objective
+        ''' Specifying the objective '''
 
         # Minimize moving frame invariants to deal with singularities and noise
         objective_reg = ocp.sum(cas.dot(invars[1:3],invars[1:3]))
         objective = objective_reg/(N-1)
         ocp.add_objective(objective)
 
-        #%% Define solver and save variables
+        ''' Define solver and save variables '''
         
         if fatrop_solver:
             ocp.method(rockit.external_method('fatrop', N=N-1))
             ocp._method.set_name("/codegen/rotation") # pick a unique name when using multiple OCP specifications in the same script
+            ocp._method.set_expand(True)
+            #ocp._method.set_option("expand",True)
         else:
             ocp.method(rockit.MultipleShooting(N=N-1))
             #ocp.solver('ipopt', {'expand':True})
-            ocp.solver('ipopt',{"print_time":True,"expand":False,'ipopt.gamma_theta':1e-12,'ipopt.max_iter':max_iter,'ipopt.tol':tolerance,'ipopt.print_level':print_level,'ipopt.ma57_automatic_scaling':'no','ipopt.linear_solver':'mumps'})
+            ocp.solver('ipopt',{"print_time":True,"expand":False,'ipopt.gamma_theta':1e-12,'ipopt.print_info_string':'yes','ipopt.max_iter':max_iter,'ipopt.tol':tolerance,'ipopt.print_level':print_level,'ipopt.ma57_automatic_scaling':'no','ipopt.linear_solver':'mumps'})
         
         # Solve already once with dummy values for code generation (TODO: can this step be avoided somehow?)
         ocp.set_initial(R_r, np.eye(3))
@@ -125,6 +128,7 @@ class OCP_calc_rot:
 
     def calculate_invariants(self,R_meas,stepsize): 
 
+        N = R_meas.shape[0] # number of samples in the window
         if not R_meas.shape[1] == 3:
             R_meas = R_meas[:,:3,:3]
 
@@ -151,29 +155,22 @@ class OCP_calc_rot:
         return invariants, calculated_trajectory, calculated_movingframe
 
 if __name__ == "__main__":
-
     from invariants_py.reparameterization import interpR
 
     # Test data    
     R_start = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])  # Rotation matrix 1
     R_mid = np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])  # Rotation matrix 3
     R_end = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])  # Rotation matrix 2
+    N = 100
 
     # Interpolate between R_start and R_end
-    measured_orientations = interpR(np.linspace(0, 1, 100), np.array([0,0.8,1]), np.stack([R_start, R_mid, R_end],0))
+    measured_orientations = interpR(np.linspace(0,1,N), np.array([0,0.5,1]), np.stack([R_start, R_mid, R_end],0))
     timestep = 0.001
     
+    # Specify OCP symbolically
+    OCP = OCP_calc_rot(window_len=N, fatrop_solver=False, rms_error_traj=1*pi/180)
 
-    # TODO fix problem with logm theta=pi
-    print((np.array([R_start,R_mid,R_end])))
-    
-    print(measured_orientations)
-
-    # # Specify OCP symbolically
-    # N = np.size(measured_orientations,0)
-    # OCP = OCP_calc_rot(window_len=N,fatrop_solver=False, rms_error_traj=1*pi/180)
-
-    # # Solve the OCP using the specified data
-    # calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_orientations, timestep)
-    # #print(calc_invariants)
+    # Solve the OCP using the specified data
+    calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_orientations, timestep)
+    #print(calc_invariants)
 

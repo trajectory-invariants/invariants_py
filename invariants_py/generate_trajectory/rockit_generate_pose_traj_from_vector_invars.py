@@ -1,16 +1,11 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Mar  22 2024
 
-@author: Riccardo
-"""
 
 import numpy as np
 import casadi as cas
 import rockit
 import invariants_py.dynamics_vector_invariants as dynamics
 from invariants_py.kinematics.robot_forward_kinematics import robot_forward_kinematics
-from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag, diffR, diag
+from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag
 from invariants_py.kinematics.orientation_kinematics import rotate_x
 from invariants_py.initialization import generate_initvals_from_constraints
 import invariants_py.data_handler as dh
@@ -29,12 +24,12 @@ class OCP_gen_pose:
         if include_robot_model:
             robot = urdf.URDF.load(path_to_urdf)
             nb_joints = robot_params.get('joint_number', robot.num_actuated_joints)
-            q_limits = robot_params.get('q_lim', [robot._actuated_joints[i].limit.upper for i in range(robot.num_actuated_joints)])
+            q_limits = robot_params.get('q_lim', np.array([robot._actuated_joints[i].limit.upper for i in range(robot.num_actuated_joints)]))
             root = robot_params.get('root', robot.base_link)
             tip = robot_params.get('tip', 'tool0')
             q_init = robot_params.get('q_init', np.zeros(nb_joints))
 
-        #%% Create decision variables and parameters for the optimization problem
+        ''' Create decision variables and parameters for the optimization problem '''
         
         ocp = rockit.Ocp(T=1.0)
         
@@ -82,7 +77,7 @@ class OCP_gen_pose:
         
         w_invars = ocp.parameter(6,grid='control',include_last=True) # weights for invariants
                 
-        #%% Specifying the constraints
+        ''' Specifying the constraints '''
         
         # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
         ocp.subject_to(ocp.at_t0(tril_vec(R_t.T @ R_t - np.eye(3))==0.))
@@ -133,29 +128,28 @@ class OCP_gen_pose:
             ocp.subject_to(invars[0,:]>=0) # lower bounds on control
             ocp.subject_to(invars[1,:]>=0) # lower bounds on control
             
-        #%% Specifying the objective
+        ''' Specifying the objective '''
         # Fitting constraint to remain close to measurements
 
         if include_robot_model:
-            objective_inv = ocp.sum(1/window_len*cas.dot(w_invars*(invars - invars_demo),w_invars*(invars - invars_demo)),include_last=True)
+            objective_invariants = ocp.sum(1/window_len*cas.dot(w_invars*(invars - invars_demo),w_invars*(invars - invars_demo)),include_last=True)
             # Objective for joint limits
             e_pos = cas.dot(p_obj_fwkin - p_obj,p_obj_fwkin - p_obj)
             e_rot = cas.dot(R_obj.T @ R_obj_fwkin - np.eye(3),R_obj.T @ R_obj_fwkin - np.eye(3))
-            objective_jointlim = ocp.sum(e_pos + e_rot + 0.001*cas.dot(qdot,qdot),include_last = True)
-            objective = ocp.sum(objective_inv + objective_jointlim, include_last = True)
+            objective_inverse_kin = ocp.sum(e_pos + e_rot + 0.001*cas.dot(qdot,qdot),include_last = True)
+            # ocp.subject_to(p_obj == p_obj_fwkin)
+            # ocp.subject_to(tril_vec_no_diag(R_obj.T @ R_obj_fwkin - np.eye(3)) == 0.)
+            # objective_inverse_kin = ocp.sum(0.001*cas.dot(qdot,qdot),include_last = True)
+            objective = ocp.sum(objective_invariants + objective_inverse_kin, include_last = True)
         else:
             objective = ocp.sum(1/window_len*cas.dot(w_invars*(invars - invars_demo),w_invars*(invars - invars_demo)),include_last=True)
 
-        #%% Define solver and save variables
+        ''' Define solver and save variables '''
         ocp.add_objective(objective)
         if fatrop_solver:
             ocp.method(rockit.external_method('fatrop' , N=window_len-1))
-            # ocp._method.set_name("generation_pose")
-            # TEMPORARY SOLUTION TO HAVE ONLINE GENERATION
-            import random
-            import string
-            rand = "".join(random.choices(string.ascii_lowercase))
-            ocp._method.set_name("/codegen/generation_pose_"+rand)
+            ocp._method.set_expand(True) 
+            ocp._method.set_name("/codegen/generation_pose")
         else:
             ocp.method(rockit.MultipleShooting(N=window_len-1))
             ocp.solver('ipopt', {'expand':True})
@@ -170,7 +164,7 @@ class OCP_gen_pose:
         ocp.set_value(w_invars, 0.001+np.zeros((6,window_len)))
         ocp.set_value(h, 0.1)
         if include_robot_model:
-            p_obj_dummy, _ = robot_forward_kinematics(q_init[0],path_to_urdf,root,tip)
+            p_obj_dummy, _ = robot_forward_kinematics(q_init,path_to_urdf,root,tip)
             ocp.set_initial(q,q_init) 
             ocp.set_initial(qdot, 0.001*np.ones((nb_joints,window_len-1)))
             ocp.set_value(q_lim,q_limits)
@@ -245,20 +239,21 @@ class OCP_gen_pose:
             ocp.sample(R_t, grid='control')[1], # sampled translational FS frame
             ocp.sample(R_r, grid='control')[1], # sampled rotational FS frame
             ocp.sample(R_obj, grid='control')[1]] # sampled object orientation
+        input_params_labels = ["invars","w_invars","stepsize"] # input labels for debugging
+        input_sol_labels = ["invars1","p_obj1","R_t1","R_r1","R_obj1"] # labels for debugging
+        solution_labels = ["invars2","p_obj2","R_t2","R_r2","R_obj2"] # output labels for debugging
         if include_robot_model:
             solution.append(ocp.sample(q, grid='control')[1]) # sampled joint values
-            inputs_labels = ["invars","w_invars","stepsize","q_lim","invars1","p_obj1","R_t1","R_r1","R_obj1","q1"] # input labels for debugging
-            solution_labels = ["invars2","p_obj2","R_t2","R_r2","R_obj2","q2"] # output labels for debugging
-        else:
-            inputs_labels = ["invars","w_invars","stepsize","invars1","p_obj1","R_t1","R_r1","R_obj1"] # input labels for debugging
-            solution_labels = ["invars2","p_obj2","R_t2","R_r2","R_obj2"] # output labels for debugging
+            input_params_labels.append("q_lim")
+            input_sol_labels.append("q1")
+            solution_labels.append("q2")
 
         self.ocp = ocp # save the optimization problem locally, avoids problems when multiple rockit ocp's are created
 
         self.ocp_function = self.ocp.to_function('ocp_function', 
             [*input_params,*solution,*bounds], # inputs
             [*solution], # outputs
-            [*inputs_labels,*bounds_labels], # input labels for debugging
+            [*input_params_labels,*input_sol_labels,*bounds_labels], # input labels for debugging
             [*solution_labels], # output labels for debugging
         )
 
@@ -300,7 +295,8 @@ class OCP_gen_pose:
             self.q = q
             self.qdot = qdot
             self.q_init = q_init
-            self.q_lim = q_limits
+            self.q_lim = q_lim
+            self.q_limits = q_limits
 
     def generate_trajectory(self, invariant_model, boundary_constraints, step_size, weights_params = {}, initial_values = {}):
 
@@ -319,7 +315,7 @@ class OCP_gen_pose:
             w_invars[:, w_high_start:w_high_end+1] = w_high_invars.reshape(-1, 1)
 
         if self.include_robot_model:
-            input_params = [invariant_model.T,w_invars,step_size,self.q_lim]
+            input_params = [invariant_model.T,w_invars,step_size,self.q_limits]
         else:
             input_params = [invariant_model.T,w_invars,step_size]
 
@@ -366,7 +362,6 @@ class OCP_gen_pose:
     
 
     def generate_trajectory_OLD(self,invars_demo,p_obj_init,R_obj_init,R_t_init,R_r_init,q_init,q_lim,R_t_start,R_r_start,R_t_end,R_r_end,p_obj_start,R_obj_start,p_obj_end,R_obj_end, step_size, invars_init = None, w_invars = (10**-3)*np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), w_high_start = 1, w_high_end = 0, w_high_invars = (10**-3)*np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), w_high_active = 0):
-        #%%
         if invars_init is None:
             invars_init = invars_demo
 
@@ -495,7 +490,7 @@ if __name__ == "__main__":
         "urdf_file_name": urdf_file_name,
         "joint_number": 6, # Number of joints
     }
-    q_init = np.random.rand(window_len, robot_params["joint_number"])
+    q_init = np.random.rand(robot_params["joint_number"])
     q_lim = np.random.rand(robot_params["joint_number"])
 
     # Create OCP WITHOUT robot kinematic model

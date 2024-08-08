@@ -1,11 +1,11 @@
-# Generate translation trajectory from model invariants
+''' 
+Generate a new position trajectory from a given invariant representation model and boundary constraints.
+'''
 
 # Import necessary modules
 from invariants_py import data_handler as dh
 import invariants_py.plotting_functions.plotters as plotters
 from invariants_py.generate_trajectory.opti_generate_position_traj_from_vector_invars import generate_trajectory_translation
-
-import numpy as np
 
 # Find the path to the data file
 path_to_data = dh.find_data_path("sine_wave_invariant_model.csv")

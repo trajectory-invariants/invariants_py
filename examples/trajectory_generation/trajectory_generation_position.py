@@ -11,7 +11,7 @@ from invariants_py.generate_trajectory.opti_generate_position_traj_from_vector_i
 from IPython.display import clear_output
 
 data_location = dh.find_data_path('beer_1.txt')
-trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
+trajectory,time = dh.read_pose_trajectory_from_data(data_location, dtype = 'txt')
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
 trajectory = pose[:,0:3,3]
@@ -26,7 +26,7 @@ ax.plot(trajectory[:,0],trajectory[:,1],trajectory[:,2],'.-')
 FS_calculation_problem = OCP_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.001)
 
 # calculate invariants given measurements
-invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants_global(trajectory,stepsize)
+invariants, calculate_trajectory, movingframes = FS_calculation_problem.calculate_invariants(trajectory,stepsize)
 
 init_vals_calculate_trajectory = calculate_trajectory
 init_vals_movingframes = movingframes

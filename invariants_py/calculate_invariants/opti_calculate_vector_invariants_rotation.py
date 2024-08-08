@@ -2,51 +2,39 @@ import numpy as np
 from math import pi
 import casadi as cas
 import invariants_py.dynamics_vector_invariants as dynamics
+from invariants_py.ocp_helper import tril_vec
 
 class OCP_calc_rot:
 
     def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180, solver_options = {}):
        
-        #%% Create decision variables and parameters for the optimization problem
-
-        # Set solver options
+        # Get solver options
         tolerance = solver_options.get('tol',1e-4) # tolerance for the solver
         max_iter = solver_options.get('max_iter',500) # maximum number of iterations
         print_level = solver_options.get('print_level',5) # 5 prints info, 0 prints nothing
+        
+        ''' Create decision variables and parameters for the optimization problem '''
 
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
 
         # Define system states X (unknown object pose + moving frame pose at every time step) 
-        R_obj = []
-        R_r = []
-        X = []
-        for k in range(window_len):
-            R_obj.append(opti.variable(3,3)) # object orientation
-            R_r.append(opti.variable(3,3)) # rotational Frenet-Serret frame
-            X.append(cas.vertcat(cas.vec(R_r[k]), cas.vec(R_obj[k])))
+        R_obj = [opti.variable(3,3) for _ in range(window_len)] # object orientation
+        R_r = [opti.variable(3,3) for _ in range(window_len)] # rotational Frenet-Serret frame
+        X = [cas.vertcat(cas.vec(R_r[k]), cas.vec(R_obj[k])) for k in range(window_len)]
 
         # Define system controls (invariants at every time step)
         U = opti.variable(3,window_len-1)
 
         # Define system parameters P (known values in optimization that need to be set right before solving)
-        R_obj_m = [] # measured object orientation
+        R_obj_m = [opti.parameter(3,3) for _ in range(window_len)] # measured object orientation
         R_r_0 = opti.parameter(3,3) # THIS IS COMMENTED OUT IN MATLAB, WHY?
-        for k in range(window_len):
-            R_obj_m.append(opti.parameter(3,3)) # object orientation
-
         h = opti.parameter(1,1)
         
-        #%% Specifying the constraints
+        ''' Specifying the constraints '''
         
         # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
-        #opti.subject_to( R_t[-1].T @ R_t[-1] == np.eye(3))
-        
-        constr = R_r[0].T @ R_r[0]
-        opti.subject_to(cas.vertcat(constr[1,0], constr[2,0], constr[2,1], constr[0,0], constr[1,1], constr[2,2])==cas.vertcat(cas.DM.zeros(3,1), cas.DM.ones(3,1)))
-
-        constr_obj = R_obj[0].T @ R_obj[0]
-        opti.subject_to(cas.vertcat(constr_obj[1,0], constr_obj[2,0], constr_obj[2,1], constr_obj[0,0], constr_obj[1,1], constr_obj[2,2])==cas.vertcat(cas.DM.zeros(3,1), cas.DM.ones(3,1)))
-
+        opti.subject_to(tril_vec(R_r[0].T @ R_r[0] - np.eye(3)) == 0)
+        opti.subject_to(tril_vec(R_obj[0].T @ R_obj[0] - np.eye(3)) == 0)
 
         # Dynamic constraints
         integrator = dynamics.define_integrator_invariants_rotation(h)
@@ -60,17 +48,16 @@ class OCP_calc_rot:
         # Lower bounds on controls
         if bool_unsigned_invariants:
             opti.subject_to(U[0,:]>=0) # lower bounds on control
-            opti.subject_to(U[1,:]>=0) # lower bounds on control
-
-        #%% Specifying the objective
+            #opti.subject_to(U[1,:]>=0) # lower bounds on control
 
         # Fitting constraint to remain close to measurements
-        objective_fit = 0
+        total_fitting_error = 0
         for k in range(window_len):
-            err_rot = R_obj_m[k].T @ R_obj[k] - np.eye(3) # orientation error
-            objective_fit = objective_fit + cas.dot(err_rot,err_rot)
-            
-        opti.subject_to(objective_fit/window_len < rms_error_traj**2)
+            err_rot = tril_vec(R_obj_m[k].T @ R_obj[k] - np.eye(3)) # orientation error
+            total_fitting_error = total_fitting_error + cas.dot(err_rot,err_rot)
+        opti.subject_to(total_fitting_error/window_len < rms_error_traj**2)
+
+        ''' Specifying the objective '''
 
         # Regularization constraints to deal with singularities and noise
         objective_reg = 0
@@ -88,14 +75,17 @@ class OCP_calc_rot:
             #                + cas.dot(w_deriv**(0.5)*err_deriv,w_deriv**(0.5)*err_deriv) \
             #                + cas.dot(w_abs**(0.5)*err_abs, w_abs**(0.5)*err_abs)
 
-        objective = objective_reg/(window_len-1)
+        objective = objective_reg/(window_len-1) #+ objective_fit/window_len
+        #opti.subject_to(U[1,-1] == U[1,-2]); # Last sample has no impact on RMS error
 
-        opti.subject_to(U[1,-1] == U[1,-2]); # Last sample has no impact on RMS error
+        ''' Define solver '''
 
-        #%% Define solver and save variables
+        ''' Define solver and save variables '''
         opti.minimize(objective)
-        opti.solver('ipopt',{"print_time":False,"expand":True},{'gamma_theta':1e-12,'max_iter':max_iter,'tol':tolerance,'print_level':print_level,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
-        
+        opti.solver('ipopt',
+                    {"print_time":False,"expand":True},{'max_iter':max_iter,'tol':tolerance,'print_level':print_level,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
+        #'gamma_theta':1e-12
+
         # Save variables
         self.R_r = R_r
         self.R_obj = R_obj
@@ -107,69 +97,97 @@ class OCP_calc_rot:
         self.first_window = True
         self.h = h
          
-    def calculate_invariants_global(self,trajectory_meas,stepsize): 
-        #%%
+    def calculate_invariants(self,trajectory_meas,stepsize, choice_initialization=2): 
+        
+        from invariants_py.initialization import calculate_velocity_from_discrete_rotations, estimate_movingframes, estimate_rotational_invariants
+        from invariants_py.dynamics_vector_invariants import reconstruct_rotation_traj
+        from invariants_py.kinematics.screw_kinematics import average_vector_orientation_frame
 
         measured_orientation = trajectory_meas[:,:3,:3]
         N = self.window_len
-        
-        # Initialize states
-        # TODO  this is not correct yet, ex not perpendicular to ey
-        # Pdiff = np.diff(measured_orientation,axis=0)
-        # ex = Pdiff / np.linalg.norm(Pdiff,axis=1).reshape(N-1,1)
-        # ex = np.vstack((ex,[ex[-1,:]]))
-        # ey = np.tile( np.array((0,0,1)), (N,1) )
-        # ez = np.array([np.cross(ex[i,:],ey[i,:]) for i in range(N)])
-        
-        #JUST TESTING
-        ex = np.tile( np.array((1,0,0)), (N,1) )
-        ey = np.tile( np.array((0,1,0)), (N,1) )
-        ez = np.array([np.cross(ex[i,:],ey[i,:]) for i in range(N)])
-        
-        #Pdiff_cross = np.cross(Pdiff[0:-1],Pdiff[1:])
-        #ey = Pdiff_cross / np.linalg.norm(Pdiff_cross,axis=1).reshape(N-2,1)
-        
+
+        '''Choose initialization'''
+        if choice_initialization == 0:
+            # Initialization of tangent moving frame using data
+            Rdiff = calculate_velocity_from_discrete_rotations(measured_orientation,timestamps=np.arange(N))
+            ex = Rdiff / np.linalg.norm(Rdiff,axis=1).reshape(N,1)
+            ex = np.vstack((ex,[ex[-1,:]]))
+            ez = np.tile( np.array((0,0,1)), (N,1) )
+            ey = np.array([np.cross(ez[i,:],ex[i,:]) for i in range(N)])
+            invariants = np.hstack((1*np.ones((N-1,1)),1e-1*np.ones((N-1,2))))
+            R_obj_traj = measured_orientation
+            R_r_traj = np.zeros((N,3,3))
+            for i in range(N):
+                R_r_traj[i,:,:] = np.column_stack((ex[i,:],ey[i,:],ez[i,:]))            
+
+        elif choice_initialization == 1:
+            # Initialization with identity matrix for the moving frame
+            ex = np.tile( np.array((1,0,0)), (N,1) )
+            ey = np.tile( np.array((0,1,0)), (N,1) )
+            ez = np.array([np.cross(ex[i,:],ey[i,:]) for i in range(N)])
+            invariants = np.hstack((1*np.ones((N-1,1)),1e-1*np.ones((N-1,2))))
+            R_obj_traj = measured_orientation
+            R_r_traj = np.zeros((N,3,3))
+            for i in range(N):
+                R_r_traj[i,:,:] = np.column_stack((ex[i,:],ey[i,:],ez[i,:]))
+
+        elif choice_initialization == 2:
+            # Initialization by estimating moving frames with discrete analytical equations
+            Rdiff = calculate_velocity_from_discrete_rotations(measured_orientation,timestamps=np.arange(N))
+            invariants = np.hstack((1*np.ones((N-1,1)),1e-1*np.ones((N-1,2))))
+            R_r_traj = estimate_movingframes(Rdiff)
+            invariants = estimate_rotational_invariants(R_r_traj,Rdiff)
+            R_obj_traj = measured_orientation
+
+        elif choice_initialization == 3:
+            # Initialization by reconstructing a trajectory from initial invariants (makes dynamic constraints satisfied)
+            R_r_0 = np.eye(3,3)
+            R_obj_0 = np.eye(3,3)
+            invariants = np.hstack((1*np.ones((N-1,1)),1e-1*np.ones((N-1,2))))
+            R_obj_traj, R_r_traj = reconstruct_rotation_traj(invariants, stepsize, R_r_0, R_obj_0)
+
+        elif choice_initialization == 4:
+            # Initialization by estimating moving frames with average vector orientation frame
+            Rdiff = calculate_velocity_from_discrete_rotations(measured_orientation,timestamps=np.arange(N))
+            R_avof,_ = average_vector_orientation_frame(Rdiff)
+            # print(R_avof)
+            # print(R_avof.T @ R_avof)
+            R_r_traj = np.tile(R_avof,(N,1,1))
+            R_obj_traj = measured_orientation
+            invariants = np.hstack((1*np.ones((N-1,1)),1e-12*np.ones((N-1,2))))
+
+        ''' Set values '''
+        # Set initial values states
         for k in range(N):
-            self.opti.set_initial(self.R_r[k], np.array([ex[k,:], ey[k,:], ez[k,:]]).T ) #construct_init_FS_from_traj(meas_traj.Obj_location)
-            self.opti.set_initial(self.R_obj[k], measured_orientation[k])
+            self.opti.set_initial(self.R_r[k],  R_r_traj[k,:,:]) 
+            self.opti.set_initial(self.R_obj[k], R_obj_traj[k,:,:])
             
-        # Initialize controls
+        # Set initial values controls
         for k in range(N-1):    
-            self.opti.set_initial(self.U[:,k], np.array([1,1e-12,1e-12]))
+            self.opti.set_initial(self.U[:,k], invariants[k,:])
             
         # Set values parameters
-        self.opti.set_value(self.R_r_0, np.eye(3,3)) # THIS IS COMMENTED OUT IN MATLAB, WHY?
         for k in range(N):
             self.opti.set_value(self.R_obj_m[k], measured_orientation[k])       
-        
         self.opti.set_value(self.h,stepsize)
 
-        # ######################
-        # ##  DEBUGGING: check integrator in initial values, time step 0 to 1
-        # x0 = cas.vertcat(cas.vec(np.eye(3,3)), cas.vec(measured_positions[0]))
-        # u0 = 1e-8*np.ones((3,1))
-        # integrator = dynamics.define_integrator_invariants_position(self.stepsize)
-        # x1 = integrator(x0,u0)
-        # print(x1)
-        # ######################
-
+        ''' Solve and return solutation '''
         # Solve the NLP
         sol = self.opti.solve_limited()
         self.sol = sol
         
-        # Extract the solved variables
+        # Extract and return the solved variables
         invariants = sol.value(self.U).T
         invariants =  np.vstack((invariants,[invariants[-1,:]]))
         calculated_trajectory = np.array([sol.value(i) for i in self.R_obj])
         calculated_movingframe = np.array([sol.value(i) for i in self.R_r])
-        
         return invariants, calculated_trajectory, calculated_movingframe
 
     def calculate_invariants_online(self,trajectory_meas,stepsize,sample_jump):
-        #%%
+        
         if self.first_window:
             # Calculate invariants in first window
-            invariants, calculated_trajectory, calculated_movingframe = self.calculate_invariants_global(trajectory_meas,stepsize)
+            invariants, calculated_trajectory, calculated_movingframe = self.calculate_invariants(trajectory_meas,stepsize)
             self.first_window = False
             
             
@@ -183,7 +201,7 @@ class OCP_calc_rot:
             measured_orientation = trajectory_meas[:,:3,:3]
             N = self.window_len
             
-            #%% Set values parameters
+            ''' Set values parameters '''
             #for k in range(1,N):
             #    self.opti.set_value(self.p_obj_m[k], measured_positions[k-1])   
             
@@ -196,7 +214,7 @@ class OCP_calc_rot:
             
             self.opti.set_value(self.h,stepsize)
         
-            #%% First part of window initialized using results from earlier solution
+            ''' First part of window initialized using results from earlier solution '''
             # Initialize states
             for k in range(N-sample_jump-1):
                 self.opti.set_initial(self.R_r[k], self.sol.value(self.R_r[sample_jump+k]))
@@ -206,7 +224,7 @@ class OCP_calc_rot:
             for k in range(N-sample_jump-1):    
                 self.opti.set_initial(self.U[:,k], self.sol.value(self.U[:,sample_jump+k]))
                 
-            #%% Second part of window initialized uses default initialization
+            ''' Second part of window initialized uses default initialization '''
             # Initialize states
             for k in range(N-sample_jump,N):
                 self.opti.set_initial(self.R_r[k], self.sol.value(self.R_r[-1]))
@@ -218,7 +236,7 @@ class OCP_calc_rot:
 
             #print(self.sol.value(self.R_t[-1]))
 
-            #%% Solve the NLP
+            ''' Solve the NLP '''
             sol = self.opti.solve_limited()
             self.sol = sol
             
@@ -230,27 +248,30 @@ class OCP_calc_rot:
             
             return invariants, calculated_trajectory, calculated_movingframe
         
-
 if __name__ == "__main__":
+    from invariants_py.reparameterization import interpR
     import invariants_py.kinematics.orientation_kinematics as SO3
 
-    # Test data
-    measured_orientations = SO3.random_traj(N=10) # TODO replace with something more realistic, now it will sometimes fail
+    # Test data    
+    R_start = np.eye(3)  # Rotation matrix 1
+    R_mid = SO3.rotate_z(np.pi)  # Rotation matrix 3
+    R_end = SO3.RPY(np.pi/2,0,np.pi/2)  # Rotation matrix 2
+    N = 100
+
+    # Interpolate between R_start and R_end
+    measured_orientations = interpR(np.linspace(0,1,N), np.array([0,0.5,1]), np.stack([R_start, R_mid, R_end],0))
     timestep = 0.01
-    
-    # Specify OCP symbolically
-    N = np.size(measured_orientations,0)
 
     # Create an instance of OCP_calc_rot
-    ocp = OCP_calc_rot(window_len=N, rms_error_traj=5*pi/180)
+    ocp = OCP_calc_rot(window_len=N, rms_error_traj=0.000000001*pi/180, solver_options={'print_level':5,'max_iter':100})
     
-    # Calculate invariants using the calculate_invariants_global method
-    invariants_global, calculated_trajectory_global, calculated_movingframe_global = ocp.calculate_invariants_global(measured_orientations, timestep)
-    
+    # Calculate invariants using the calculate_invariants method
+    invars, calc_trajectory, calc_movingframes = ocp.calculate_invariants(measured_orientations, timestep, choice_initialization=2)
+
     # Print the results
-    # print("Global Invariants:")
-    # print(invariants_global)
-    # print("Global Calculated Trajectory:")
-    # print(calculated_trajectory_global)
-    # print("Global Calculated Moving Frame:")
-    # print(calculated_movingframe_global)
+    #print("Global Invariants:")
+    #print(invars)
+    #print("Global Calculated Trajectory:")
+    # print(calc_trajectory)
+    #print("Global Calculated Moving Frame:")
+    #print(calc_movingframes)

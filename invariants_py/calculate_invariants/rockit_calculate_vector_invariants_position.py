@@ -98,13 +98,13 @@ class OCP_calc_pos:
             ocp.set_next(total_ek, total_ek)
             ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
             # total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
-            ocp.subject_to(1000*total_ek/N < 1000*rms_error_traj**2)
+            ocp.subject_to(total_ek/N < rms_error_traj**2)
             #total_ek_scaled = running_ek/N/rms_error_traj**2 # scaled total error
             #ocp.subject_to(ocp.at_tf(total_ek_scaled < 1))
             
         # Boundary conditions (optional, but may help to avoid straight line fits)
-        ocp.subject_to(ocp.at_t0(p_obj == p_obj_m)) # fix first position to measurement
-        ocp.subject_to(ocp.at_tf(p_obj == p_obj_m)) # fix last position to measurement
+        #ocp.subject_to(ocp.at_t0(p_obj == p_obj_m)) # fix first position to measurement
+        #ocp.subject_to(ocp.at_tf(p_obj == p_obj_m)) # fix last position to measurement
 
         if planar_task:
             # Constrain the binormal vector of the moving frame to point upwards
@@ -122,10 +122,10 @@ class OCP_calc_pos:
         ocp.add_objective(objective)
 
         """ Solver definition """
-
         if check_solver(fatrop_solver):
             ocp.method(rockit.external_method('fatrop',N=N-1))
-            ocp._method.set_name("/codegen/calculate_position")   
+            ocp._method.set_name("/codegen/calculate_position")  
+            ocp._method.set_expand(True) 
         else:
             ocp.method(rockit.MultipleShooting(N=N-1))
             ocp.solver('ipopt', {'expand':True, 'ipopt.tol':tolerance,'ipopt.print_info_string':'yes', 'ipopt.max_iter':max_iter,'ipopt.print_level':print_level, 'ipopt.ma57_automatic_scaling':'no', 'ipopt.linear_solver':'mumps'})
@@ -184,6 +184,10 @@ class OCP_calc_pos:
         - calculated_trajectory (numpy.ndarray of shape (N, 3)): fitted trajectory corresponding to invariants
         - calculated_movingframes (numpy.ndarray of shape (N, 3, 3)): moving frames corresponding to invariants
         """
+
+        if not measured_positions.shape[1] == 3:
+            measured_positions = measured_positions[:,:3,3]
+
 
         # Check if this is the first function call
         if not use_previous_solution or self.first_time:
@@ -264,7 +268,7 @@ if __name__ == "__main__":
     # Test the functionalities of the class
     OCP = OCP_calc_pos(window_len=N, rms_error_traj=10**-3, fatrop_solver=True)
 
-    # Call the calculate_invariants_global function and measure the elapsed time
+    # Call the calculate_invariants function and measure the elapsed time
     #start_time = time.time()
     calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants_OLD(measured_positions, stepsize)
     #elapsed_time = time.time() - start_time

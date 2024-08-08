@@ -86,26 +86,21 @@ def integrate_vector_invariants_pose(R_t, R_r, R_obj, p_obj, u, h):
 def integrate_vector_invariants_position(R_t, p_obj, u, h):
     """
     Discrete dynamics of the vector invariants for position. Integrate invariants over interval h starting from a current state (object pose + moving frames)
-    """
-    # Define a geometric integrator for eFSI,
-    # (meaning rigid-body motion is perfectly integrated assuming constant invariants)
-    
-    
-    # object translation speed
-    # curvature speed translational Frenet-Serret
-    # torsion speed translational Frenet-Serret
-    
-    i4 = u[0]
-    i5 = u[1]
-    i6 = u[2]
+    """    
+    i_vel = u[0] # object translation speed
+    i_kappa = u[1] # curvature rate of moving frame
+    i_tau = u[2] # torsion rate of moving frame
 
-    omega = cas.vertcat(i6,0,i5)
+    # Represent the velocities in the moving frame
+    omega = cas.vertcat(i_tau,0,i_kappa)
     omega_norm = cas.norm_2(omega)
-    v = cas.vertcat(i4,0,0)
+    v = cas.vertcat(i_vel,0,0)
 
+    # Integrate velocities (body-fixed twist) to find change in rotation and translation
     deltaR = np.eye(3) + cas.sin(omega_norm @ h)/omega_norm*cas.skew(omega) + (1-cas.cos(omega_norm @ h))/omega_norm**2 * cas.mtimes(cas.skew(omega),cas.skew(omega))
     deltaP = (np.eye(3)-deltaR) @ cas.skew(omega) @ v/omega_norm**2 + omega @ omega.T @ v/omega_norm**2*h
     
+    # Apply change in rotation and translation
     R_t_plus1 = R_t @ deltaR
     p_obj_plus1 = R_t @ deltaP + p_obj
 
@@ -156,6 +151,21 @@ def reconstruct_offset_invariants(invariants, h):
             = integrate_vector_invariants_pose(R_t_0, R_r_0, R_offset, p_offset, invariants[:,i], h)
     return (R_offset, p_offset)
 
+def reconstruct_rotation_traj(invariants,h,R_r,R_obj):
+    """Reconstruct the rotation trajectory from the invariants starting from an initial object orientation and moving frame"""
+
+    R_r_traj = np.zeros((np.shape(invariants)[0]+1,3,3))
+    R_obj_traj = np.zeros((np.shape(invariants)[0]+1,3,3))
+    R_r_traj[0,:,:] = R_r
+    R_obj_traj[0,:,:] = R_obj
+    
+    for i in range(1,np.shape(invariants)[0]+1):
+        (R_r, R_obj) = integrate_vector_invariants_rotation(R_r, R_obj, invariants[i-1,:], h)
+        R_r_traj[i,:,:] = R_r
+        R_obj_traj[i,:,:] = R_obj
+
+    return R_obj_traj, R_r_traj
+
 def define_integrator_invariants_position(h):
     """Define a CasADi function that integrates the vector invariants for rotation over a time interval h."""
 
@@ -194,8 +204,7 @@ def define_integrator_invariants_position_jerkmodel(h):
     i3 = cas.MX.sym('i3')
     u = cas.vertcat(i1ddot,i2dot,i3)
 
-
-    #%% Define geometric integrator
+    ''' Define geometric integrator '''
     ## Define a geometric integrator for eFSI, (meaning rigid-body motion is perfectly integrated assuming constant invariants)
     invariants = cas.vertcat(i1,i2,i3)
     (R_t_plus1, p_obj_plus1) = integrate_vector_invariants_position(R_t, p_obj, invariants, h)

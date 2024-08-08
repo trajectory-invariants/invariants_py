@@ -19,12 +19,12 @@ from scipy.spatial.transform import Rotation as R
 from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize
 import invariants_py.plotting_functions.plotters as pl
 from invariants_py.reparameterization import interpR
-from invariants_py.initialization import FSr_init
+from invariants_py.initialization import initial_trajectory_movingframe_rotation
 from invariants_py.ocp_helper import solution_check_rot
 
 #%%
 data_location = dh.find_data_path('beer_1.txt')
-trajectory,time = dh.read_pose_trajectory_from_txt(data_location)
+trajectory,time = dh.read_pose_trajectory_from_data(data_location, dtype = 'txt')
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
 trajectory_position = pose[:,:3,3]
@@ -108,7 +108,7 @@ R_obj_end =  orthonormalize(rotate.as_matrix() @ calculate_trajectory[-1])
 # Linear initialization
 R_obj_init = interpR(np.linspace(0, 1, len(calculate_trajectory)), [0,1], np.array([R_obj_start, R_obj_end]))
 
-R_r_init, R_r_init_array, invars_init = FSr_init(R_obj_start, R_obj_end)
+R_r_init, R_r_init_array, invars_init = initial_trajectory_movingframe_rotation(R_obj_start, R_obj_end)
 
 initial_values = {"invariants": {"rotational": invars_init}, "trajectory": {"orientation": R_obj_init}, "moving-frame": {"rotational": R_r_init_array}}
 

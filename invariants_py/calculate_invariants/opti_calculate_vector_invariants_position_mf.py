@@ -7,7 +7,7 @@ class OCP_calc_pos:
 
     def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, w_deriv = (10**-6)*np.array([1.0, 1.0, 1.0]), w_abs = (10**-10)*np.array([1.0, 1.0]), planar_task = False, geometric = False):
        
-        #%% Create decision variables and parameters for the optimization problem
+        ''' Create decision variables and parameters for the optimization problem '''
         
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
 
@@ -27,7 +27,7 @@ class OCP_calc_pos:
 
         h = opti.parameter(1,1)
         
-        #%% Specifying the constraints
+        ''' Specifying the constraints '''
         
         # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
         opti.subject_to(ocp_helper.tril_vec(R_t[0].T @ R_t[0] - np.eye(3)) == 0)
@@ -56,7 +56,7 @@ class OCP_calc_pos:
             for k in range(window_len-2):
                 opti.subject_to(U[0,k+1] == U[0,k])
     
-        #%% Specifying the objective
+        ''' Specifying the objective '''
 
         # Fitting constraint to remain close to measurements
         objective_fit = 0
@@ -80,9 +80,9 @@ class OCP_calc_pos:
 
         objective = objective_fit + objective_reg
 
-        #%% Define solver and save variables
+        ''' Define solver and save variables '''
         opti.minimize(objective)
-        opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':1000,'tol':1e-4,'print_level':0,'ma57_automatic_scaling':'no','linear_solver':'mumps'})
+        opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':1000,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'})
         
         # Save variables
         self.R_t = R_t
@@ -95,8 +95,8 @@ class OCP_calc_pos:
         self.first_window = True
         self.h = h
          
-    def calculate_invariants_global(self,trajectory_meas,stepsize):
-        #%%
+    def calculate_invariants(self,trajectory_meas,stepsize):
+        
 
         if trajectory_meas.shape[1] == 3:
             measured_positions = trajectory_meas
@@ -149,10 +149,10 @@ class OCP_calc_pos:
         return invariants, calculated_trajectory, calculated_movingframe
 
     def calculate_invariants_online(self,trajectory_meas,stepsize,sample_jump):
-        #%%
+        
         if self.first_window:
             # Calculate invariants in first window
-            invariants, calculated_trajectory, calculated_movingframe = self.calculate_invariants_global(trajectory_meas,stepsize)
+            invariants, calculated_trajectory, calculated_movingframe = self.calculate_invariants(trajectory_meas,stepsize)
             self.first_window = False
             
             
@@ -169,7 +169,7 @@ class OCP_calc_pos:
                 measured_positions = trajectory_meas[:,:3,3]
             N = self.window_len
             
-            #%% Set values parameters
+            ''' Set values parameters '''
             #for k in range(1,N):
             #    self.opti.set_value(self.p_obj_m[k], measured_positions[k-1])   
             
@@ -182,7 +182,7 @@ class OCP_calc_pos:
             
             self.opti.set_value(self.h,stepsize);
         
-            #%% First part of window initialized using results from earlier solution
+            ''' First part of window initialized using results from earlier solution '''
             # Initialize states
             for k in range(N-sample_jump-1):
                 self.opti.set_initial(self.R_t[k], self.sol.value(self.R_t[sample_jump+k]))
@@ -192,7 +192,7 @@ class OCP_calc_pos:
             for k in range(N-sample_jump-1):    
                 self.opti.set_initial(self.U[:,k], self.sol.value(self.U[:,sample_jump+k]));
                 
-            #%% Second part of window initialized uses default initialization
+            ''' Second part of window initialized uses default initialization '''
             # Initialize states
             for k in range(N-sample_jump,N):
                 self.opti.set_initial(self.R_t[k], self.sol.value(self.R_t[-1]))
@@ -204,7 +204,7 @@ class OCP_calc_pos:
 
             #print(self.sol.value(self.R_t[-1]))
 
-            #%% Solve the NLP
+            ''' Solve the NLP '''
             sol = self.opti.solve_limited()
             self.sol = sol
             
@@ -215,3 +215,35 @@ class OCP_calc_pos:
             calculated_movingframe = np.array([sol.value(i) for i in self.R_t])
             
             return invariants, calculated_trajectory, calculated_movingframe
+        
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+
+    # Example data for measured positions and the stepsize
+    N = 100
+    t = np.linspace(0, 4, N)
+    measured_positions = np.column_stack((1 * np.cos(t), 1 * np.sin(t), 0.1 * t))
+    stepsize = t[1]-t[0]
+
+    # Test the functionalities of the class
+    OCP = OCP_calc_pos(window_len=np.size(measured_positions,0))
+
+    # Call the calculate_invariants function and measure the elapsed time
+    #start_time = time.time()
+    calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_positions, stepsize)
+    #elapsed_time = time.time() - start_time
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(measured_positions[:, 0], measured_positions[:, 1], measured_positions[:, 2],'b.-')
+    ax.plot(calc_trajectory[:, 0], calc_trajectory[:, 1], calc_trajectory[:, 2],'r--')
+    plt.show()
+
+    # # Print the results and elapsed time
+    # print("Calculated invariants:")
+    #print(calc_invariants)
+    # print("Calculated Moving Frame:")
+    # print(calc_movingframes)
+    # print("Calculated Trajectory:")
+    # print(calc_trajectory)
+    # print("Elapsed Time:", elapsed_time, "seconds")
