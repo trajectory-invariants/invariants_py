@@ -1,6 +1,7 @@
 import numpy as np
 import invariants_py.kinematics.orientation_kinematics as SO3
 from invariants_py.reparameterization import interpR
+from math import atan2
 
 def initial_trajectory_movingframe_rotation(R_obj_start,R_obj_end,N=100):
 
@@ -174,10 +175,10 @@ def calculate_tangent(vector_traj):
 
     return tangent
 
-def calculate_binormal(vector_traj,tangent):
+def calculate_binormal(vector_traj,tangent, reference_vector=None):
     """
-    Estimate the second axis of the moving frame based on the given trajectory.
-    The second axis is calculated by normalizing the cross product of the trajectory vector and the tangent.
+    Estimate the third axis of the moving frame based on the given trajectory.
+    The third axis is calculated by normalizing the cross product of the trajectory vector and the tangent.
     For vectors with a norm close to zero, the binormal of the previous vector is used.
     For vectors before the first non-zero norm, the binormal of the first non-zero norm is used.
     If no non-zero norm is found, all binormals are initialized with [0, 1, 0].
@@ -204,13 +205,14 @@ def calculate_binormal(vector_traj,tangent):
     first_nonzero_norm_index = np.where(~np.isclose(norm_binormal_vec, 0))[0]
     if first_nonzero_norm_index.size == 0:
         # choose a non-collinear vector
-        a = np.array([0, 1, 0]) if not np.isclose(tangent[1], 0) else np.array([0, 0, 1])
+        a = np.array([0, 0, 1]) if not np.isclose(tangent[0,2], 1) else np.array([0, 1, 0])
 
         # take cross-product to get perpendicular
         perp = np.cross(tangent[0,:], a, axis=0)
 
         # normalize
-        binormal = perp / np.linalg.norm(perp)
+        for i in range(N):
+            binormal[i, :] = perp / np.linalg.norm(perp)
     else:
         first_nonzero_norm_index = first_nonzero_norm_index[0]
 
@@ -224,7 +226,12 @@ def calculate_binormal(vector_traj,tangent):
         # For each sample before the first non-zero norm index
         for i in range(first_nonzero_norm_index):
             binormal[i, :] = binormal[first_nonzero_norm_index, :]
-
+            
+    if reference_vector is not None:
+        for i in range(N):
+            if np.dot(binormal[i, :], reference_vector) < 0:
+                binormal[i, :] = -binormal[i, :]
+        
     return binormal
 
 def estimate_movingframes(vector_traj):
@@ -236,13 +243,13 @@ def estimate_movingframes(vector_traj):
 
     # Calculate binormal vector
     N = np.size(vector_traj, 0)
-    binormal_vec = np.zeros((N,3))
-    for i in range(N-1):
-        binormal_vec[i,:] = np.cross(vector_traj[i,:],vector_traj[i+1,:])
-    binormal_vec[-1,:] = binormal_vec[-2,:]
+    # binormal_vec = np.zeros((N,3))
+    # for i in range(N-1):
+    #     binormal_vec[i,:] = np.cross(vector_traj[i,:],vector_traj[i+1,:])
+    # binormal_vec[-1,:] = binormal_vec[-2,:]
 
     # Estimate second axis
-    e_binormal = calculate_binormal(vector_traj,e_tangent)
+    e_binormal = calculate_binormal(vector_traj,e_tangent,reference_vector=np.array([0,0,1]))
 
     # Calculate third axis
     e_normal = np.array([ np.cross(e_binormal[i,:],e_tangent[i,:]) for i in range(N) ])
@@ -252,23 +259,27 @@ def estimate_movingframes(vector_traj):
         R[i,:,:] = np.column_stack((e_tangent[i,:],e_normal[i,:],e_binormal[i,:]))
     return R
 
-def angle_between_vectors(u, v):
+def angle_between_vectors(u, v, rot_axis = None):
     """
-    Calculate the angle between two vectors.
+    Calculate the angle between two vectors in a robust way.
 
     Input:
         u: first vector
         v: second vector
     Output:
-        angle: angle in rad between the two vectors
+        angle: angle [rad] between the two vectors
     """
-    from math import atan2
-    angle = atan2(np.linalg.norm(np.cross(u,v)),np.dot(u,v))
     
-    #angle = np.arccos(np.dot(u, v) / (np.linalg.norm(u) * np.linalg.norm(v)))
+    cross_prod = np.cross(u,v)
+    angle = atan2(np.linalg.norm(cross_prod),np.dot(u,v))
+    
+    if rot_axis is not None:
+        sign = np.sign(np.dot(cross_prod, rot_axis))      
+        angle = sign*angle  
+    
     return angle
 
-def estimate_vector_invariants(R_mf_traj,vector_traj):
+def estimate_vector_invariants(R_mf_traj,vector_traj,stepsize):
     '''
     
     '''
@@ -282,11 +293,11 @@ def estimate_vector_invariants(R_mf_traj,vector_traj):
         
     # second invariant is the angle between successive first axes of the moving frame
     for i in range(N-1):
-        invariants[i,1] = angle_between_vectors(R_mf_traj[i,:,0], R_mf_traj[i+1,:,0])
+        invariants[i,1] = angle_between_vectors(R_mf_traj[i,:,0], R_mf_traj[i+1,:,0], R_mf_traj[i,:,2])/stepsize
     
     # third invariant is the angle between successive third axes of the moving frame
     for i in range(N-1):
-        invariants[i,2] = angle_between_vectors(R_mf_traj[i,:,2], R_mf_traj[i+1,:,2])
+        invariants[i,2] = angle_between_vectors(R_mf_traj[i,:,2], R_mf_traj[i+1,:,2], R_mf_traj[i,:,0])/stepsize
         
     invariants[-1,1:] = invariants[-2,1:] # copy last values
     #print(invariants)
@@ -329,7 +340,7 @@ def  initialize_VI_pos(input_trajectory):
     invars = np.vstack((1e0*np.ones((1,N-1)),1e-1*np.ones((1,N-1)), 1e-12*np.ones((1,N-1))))
     return [invars, p_obj_sol, R_t]
 
-def  initialize_VI_pos2(measured_positions):
+def  initialize_VI_pos2(measured_positions,stepsize):
     
     N = np.size(measured_positions,0)
     Pdiff = np.diff(measured_positions, axis=0)
@@ -341,7 +352,7 @@ def  initialize_VI_pos2(measured_positions):
     for i in range(N):
         R_t_init2[i,:,:] = np.column_stack((ex[i,:],ey[i,:],ez[i,:]))
     #print(R_t_init2)
-    invars = estimate_vector_invariants(R_t_init2,Pdiff) + 1e-12*np.ones((N,3))
+    invars = estimate_vector_invariants(R_t_init2,Pdiff,stepsize) + 1e-12*np.ones((N,3))
     #print(invars)
 
     R_t_init = np.zeros((9,N))
@@ -397,3 +408,33 @@ def initialize_VI_rot2(measured_orientation):
     invars = np.vstack((1e0*np.ones((1,N-1)),1e-1*np.ones((1,N-1)), 1e-12*np.ones((1,N-1))))
 
     return [invars, R_obj, R_r]
+
+
+def discrete_approximation_invariants(measured_positions, stepsize):
+    """
+    Calculate the vector invariants of a measured position trajectory 
+    based on a discrete approximation of the moving frame.
+
+    Input:
+        measured_positions: measured positions (Nx3)
+        stepsize: stepsize of the simulation
+    Output:
+        invariants: invariants (Nx3)
+        trajectory: trajectory of the moving frame (Nx3)
+        mf: moving frame (Nx3x3)
+    """
+    N = np.size(measured_positions, 0)
+    
+    Pdiff = np.diff(measured_positions,axis=0)
+
+    # Calculate the trajectory of the moving frame
+    R_mf_traj = estimate_movingframes(Pdiff)
+
+    # Calculate the invariants based on the trajectory
+    invariants = estimate_vector_invariants(R_mf_traj,Pdiff/stepsize,stepsize)  + 1e-6*np.ones((N-1,3))
+    invariants = np.vstack((invariants, invariants[-1,:]))
+    
+    # append last value to mf
+    R_mf_traj = np.concatenate((R_mf_traj, R_mf_traj[-1,:,:][np.newaxis, :, :]), axis=0)    
+
+    return invariants, measured_positions, R_mf_traj
