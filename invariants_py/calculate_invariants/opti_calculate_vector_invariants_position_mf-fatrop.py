@@ -87,7 +87,7 @@ class OCP_calc_pos:
 
         # Regularization constraints to deal with singularities and noise
         objective_reg = 0
-        for k in range(window_len-1):
+        for k in range(window_len):
             if k!=0:
                 err_deriv = U[k] - U[k-1] # first-order finite backwards derivative (noise smoothing effect)
             else:
@@ -103,8 +103,8 @@ class OCP_calc_pos:
 
         ''' Define solver and save variables '''
         opti.minimize(objective)
-        opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':100,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'})
-        #opti.solver('fatrop',{"expand":False,'fatrop.max_iter':100,'fatrop.tol':1e-4,'fatrop.print_level':5, "structure_detection":"auto","debug":True,"fatrop.mu_init":0.1})
+        #opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':100,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'})
+        opti.solver('fatrop',{"expand":True,'fatrop.max_iter':100,'fatrop.tol':1e-4,'fatrop.print_level':5, "structure_detection":"auto","debug":True,"fatrop.mu_init":0.1})
         
         # Save variables
         self.R_t = R_t
@@ -159,14 +159,21 @@ class OCP_calc_pos:
         # ######################
 
         # Solve the NLP
-        sol = self.opti.solve_limited()
-        self.sol = sol
-        
-        # Extract the solved variables
-        invariants = sol.value(self.U).T
-        invariants =  np.vstack((invariants,[invariants[-1,:]]))
-        calculated_trajectory = np.array([sol.value(i) for i in self.p_obj])
-        calculated_movingframe = np.array([sol.value(i) for i in self.R_t])
+        try:
+            sol = self.opti.solve_limited()
+            self.sol = sol
+            
+            # Extract the solved variables
+            invariants = np.array([sol.value(i) for i in self.U])
+            invariants =  np.vstack((invariants,[invariants[-1,:]]))
+            calculated_trajectory = np.array([sol.value(i) for i in self.p_obj])
+            calculated_movingframe = np.array([sol.value(i) for i in self.R_t])
+        except RuntimeError:
+            # Extract the solved variables
+            invariants = np.array([self.opti.debug.value(i) for i in self.U])
+            invariants =  np.vstack((invariants,[invariants[-1,:]]))
+            calculated_trajectory = np.array([self.opti.debug.value(i) for i in self.p_obj])
+            calculated_movingframe = np.array([self.opti.debug.value(i) for i in self.R_t])
         
         return invariants, calculated_trajectory, calculated_movingframe
 
