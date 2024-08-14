@@ -16,3 +16,5 @@ __pycache__/
 casadi_codegen.obj
 invariants_py/data/sine_wave_invariants.csv
 venv/
+debug_fatrop_*
+nlp_hess_l.casadi
