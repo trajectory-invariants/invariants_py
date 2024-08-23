@@ -35,8 +35,8 @@ def reconstruct_trajectory(invariants, position_init=np.zeros((3,1)), movingfram
     
     Parameters:
     - invariants (numpy array of shape (N,3)): Array of vector invariants.
-    - p_init (numpy array of shape (3,1), optional): Initial position. Defaults to a 3x1 zero array.
-    - mf_init (numpy array of shape (3,3), optional): Initial frame matrix. Defaults to a 3x3 identity matrix.
+    - position_init (numpy array of shape (3,1), optional): Initial position. Defaults to a 3x1 zero array.
+    - movingframe_init (numpy array of shape (3,3), optional): Initial frame matrix. Defaults to a 3x3 identity matrix.
     
     Returns:
     - positions (numpy array of shape (N,3)): Array of reconstructed positions.
