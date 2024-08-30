@@ -16,7 +16,7 @@ trajectory, time = dh.read_pose_trajectory_from_data(path_data,dtype = 'txt')
 invariants, progress, calc_trajectory, movingframes, progress_n = invariants_handler.calculate_invariants_translation(trajectory)
 
 # (Optional) Reconstruction of the trajectory from the invariants
-reconstructed_trajectory, recon_mf = invariants_handler.reconstruct_trajectory(invariants, position_init=calc_trajectory[0,:], movingframe_init=movingframes[0,:,:])
+reconstructed_trajectory, recon_mf, recon_vel = invariants_handler.reconstruct_trajectory(invariants, position_init=calc_trajectory[0,:], movingframe_init=movingframes[0,:,:])
 
 print(recon_mf[1,:,:])
 print(movingframes[1,:,:])
