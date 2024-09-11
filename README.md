@@ -3,6 +3,10 @@
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/trajectory-invariants/invariants_py)
 ![GitHub issues](https://img.shields.io/github/issues/trajectory-invariants/invariants_py)
 
+<p align="center">
+  <img src="https://github.com/trajectory-invariants/trajectory-invariants.github.io/blob/master/static/images/logo-trajectory-invariants.png" alt="Logo Trajectory Invariants" title="Title text" width="500">
+</p>
+
 `invariants-py` is a Python library to robustly calculate coordinate-invariant trajectory representations using geometric optimal control. 
 It also supports trajectory generation under user-specified trajectory constraints starting from invariant representations.
 
