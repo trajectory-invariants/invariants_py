@@ -26,7 +26,7 @@ from invariants_py.dynamics_vector_invariants import integrate_vector_invariants
 
 class OCP_calc_pos:
     
-    def __init__(self, window_len=100, rms_error_traj=10**-2, fatrop_solver=False, bool_unsigned_invariants=False, planar_task=False, solver_options = {}):
+    def __init__(self, window_len=100, rms_error_traj=10**-3, fatrop_solver=False, bool_unsigned_invariants=False, planar_task=False, solver_options = {}):
         """
         Initializes an instance of the RockitCalculateVectorInvariantsPosition class.
         It specifies the optimal control problem (OCP) for calculating the invariants of a trajectory in a symbolic way.
@@ -141,10 +141,12 @@ class OCP_calc_pos:
         ocp.solve() # code generation
 
         # Set Fatrop solver options (Q: why can this not be done before solving?)
+        # TODO integrate with above using transcribe
         if fatrop_solver:
             ocp._method.set_option("tol",tolerance)
             ocp._method.set_option("print_level",print_level)
             ocp._method.set_option("max_iter",max_iter)
+            ocp._method.set_option("linsol_lu_fact_tol",1e-12)
         self.first_time = True
         
         # Encapsulate OCP specification in a casadi function after discretization (sampling)
