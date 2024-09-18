@@ -215,7 +215,7 @@ class OCP_calc_pos:
             else:  
                 
                 # Initialize states and controls using measurements
-                self.values_variables = initialization.initialize_VI_pos2(measured_positions)
+                self.values_variables = initialization.initialize_VI_pos2(measured_positions,stepsize)
                 self.first_time = False
 
         # Solve the optimization problem for the given measurements starting from previous solution
