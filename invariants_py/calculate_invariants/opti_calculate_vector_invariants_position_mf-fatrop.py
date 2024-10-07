@@ -159,21 +159,21 @@ class OCP_calc_pos:
         # ######################
 
         # Solve the NLP
-        try:
-            sol = self.opti.solve_limited()
-            self.sol = sol
-            
-            # Extract the solved variables
-            invariants = np.array([sol.value(i) for i in self.U])
-            invariants =  np.vstack((invariants,[invariants[-1,:]]))
-            calculated_trajectory = np.array([sol.value(i) for i in self.p_obj])
-            calculated_movingframe = np.array([sol.value(i) for i in self.R_t])
-        except RuntimeError:
-            # Extract the solved variables
-            invariants = np.array([self.opti.debug.value(i) for i in self.U])
-            invariants =  np.vstack((invariants,[invariants[-1,:]]))
-            calculated_trajectory = np.array([self.opti.debug.value(i) for i in self.p_obj])
-            calculated_movingframe = np.array([self.opti.debug.value(i) for i in self.R_t])
+        # try:
+        sol = self.opti.solve_limited()
+        self.sol = sol
+        
+        # Extract the solved variables
+        invariants = np.array([sol.value(i) for i in self.U])
+        invariants =  np.vstack((invariants,[invariants[-1,:]]))
+        calculated_trajectory = np.array([sol.value(i) for i in self.p_obj])
+        calculated_movingframe = np.array([sol.value(i) for i in self.R_t])
+        # except RuntimeError:
+        #     # Extract the solved variables
+        #     invariants = np.array([self.opti.debug.value(i) for i in self.U])
+        #     invariants =  np.vstack((invariants,[invariants[-1,:]]))
+        #     calculated_trajectory = np.array([self.opti.debug.value(i) for i in self.p_obj])
+        #     calculated_movingframe = np.array([self.opti.debug.value(i) for i in self.R_t])
         
         return invariants, calculated_trajectory, calculated_movingframe
 
@@ -266,7 +266,7 @@ if __name__ == "__main__":
     ax = fig.add_subplot(111, projection='3d')
     ax.plot(measured_positions[:, 0], measured_positions[:, 1], measured_positions[:, 2],'b.-')
     ax.plot(calc_trajectory[:, 0], calc_trajectory[:, 1], calc_trajectory[:, 2],'r--')
-    plt.show()
+    plt.show(block=False)
 
     # # Print the results and elapsed time
     # print("Calculated invariants:")
