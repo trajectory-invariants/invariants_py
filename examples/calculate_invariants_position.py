@@ -13,11 +13,18 @@ path_data = dh.find_data_path("sine_wave.txt") # TODO convert sine_wave.txt to s
 trajectory, time = dh.read_pose_trajectory_from_data(path_data,dtype = 'txt')
 
 # Calculate the invariants of the translation trajectory
-invariants, progress, calc_trajectory, movingframes = invariants_handler.calculate_invariants_translation(trajectory)
+invariants, progress, calc_trajectory, movingframes, progress_n = invariants_handler.calculate_invariants_translation(trajectory)
+
+# (Optional) Reconstruction of the trajectory from the invariants
+reconstructed_trajectory, recon_mf, recon_vel = invariants_handler.reconstruct_trajectory(invariants, position_init=calc_trajectory[0,:], movingframe_init=movingframes[0,:,:])
+
+print(recon_mf[1,:,:])
+print(movingframes[1,:,:])
 
 # Plotting the results
 plotters.plot_invariants_new2(invariants, progress) # calculated invariants
 plotters.plot_trajectory(calc_trajectory) # calculated trajectory corresponding to invariants
+plotters.plot_trajectory(reconstructed_trajectory) # reconstructed trajectory corresponding to invariants
 plotters.plot_moving_frames(calc_trajectory, movingframes) # calculated moving frames along trajectory
 plotters.animate_moving_frames(calc_trajectory, movingframes) # animated moving frames along trajectory
 

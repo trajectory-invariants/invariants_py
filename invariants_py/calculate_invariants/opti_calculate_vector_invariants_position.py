@@ -58,9 +58,6 @@ class OCP_calc_pos:
             for k in range(window_len-2):
                 opti.subject_to(U[0,k+1] == U[0,k])
     
-        #opti.subject_to(p_obj[0] == p_obj_m[0]) # Fix first measurement
-        #opti.subject_to(p_obj[-1] == p_obj_m[-1]) # Fix last measurement
-
         # Measurement fitting constraint
         trajectory_error = 0
         for k in range(window_len):
@@ -69,8 +66,8 @@ class OCP_calc_pos:
         opti.subject_to(trajectory_error/window_len < rms_error_traj**2)
 
         # Boundary constraints
-        #pti.subject_to(self.p_obj[0] == self.p_obj_m[0]) # Fix first measurement
-        #opti.subject_to(self.p_obj[N-1] == self.p_obj_m[N-1]) # Fix last measurement
+        #opti.subject_to(self.p_obj[0] == self.p_obj_m[0]) # Fix first measurement
+        #opti.subject_to(self.p_obj[-1] == self.p_obj_m[-1]) # Fix last measurement
         #opti.subject_to(U[1,-1] == U[1,-2]) # Last sample has no impact on RMS error
 
         ''' Objective function '''
@@ -81,6 +78,8 @@ class OCP_calc_pos:
             err_abs = U[[1,2],k] # value of moving frame invariants
             objective_reg = objective_reg + cas.dot(err_abs,err_abs) # cost term
         objective = objective_reg/(window_len-1) # normalize with window length
+
+        #objective = objective + 10e-8*trajectory_error/window_len # add trajectory error to objective function
 
         ''' Solver '''
         opti.minimize(objective)
@@ -180,20 +179,20 @@ class OCP_calc_pos:
                     self.opti.set_value(self.p_obj_m[k], measured_positions[k])   
             
             # Set other parameters equal to the measurements in that window
-            self.opti.set_value(self.R_t_0, self.sol.value(self.R_t[sample_jump]));
-            #self.opti.set_value(self.p_obj_m[0], self.sol.value(self.p_obj[sample_jump]));
+            self.opti.set_value(self.R_t_0, self.sol.value(self.R_t[sample_jump]))
+            #self.opti.set_value(self.p_obj_m[0], self.sol.value(self.p_obj[sample_jump]))
             
-            self.opti.set_value(self.h,stepsize);
+            self.opti.set_value(self.h,stepsize)
         
             ''' First part of window initialized using results from earlier solution '''
             # Initialize states
             for k in range(N-sample_jump-1):
                 self.opti.set_initial(self.R_t[k], self.sol.value(self.R_t[sample_jump+k]))
-                self.opti.set_initial(self.p_obj[k], self.sol.value(self.p_obj[sample_jump+k]));
+                self.opti.set_initial(self.p_obj[k], self.sol.value(self.p_obj[sample_jump+k]))
                 
             # Initialize controls
             for k in range(N-sample_jump-1):    
-                self.opti.set_initial(self.U[:,k], self.sol.value(self.U[:,sample_jump+k]));
+                self.opti.set_initial(self.U[:,k], self.sol.value(self.U[:,sample_jump+k]))
                 
             ''' Second part of window initialized uses default initialization '''
             # Initialize states
@@ -229,7 +228,7 @@ if __name__ == "__main__":
     stepsize = t[1]-t[0]
 
     # Test the functionalities of the class
-    OCP = OCP_calc_pos(window_len=np.size(measured_positions,0), rms_error_traj=10**-3)
+    OCP = OCP_calc_pos(window_len=np.size(measured_positions,0), rms_error_traj=10**-5)
 
     # Call the calculate_invariants function and measure the elapsed time
     #start_time = time.time()
@@ -244,7 +243,7 @@ if __name__ == "__main__":
 
     # # Print the results and elapsed time
     # print("Calculated invariants:")
-    #print(calc_invariants)
+    print(calc_invariants)
     # print("Calculated Moving Frame:")
     # print(calc_movingframes)
     # print("Calculated Trajectory:")
