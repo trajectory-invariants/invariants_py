@@ -5,7 +5,13 @@ import invariants_py.ocp_helper as ocp_helper
 
 class OCP_calc_pos:
 
-    def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, w_deriv = (10**-6)*np.array([1.0, 1.0, 1.0]), w_abs = (10**-10)*np.array([1.0, 1.0]), planar_task = False, geometric = False):
+    def __init__(self, window_len = 100, 
+                 w_pos = 1, w_rot = 1, 
+                 w_deriv = (10**-6)*np.array([1.0, 1.0, 1.0]), 
+                 w_abs = (10**-10)*np.array([1.0, 1.0]), 
+                 bool_unsigned_invariants = False, 
+                 planar_task = False, 
+                 geometric = False):
        
         ''' Create decision variables and parameters for the optimization problem '''
         
@@ -71,7 +77,7 @@ class OCP_calc_pos:
                 err_deriv = U[:,k] - U[:,k-1] # first-order finite backwards derivative (noise smoothing effect)
             else:
                 err_deriv = 0
-            err_abs = U[[1,2],k] # absolute value invariants (force arbitrary invariants in singularities to zero)
+            err_abs = U[1:3,k] # absolute value invariants (force arbitrary invariants in singularities to zero)
 
             ##Check that obj function is correctly typed in !!!
             objective_reg = objective_reg \
@@ -82,7 +88,7 @@ class OCP_calc_pos:
 
         ''' Define solver and save variables '''
         opti.minimize(objective)
-        opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':1000,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'})
+        opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':300,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'})
         
         # Save variables
         self.R_t = R_t
@@ -118,7 +124,7 @@ class OCP_calc_pos:
             
         # Initialize controls
         for k in range(N-1):    
-            self.opti.set_initial(self.U[:,k], np.array([1,1e-12,1e-12]))
+            self.opti.set_initial(self.U[:,k], np.array([1,1e-1,1e-5]))
 
         # Set values parameters
         self.opti.set_value(self.R_t_0, np.eye(3,3))
@@ -226,7 +232,7 @@ if __name__ == "__main__":
     stepsize = t[1]-t[0]
 
     # Test the functionalities of the class
-    OCP = OCP_calc_pos(window_len=np.size(measured_positions,0))
+    OCP = OCP_calc_pos(window_len=N)
 
     # Call the calculate_invariants function and measure the elapsed time
     #start_time = time.time()
@@ -237,11 +243,10 @@ if __name__ == "__main__":
     ax = fig.add_subplot(111, projection='3d')
     ax.plot(measured_positions[:, 0], measured_positions[:, 1], measured_positions[:, 2],'b.-')
     ax.plot(calc_trajectory[:, 0], calc_trajectory[:, 1], calc_trajectory[:, 2],'r--')
-    plt.show()
-
+    plt.show(block=False)
+    
     # # Print the results and elapsed time
-    # print("Calculated invariants:")
-    #print(calc_invariants)
+    #print("Calculated invariants:", calc_invariants)
     # print("Calculated Moving Frame:")
     # print(calc_movingframes)
     # print("Calculated Trajectory:")

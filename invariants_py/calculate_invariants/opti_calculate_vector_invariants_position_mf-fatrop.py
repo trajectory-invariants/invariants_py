@@ -5,25 +5,35 @@ import invariants_py.ocp_helper as ocp_helper
 
 class OCP_calc_pos:
 
-    def __init__(self, window_len = 100, bool_unsigned_invariants = False, w_pos = 1, w_rot = 1, w_deriv = (10**-6)*np.array([1.0, 1.0, 1.0]), w_abs = (10**-10)*np.array([1.0, 1.0]), planar_task = False, geometric = False):
+    def __init__(self, window_len = 100,
+                 w_pos = 1, w_rot = 1,
+                 w_deriv = (10**-6)*np.array([1.0, 1.0, 1.0]),
+                 w_abs = (10**-10)*np.array([1.0, 1.0]),
+                 solver = 'ipopt',
+                 planar_task = False,
+                 bool_unsigned_invariants = False,
+                 geometric = False):
        
         ''' Create decision variables and parameters for the optimization problem '''
         
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
-
-        R_t_o = opti.variable(3,3) # initial translational Frenet-Serret frame
 
         # Define system states X (unknown object pose + moving frame pose at every time step) 
         p_obj = []
         R_t = []
         X = []
         U = []
-        for k in range(window_len):
+        for k in range(window_len-1):
             R_t.append(opti.variable(3,3)) # translational Frenet-Serret frame
             p_obj.append(opti.variable(3,1)) # object position
             U.append(opti.variable(3,1)) # invariants
             X.append(cas.vertcat(cas.vec(R_t[k]), cas.vec(p_obj[k])))
 
+        # Add last state
+        R_t.append(opti.variable(3,3)) # translational Frenet-Serret frame
+        p_obj.append(opti.variable(3,1)) # object position
+        X.append(cas.vertcat(cas.vec(R_t[-1]), cas.vec(p_obj[-1])))
+            
         # Define system controls (invariants at every time step)
         #U = opti.variable(3,window_len-1)
 
@@ -32,18 +42,10 @@ class OCP_calc_pos:
         for k in range(window_len):
             p_obj_m.append(opti.parameter(3,1)) # object position
         R_t_0 = opti.parameter(3,3) # initial translational Frenet-Serret frame at first sample of window
-
         h = opti.parameter(1,1)
         
         ''' Specifying the constraints '''
-        #opti.subject_to(ocp_helper.tril_vec(R_t[0].T @ R_t[0] - np.eye(3)) < 10)
-        # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
-        #opti.subject_to(R_t_o == R_t[0])
-        #         opti.subject_to(R_t_o == R_t[0])
-        
-        # opti.subject_to(R_t_o[0,0] - R_t_o[1,0] == 0)
-       
-        
+
         # Dynamic constraints
         integrator = dynamics.define_integrator_invariants_position(h)
         for k in range(window_len-1):
@@ -53,16 +55,14 @@ class OCP_calc_pos:
             # Gap closing constraint
             opti.subject_to(X[k+1]-Xk_end==0)
             
+            # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
             if k==0:
                 opti.subject_to(ocp_helper.tril_vec(R_t[0].T @ R_t[0] - np.eye(3)) == 0)
-            
-            
+              
         # Lower bounds on controls
         if bool_unsigned_invariants:
             opti.subject_to(U[0,:]>=0) # lower bounds on control
             #opti.subject_to(U[1,:]>=0) # lower bounds on control
-
-        
 
         # 2D contour   
         if planar_task:
@@ -74,9 +74,6 @@ class OCP_calc_pos:
             for k in range(window_len-2):
                 opti.subject_to(U[0,k+1] == U[0,k])
     
-    
-        
-
         ''' Specifying the objective '''
 
         # Fitting constraint to remain close to measurements
@@ -87,12 +84,12 @@ class OCP_calc_pos:
 
         # Regularization constraints to deal with singularities and noise
         objective_reg = 0
-        for k in range(window_len):
+        for k in range(window_len-1):
             if k!=0:
                 err_deriv = U[k] - U[k-1] # first-order finite backwards derivative (noise smoothing effect)
             else:
                 err_deriv = 0
-            err_abs = U[k][1:2] # absolute value invariants (force arbitrary invariants in singularities to zero)
+            err_abs = U[k][1:3] # absolute value invariants (force arbitrary invariants in singularities to zero)
 
             ##Check that obj function is correctly typed in !!!
             objective_reg = objective_reg \
@@ -103,8 +100,10 @@ class OCP_calc_pos:
 
         ''' Define solver and save variables '''
         opti.minimize(objective)
-        #opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':100,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'})
-        opti.solver('fatrop',{"expand":True,'fatrop.max_iter':100,'fatrop.tol':1e-4,'fatrop.print_level':5, "structure_detection":"auto","debug":True,"fatrop.mu_init":0.1})
+        if solver == 'ipopt':
+            opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':300,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'})
+        elif solver == 'fatrop':
+            opti.solver('fatrop',{"expand":True,'fatrop.max_iter':300,'fatrop.tol':1e-4,'fatrop.print_level':5, "structure_detection":"auto","debug":True,"fatrop.mu_init":0.1})
         
         # Save variables
         self.R_t = R_t
@@ -249,13 +248,13 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     # Example data for measured positions and the stepsize
-    N = 10
+    N = 100
     t = np.linspace(0, 4, N)
     measured_positions = np.column_stack((1 * np.cos(t), 1 * np.sin(t), 0.1 * t))
     stepsize = t[1]-t[0]
 
     # Test the functionalities of the class
-    OCP = OCP_calc_pos(window_len=np.size(measured_positions,0))
+    OCP = OCP_calc_pos(window_len=N)
 
     # Call the calculate_invariants function and measure the elapsed time
     #start_time = time.time()
@@ -267,10 +266,9 @@ if __name__ == "__main__":
     ax.plot(measured_positions[:, 0], measured_positions[:, 1], measured_positions[:, 2],'b.-')
     ax.plot(calc_trajectory[:, 0], calc_trajectory[:, 1], calc_trajectory[:, 2],'r--')
     plt.show(block=False)
-
+    
     # # Print the results and elapsed time
-    # print("Calculated invariants:")
-    #print(calc_invariants)
+    #print("Calculated invariants:", calc_invariants)
     # print("Calculated Moving Frame:")
     # print(calc_movingframes)
     # print("Calculated Trajectory:")
