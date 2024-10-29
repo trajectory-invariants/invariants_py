@@ -39,7 +39,7 @@ timestamps = df['timestamp'].values
 stepsize = np.mean(np.diff(timestamps))
 
 # Downsample the trajectory to 100 samples
-downsampled_indices = np.linspace(0, len(trajectory) - 1, 200, dtype=int)
+downsampled_indices = np.linspace(0, len(trajectory) - 1, 400, dtype=int)
 trajectory = trajectory[downsampled_indices]/1000 # Convert to meters
 timestamps = timestamps[downsampled_indices]
 stepsize = np.mean(np.diff(timestamps))
@@ -51,6 +51,9 @@ trajectory, arclength, arclength_n, nb_samples, stepsize = reparameterize_positi
 # Use the standard approach if the data size is within the limit
 ocp = OCP_calc_pos(window_len=len(trajectory),fatrop_solver=True,geometric=True)
 invariants, reconstructed_trajectory, moving_frames = ocp.calculate_invariants(trajectory, stepsize)
+
+invariants[:,1] = invariants[:,1]/invariants[:,0] # get geometric curvature
+invariants[:,2] = invariants[:,2]/invariants[:,0] # get geometric torsion
 
 # Plot the calculated invariants as subplots
 fig, axs = plt.subplots(3, 1, figsize=(10, 8))
