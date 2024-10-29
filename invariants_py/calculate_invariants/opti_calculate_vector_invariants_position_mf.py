@@ -88,7 +88,7 @@ class OCP_calc_pos:
 
         ''' Define solver and save variables '''
         opti.minimize(objective)
-        opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':300,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'})
+        opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':300,'tol':1e-6,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'})
         
         # Save variables
         self.R_t = R_t

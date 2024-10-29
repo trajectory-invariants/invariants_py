@@ -53,27 +53,29 @@ class OCP_calc_pos:
             Xk_end = integrator(X[k],U[k],h)
             
             # Gap closing constraint
-            opti.subject_to(X[k+1]-Xk_end==0)
+            opti.subject_to(X[k+1] - Xk_end == 0)
             
+            # (Optional) Geometric invariant constraint where first invariant is constant throughout the window
+            if geometric and k!=window_len-2:
+                opti.subject_to(U[k+1][0] - U[k][0] == 0)
+        
             # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
             if k==0:
                 opti.subject_to(ocp_helper.tril_vec(R_t[0].T @ R_t[0] - np.eye(3)) == 0)
               
-        # Lower bounds on controls
-        if bool_unsigned_invariants:
-            opti.subject_to(U[0,:]>=0) # lower bounds on control
-            #opti.subject_to(U[1,:]>=0) # lower bounds on control
+            # Lower bounds on controls
+            if bool_unsigned_invariants:
+                opti.subject_to(U[k][0] >= 0) # positive velocity
+                #opti.subject_to(U[k][1] >= 0) # positive curvature
 
-        # 2D contour   
-        if planar_task:
-            for k in range(window_len):
+            # 2D contour   
+            if planar_task:
                 opti.subject_to( cas.dot(R_t[k][:,2],np.array([0,0,1])) > 0)
-            
-        # Additional constraint: First invariant remains constant throughout the window
-        if geometric:
-            for k in range(window_len-2):
-                opti.subject_to(U[0,k+1] == U[0,k])
-    
+               
+        # Last stage constraints
+        if planar_task:
+            opti.subject_to( cas.dot(R_t[-1][:,2],np.array([0,0,1])) > 0)
+        
         ''' Specifying the objective '''
 
         # Fitting constraint to remain close to measurements
@@ -101,9 +103,9 @@ class OCP_calc_pos:
         ''' Define solver and save variables '''
         opti.minimize(objective)
         if solver == 'ipopt':
-            opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':300,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'})
+            opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':300,'tol':1e-6,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'})
         elif solver == 'fatrop':
-            opti.solver('fatrop',{"expand":True,'fatrop.max_iter':300,'fatrop.tol':1e-4,'fatrop.print_level':5, "structure_detection":"auto","debug":True,"fatrop.mu_init":0.1})
+            opti.solver('fatrop',{"expand":True,'fatrop.max_iter':300,'fatrop.tol':1e-6,'fatrop.print_level':5, "structure_detection":"auto","debug":True,"fatrop.mu_init":0.1})
         
         # Save variables
         self.R_t = R_t
@@ -254,7 +256,7 @@ if __name__ == "__main__":
     stepsize = t[1]-t[0]
 
     # Test the functionalities of the class
-    OCP = OCP_calc_pos(window_len=N)
+    OCP = OCP_calc_pos(window_len=N, solver='ipopt', planar_task=True, bool_unsigned_invariants=True, geometric=True)
 
     # Call the calculate_invariants function and measure the elapsed time
     #start_time = time.time()
@@ -265,10 +267,10 @@ if __name__ == "__main__":
     ax = fig.add_subplot(111, projection='3d')
     ax.plot(measured_positions[:, 0], measured_positions[:, 1], measured_positions[:, 2],'b.-')
     ax.plot(calc_trajectory[:, 0], calc_trajectory[:, 1], calc_trajectory[:, 2],'r--')
-    plt.show(block=False)
+    plt.show(block=True)
     
     # # Print the results and elapsed time
-    #print("Calculated invariants:", calc_invariants)
+    print("Calculated invariants:", calc_invariants)
     # print("Calculated Moving Frame:")
     # print(calc_movingframes)
     # print("Calculated Trajectory:")
