@@ -147,6 +147,7 @@ def main():
     
     # Compute the number of new samples
     N = int(1 + np.floor(timestamps[-1] / dt))
+    print(f'Number of samples: {N}')
     
     # Generate new equidistant time vector
     time_new = np.linspace(0, timestamps[-1], N)
@@ -158,7 +159,7 @@ def main():
     plot_trajectory_kettle(T, 'Input Trajectory')
     
     # Initialize OCP object and calculate pose
-    OCP = OCP_calc_pose(T, rms_error_traj=5 * 10**-2)
+    OCP = OCP_calc_pose(N, rms_error_traj_pos = 1e-3, rms_error_traj_rot= 1e-1)
 
     # Calculate screw invariants and other outputs
     U, T_sol_, T_isa_ = OCP.calculate_invariants(T, dt)
