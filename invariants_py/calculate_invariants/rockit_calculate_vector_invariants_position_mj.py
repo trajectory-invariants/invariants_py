@@ -8,7 +8,7 @@ from invariants_py.ocp_helper import check_solver
 
 class OCP_calc_pos:
 
-    def __init__(self, window_len = 100, w_pos = 1, w_regul_jerk = 10**-5 , bool_unsigned_invariants = False, w_regul_invars = 0, fatrop_solver = False, planar_task = False, solver_options = {}):
+    def __init__(self, window_len = 100, w_pos = 1, w_regul_jerk = 10**-5 , bool_unsigned_invariants = False, w_regul_invars = 0, fatrop_solver = False, planar_task = False, geometric = False, solver_options = {}):
         fatrop_solver = check_solver(fatrop_solver)               
 
         # Set solver options
@@ -42,8 +42,8 @@ class OCP_calc_pos:
         ''' Constraints '''
 
         # test initial constraint on position
-        self.ocp.subject_to(self.ocp.at_tf(self.p_obj == self.p_obj_m))
-        self.ocp.subject_to(self.ocp.at_t0(self.p_obj == self.p_obj_m))
+        #self.ocp.subject_to(self.ocp.at_tf(self.p_obj == self.p_obj_m))
+        #self.ocp.subject_to(self.ocp.at_t0(self.p_obj == self.p_obj_m))
 
         # Orthonormality of rotation matrix (only needed for one timestep, property is propagated by integrator)  
         self.ocp.subject_to(self.ocp.at_t0(ocp_helper.tril_vec(R_t.T @ R_t - np.eye(3))==0.))
@@ -70,6 +70,12 @@ class OCP_calc_pos:
         if bool_unsigned_invariants:
             self.ocp.subject_to(self.i1 >= 0) # velocity always positive
             #ocp.subject_to(invars[1,:]>=0) # curvature rate always positive
+
+        # Geometric invariants (optional), i.e. enforce constant speed
+        if geometric:
+            L = self.ocp.state()  # introduce extra state L for the speed
+            self.ocp.set_next(L, L)  # enforce constant speed
+            self.ocp.subject_to(self.i1 - L == 0)  # relate to first invariant
 
         ''' Objective function '''
         self.N_controls = window_len-1
