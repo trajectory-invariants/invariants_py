@@ -107,6 +107,11 @@ class OCP_calc_pos:
         elif solver == 'fatrop':
             opti.solver('fatrop',{"expand":True,'fatrop.max_iter':300,'fatrop.tol':1e-6,'fatrop.print_level':5, "structure_detection":"auto","debug":True,"fatrop.mu_init":0.1})
         
+        # Construct a CasADi function out of the opti object. This function can be called with the initial guess to solve the NLP. Faster than doing opti.set_initial + opti.solve + opti.value
+        solution = [*R_t, *p_obj, *U]
+        self.opti_function = opti.to_function('opti_function', [*p_obj_m,h,*solution], [*solution])
+        #print(self.opti_function(*[0 for _ in range(400)]))
+
         # Save variables
         self.R_t = R_t
         self.p_obj = p_obj
@@ -185,7 +190,6 @@ class OCP_calc_pos:
             invariants, calculated_trajectory, calculated_movingframe = self.calculate_invariants(trajectory_meas,stepsize)
             self.first_window = False
             
-            
             # Add continuity constraints on first sample
             #self.opti.subject_to( self.R_t[0] == self.R_t_0 )
             #self.opti.subject_to( self.p_obj[0] == self.p_obj_m[0])
@@ -207,20 +211,20 @@ class OCP_calc_pos:
                     self.opti.set_value(self.p_obj_m[k], measured_positions[k])   
             
             # Set other parameters equal to the measurements in that window
-            self.opti.set_value(self.R_t_0, self.sol.value(self.R_t[sample_jump]));
+            self.opti.set_value(self.R_t_0, self.sol.value(self.R_t[sample_jump]))
             #self.opti.set_value(self.p_obj_m[0], self.sol.value(self.p_obj[sample_jump]));
             
-            self.opti.set_value(self.h,stepsize);
+            self.opti.set_value(self.h,stepsize)
         
             ''' First part of window initialized using results from earlier solution '''
             # Initialize states
             for k in range(N-sample_jump-1):
                 self.opti.set_initial(self.R_t[k], self.sol.value(self.R_t[sample_jump+k]))
-                self.opti.set_initial(self.p_obj[k], self.sol.value(self.p_obj[sample_jump+k]));
+                self.opti.set_initial(self.p_obj[k], self.sol.value(self.p_obj[sample_jump+k]))
                 
             # Initialize controls
             for k in range(N-sample_jump-1):    
-                self.opti.set_initial(self.U[:,k], self.sol.value(self.U[:,sample_jump+k]));
+                self.opti.set_initial(self.U[:,k], self.sol.value(self.U[:,sample_jump+k]))
                 
             ''' Second part of window initialized uses default initialization '''
             # Initialize states
