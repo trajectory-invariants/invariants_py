@@ -2,7 +2,7 @@
 import numpy as np
 import invariants_py.kinematics.orientation_kinematics as SO3
 from invariants_py.kinematics.rigidbody_kinematics import inverse_T
-from scipy.linalg import expm, logm
+from invariants_py.kinematics.rigidbody_kinematics import expm_T, logm_T
 
 def interpR(x_n, x_p, R_p):
     """
@@ -54,7 +54,7 @@ def interpR(x_n, x_p, R_p):
             
     return R_n
 
-def interpT(x, T, xq):
+def interpT(xq, x, T):
     """
     Interpolates transformation matrices T at query points xq based on given sample points x.
 
@@ -83,20 +83,20 @@ def interpT(x, T, xq):
 
     for i in range(M):
         # Find the segment [x[j], x[j + 1]] that contains xq[i]
-        while xq[i] > x[j + 1]:
+        while xq[i] > x[j+1]:
             j += 1
 
-        x0, x1 = x[j], x[j + 1]
-        T0, T1 = T[j, :, :], T[j + 1, :, :]
+        x0, x1 = x[j], x[j+1]
+        T0, T1 = T[j], T[j+1]
 
         if x1 - x0 != 0:
             # Interpolate using the matrix logarithm and exponential
-            T_new = T0 @ expm((xq[i] - x0) / (x1 - x0) * logm(inverse_T(T0) @ T1))
+            T_new = T0 @ expm_T((xq[i] - x0) / (x1 - x0) * logm_T(inverse_T(T0) @ T1))
         else:
             # Handle the case where x0 == x1 (should not occur if x is strictly increasing)
             T_new = T0
 
-        T_interpolated[i, :, :] = T_new  # Store the interpolated matrix
+        T_interpolated[i] = T_new  # Store the interpolated matrix
 
     return T_interpolated
 

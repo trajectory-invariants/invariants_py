@@ -153,7 +153,7 @@ def main():
     time_new = np.linspace(0, timestamps[-1], N)
     
     # Interpolate pose matrices to new time vector
-    T = interpT(timestamps, T, time_new)
+    T = interpT(time_new, timestamps, T)
     
     # Plot the input trajectory
     plot_trajectory_kettle(T, 'Input Trajectory')
