@@ -35,7 +35,7 @@ class OCP_calc_pose:
             Xk_end = integrator(X[k],U[:,k],h)
             
             # Continuity constraint (closing the gap)
-            opti.subject_to(Xk_end==X[k+1])
+            opti.subject_to(X[k+1]- Xk_end == 0)
             
         # Lower bounds on controls
         if bool_unsigned_invariants:
@@ -45,13 +45,15 @@ class OCP_calc_pose:
         # Measurement fitting constraint
         trajectory_error_pos = 0
         trajectory_error_rot = 0
-        for k in range(N):
+        for k in range(N-1):
             err_pos = T_obj[k][0:3,3] - T_obj_m[k][0:3,3] # position error
-            err_rot = T_obj_m[k][0:3,0:3].T @ T_obj[k][0:3,0:3] - np.eye(3) # orientation error
+            err_rot = (T_obj[k][0:3,0:3].T @ T_obj_m[k][0:3,0:3]) - np.eye(3) # orientation error
             trajectory_error_pos = trajectory_error_pos + cas.dot(err_pos,err_pos)
             trajectory_error_rot = trajectory_error_rot + cas.dot(err_rot,err_rot)  
         opti.subject_to(trajectory_error_pos < N*rms_error_traj_pos**2)
         opti.subject_to(trajectory_error_rot < N*rms_error_traj_rot**2)
+
+        #objective_fit = trajectory_error_pos + trajectory_error_rot
 
         # Minimize moving frame invariants to deal with singularities and noise
         objective_reg = 0
@@ -60,9 +62,11 @@ class OCP_calc_pose:
             objective_reg = objective_reg + cas.dot(err_abs,err_abs) # cost term
         objective = objective_reg/(N-1) # normalize with window length
 
+        #objective = 1e-4*objective + objective_fit
+
         # Solver
         opti.minimize(objective)
-        opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':400,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'}) #'gamma_theta':1e-12
+        opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':300,'tol':1e-6,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'}) # 'gamma_theta':1e-12
 
         # Store variables
         self.opti = opti
@@ -90,13 +94,13 @@ class OCP_calc_pose:
         self.opti.set_value(self.h, h)
             
         for i in range(self.N-1):
-            self.opti.set_initial(self.U[:,i], np.zeros(6)+0.001*np.random.randn(6))
+            self.opti.set_initial(self.U[:,i], np.zeros(6)+0.1)
 
         # Solve
         sol = self.opti.solve()
 
         # Return solution
-        T_isa = [sol.value(self.T_isa[k]) for k in range(self.N)]
+        T_isa = np.array([sol.value(i) for i in self.T_isa])
         T_obj = [sol.value(self.T_obj[k]) for k in range(self.N)]
         U = sol.value(self.U)
         
@@ -104,14 +108,33 @@ class OCP_calc_pose:
        
 if __name__ == "__main__":
 
-    N=100
-    T_obj_m = np.tile(np.eye(4), (100, 1, 1)) # example: measured object poses
+    from invariants_py.reparameterization import interpT
+    import invariants_py.kinematics.orientation_kinematics as SE3
+    
+    # Test data    
+    N = 10
+    T_start = np.eye(4)  # Rotation matrix 1
+    T_mid = np.eye(4)
+    T_mid[:3, :3] = SE3.rotate_z(np.pi)  # Rotation matrix 3
+    T_end = np.eye(4)
+    T_end[:3, :3] = SE3.RPY(np.pi/2, 0, np.pi/2)  # Rotation matrix 2
+    
+    # Interpolate between R_start and R_end
+    T_obj_m = interpT(np.linspace(0,1,N), np.array([0,0.5,1]), np.stack([T_start, T_mid, T_end],0))
 
+    print(T_obj_m)
+    # check orthonormality of rotation matrix part of T_obj_m
+    # for i in range(N):
+    #     print(np.linalg.norm(T_obj_m[i,0:3,0:3].T @ T_obj_m[i,0:3,0:3] - np.eye(3)))
+
+    
     OCP = OCP_calc_pose(N, rms_error_traj_pos = 10**-3)
 
     # Example: calculate invariants for a given trajectory
     h = 0.01 # step size for integration of dynamic equations
 
     U, T_obj, T_isa = OCP.calculate_invariants(T_obj_m, h)
-
-    print("Invariants U: ", U)
+    #print("Invariants U: ", U)
+    # print("Invariants U: ", U.T)
+    # #print("T_obj: ", T_obj)
+    print("T_isa: ", T_isa)
