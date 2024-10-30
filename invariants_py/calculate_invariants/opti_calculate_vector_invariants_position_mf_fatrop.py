@@ -260,7 +260,7 @@ if __name__ == "__main__":
     stepsize = t[1]-t[0]
 
     # Test the functionalities of the class
-    OCP = OCP_calc_pos(window_len=N, solver='ipopt', planar_task=True, bool_unsigned_invariants=True, geometric=True)
+    OCP = OCP_calc_pos(window_len=N, solver='ipopt', planar_task=False, bool_unsigned_invariants=False, geometric=False)
 
     # Call the calculate_invariants function and measure the elapsed time
     #start_time = time.time()
