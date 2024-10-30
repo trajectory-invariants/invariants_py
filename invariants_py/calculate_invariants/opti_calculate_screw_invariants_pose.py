@@ -5,10 +5,11 @@ from invariants_py import ocp_helper
 
 class OCP_calc_pose:    
 
-    def __init__(self, T_input, bool_unsigned_invariants = False, rms_error_traj = 10**-2):
-       
-        N = T_input.shape[0]
-        
+    def __init__(self, N, 
+                rms_error_traj_pos = 10**-3,
+                rms_error_traj_rot = 10**-2,
+                bool_unsigned_invariants = False):
+               
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
         
         # Define system states X (unknown object pose + moving frame pose at every time step)
@@ -49,8 +50,8 @@ class OCP_calc_pose:
             err_rot = T_obj_m[k][0:3,0:3].T @ T_obj[k][0:3,0:3] - np.eye(3) # orientation error
             trajectory_error_pos = trajectory_error_pos + cas.dot(err_pos,err_pos)
             trajectory_error_rot = trajectory_error_rot + cas.dot(err_rot,err_rot)  
-        opti.subject_to(trajectory_error_pos/N/rms_error_traj**2 < 1)
-        opti.subject_to(trajectory_error_rot/N/rms_error_traj**2 < 1)
+        opti.subject_to(trajectory_error_pos < N*rms_error_traj_pos**2)
+        opti.subject_to(trajectory_error_rot < N*rms_error_traj_rot**2)
 
         # Minimize moving frame invariants to deal with singularities and noise
         objective_reg = 0
@@ -61,7 +62,7 @@ class OCP_calc_pose:
 
         # Solver
         opti.minimize(objective)
-        opti.solver('ipopt',{"print_time":True,"expand":True},{'gamma_theta':1e-12,'max_iter':200,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'})
+        opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':400,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'}) #'gamma_theta':1e-12
 
         # Store variables
         self.opti = opti
@@ -80,7 +81,6 @@ class OCP_calc_pose:
         T_obj_init = T_obj_m
         T_isa_init0 = np.vstack([[0, 0, 1, 0], [0, 1, 0, 0], [-1, 0, 0, 0], [0, 0, 0, 1]]).T
         T_isa_init = np.tile(T_isa_init0, (self.N, 1, 1)) # initial guess for moving frame poses
-        
             
         # Set initial guess
         for i in range(self.N):
@@ -101,14 +101,13 @@ class OCP_calc_pose:
         U = sol.value(self.U)
         
         return U, T_obj, T_isa
-    
-          
+       
 if __name__ == "__main__":
 
     N=100
     T_obj_m = np.tile(np.eye(4), (100, 1, 1)) # example: measured object poses
-    
-    OCP = OCP_calc_pose(T_obj_m, rms_error_traj=10**-3)
+
+    OCP = OCP_calc_pose(N, rms_error_traj_pos = 10**-3)
 
     # Example: calculate invariants for a given trajectory
     h = 0.01 # step size for integration of dynamic equations
