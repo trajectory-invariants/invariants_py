@@ -1,6 +1,6 @@
 [project]
 name = "invariants-py"
-version = "0.3.8" # note that it is possible for the build backend to manage versions in a dynamic way
+version = "0.3.9" # note that it is possible for the build backend to manage versions in a dynamic way
 description = "Calculate invariant trajectory representations from trajectory data and generate new trajectories from invariant representations"
 authors = [ {name = "Maxim Vochten"}, 
     {name = "Riccardo Burlizzi"},

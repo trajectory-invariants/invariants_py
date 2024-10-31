@@ -26,7 +26,7 @@ from invariants_py.dynamics_vector_invariants import integrate_vector_invariants
 
 class OCP_calc_pos:
     
-    def __init__(self, window_len=100, rms_error_traj=10**-2, fatrop_solver=False, bool_unsigned_invariants=False, planar_task=False, solver_options = {}):
+    def __init__(self, window_len=100, rms_error_traj=10**-2, fatrop_solver=False, bool_unsigned_invariants=False, planar_task=False, geometric = False, solver_options = {}):
         """
         Initializes an instance of the RockitCalculateVectorInvariantsPosition class.
         It specifies the optimal control problem (OCP) for calculating the invariants of a trajectory in a symbolic way.
@@ -117,8 +117,12 @@ class OCP_calc_pos:
             # TODO make normal to plane a parameter instead of hardcoding the Z-axis
             ocp.subject_to( cas.dot(R_t[:,2],np.array([0,0,1])) > 0)
 
-        # TODO can we implement geometric constraint (constant i1) by making i1 a state?
-
+        # Geometric invariants (optional), i.e. enforce constant speed
+        if geometric:
+            L = ocp.state()  # introduce extra state L for the speed
+            ocp.set_next(L, L)  # enforce constant speed
+            ocp.subject_to(invars[0] - L == 0, include_last=False)  # relate to first invariant
+          
         """ Objective function """
 
         # Minimize moving frame invariants to deal with singularities and noise

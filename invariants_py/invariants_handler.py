@@ -47,6 +47,7 @@ def reconstruct_trajectory(invariants, position_init=np.zeros((3,1)), movingfram
     stepsize = 1/N
 
     positions = np.zeros((N,3))
+    velocities = np.zeros((N,3))
     R_frames = np.zeros((N,3,3))
 
     positions[0,:] = position_init
@@ -61,5 +62,8 @@ def reconstruct_trajectory(invariants, position_init=np.zeros((3,1)), movingfram
 
         position_init = p_plus1
         movingframe_init = R_plus1
+        
+    for k in range(N):
+        velocities[k,:] = invariants[k, 0]*R_frames[k,:,0]
 
-    return positions, R_frames
+    return positions, R_frames, velocities

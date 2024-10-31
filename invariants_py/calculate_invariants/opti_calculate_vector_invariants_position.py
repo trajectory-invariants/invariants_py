@@ -65,9 +65,10 @@ class OCP_calc_pos:
         trajectory_error = 0
         for k in range(window_len):
             err_pos = p_obj[k] - p_obj_m[k] # position error
-            trajectory_error = trajectory_error + cas.dot(err_pos,err_pos)    
-        # r.24 in paper [Maxim 2023]
-        opti.subject_to(trajectory_error/window_len < rms_error_traj**2)
+            trajectory_error = trajectory_error + cas.dot(err_pos,err_pos) 
+        
+        # r.24 in paper [Maxim 2023]   
+        opti.subject_to(trajectory_error  < window_len*rms_error_traj**2)
 
         # Boundary constraints
         #opti.subject_to(self.p_obj[0] == self.p_obj_m[0]) # Fix first measurement
