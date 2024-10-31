@@ -182,6 +182,11 @@ def reparameterize_positiontrajectory_arclength(trajectory, N=0):
         Sequence of positions with arc length parameterization
     s : array
         Arc length as a function of original parameterization
+    
+    1/len(s) : dimensionaless arclength
+    or 1/N is the dimensionaless arclength
+    s[-1]/N : can be h for arclength
+     
 
     """
     
