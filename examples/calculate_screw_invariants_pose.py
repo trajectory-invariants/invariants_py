@@ -162,14 +162,8 @@ def main():
     OCP = OCP_calc_pose(N, rms_error_traj_pos = 1e-3, rms_error_traj_rot= 1e-2, solver='fatrop')
 
     # Calculate screw invariants and other outputs
-    U, T_sol_, T_isa_ = OCP.calculate_invariants(T, dt)
+    U, T_sol, T_isa = OCP.calculate_invariants(T, dt)
     
-    # Initialize an array for the solution trajectory
-    T_sol = np.zeros((N, 4, 4))
-    for k in range(N):
-        T_sol[k, :3, :] = T_sol_[k]
-        T_sol[k, 3, 3] = 1
-
     # Plot the reconstructed trajectory
     plot_trajectory_kettle(T_sol, 'Reconstructed Trajectory')
     

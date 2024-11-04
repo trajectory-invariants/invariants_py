@@ -3,6 +3,11 @@ import casadi as cas
 from invariants_py.dynamics_screw_invariants import define_integrator_invariants_pose
 from invariants_py import ocp_helper
 
+def form_homogeneous_matrix(T):
+    T_hom = np.eye(4)
+    T_hom[:3, :] = T
+    return T_hom
+
 class OCP_calc_pose:    
 
     def __init__(self, N, 
@@ -120,12 +125,12 @@ class OCP_calc_pose:
         sol = self.opti.solve()
 
         # Return solution
-        T_isa = [sol.value(self.T_isa[k]) for k in range(self.N)]
-        T_obj = [sol.value(self.T_obj[k]) for k in range(self.N)]
+        T_isa = np.array([form_homogeneous_matrix(sol.value(i)) for i in self.T_isa])
+        T_obj = np.array([form_homogeneous_matrix(sol.value(i)) for i in self.T_obj])
         #U = [sol.value(self.U[k]) for k in range(self.N-1)]
         U = np.array([sol.value(i) for i in self.U])
         U = np.vstack((U,[U[-1,:]]))
-        
+         
         return U, T_obj, T_isa
        
 if __name__ == "__main__":
