@@ -5,7 +5,12 @@ from invariants_py import ocp_helper
 
 class OCP_calc_pos:
 
-    def __init__(self, window_len = 100, bool_unsigned_invariants = False, rms_error_traj = 10**-2, geometric = False, planar_task = False, solver_options = {}):
+    def __init__(self, window_len = 100,
+                 rms_error_traj = 10**-2,
+                 geometric = False,
+                 planar_task = False,
+                 bool_unsigned_invariants = False,
+                 solver_options = {}):
        
         # Set solver options
         tolerance = solver_options.get('tol',1e-4) # tolerance for the solver

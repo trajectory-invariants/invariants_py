@@ -22,13 +22,15 @@ def integrate_twist_cas(twist, h):
 
 def transform_screw_cas(T, twist):
     """Return the screw coordinates of the transformed twist in the new frame."""
+    
     R = T[:3,:3]
     p = T[:3,3]
     omega = twist[:3]
     v = twist[3:]
 
     omega_new = R @ omega
-    v_new = R @ (v - cas.cross(omega, p))
+    #v_new = R @ (v - cas.cross(omega, p))
+    v_new = R @ v - cas.cross(p, R @ omega)
 
     return cas.vertcat(omega_new, v_new)
 
@@ -47,7 +49,7 @@ def integrate_screw_invariants_pose(T_isa, T_obj, u, h):
     T_isa = cas.vertcat(T_isa, cas.horzcat(0,0,0,1))
     T_obj = cas.vertcat(T_obj, cas.horzcat(0,0,0,1))
     
-    invariants_isa = cas.vertcat(i3,i2,0,i6,i5,0)
+    invariants_isa = cas.vertcat(i3,0,i2,i6,0,i5)
     invariants_obj = cas.vertcat(i1,0,0,i4,0,0)
     invariants_obj_ref = transform_screw_cas(T_isa, invariants_obj)
 
@@ -57,14 +59,14 @@ def integrate_screw_invariants_pose(T_isa, T_obj, u, h):
     deltaT_obj = integrate_twist_cas(invariants_obj_ref,h)
     T_obj_plus1 = cas.mtimes(deltaT_obj,T_obj)
 
-    return (T_isa_plus1[:3,:], T_obj_plus1[:3,:])
+    return (T_isa_plus1[0:3,:], T_obj_plus1[0:3,:])
 
 def define_integrator_invariants_pose(h):
+    
     # System states
-    T_isa  = cas.MX.sym('R_r',3,4) 
-    T_obj = cas.MX.sym('R_obj',3,4)
+    T_isa  = cas.MX.sym('T_isa',3,4) 
+    T_obj = cas.MX.sym('T_obj',3,4)
     x = cas.vertcat(cas.vec(T_isa), cas.vec(T_obj))
-
     u = cas.MX.sym('i',6,1)
 
     (T_isa_plus1, T_obj_plus1) = integrate_screw_invariants_pose(T_isa, T_obj, u, h)

@@ -59,6 +59,6 @@ if __name__ == '__main__':
 
     # Run a specifc test
     # loader = unittest.TestLoader()
-    # suite = loader.loadTestsFromName('test_compare_ipopt_fatrop_position.TestOCPcalcpos.test_fatrop_solver_comparison2')
+    # suite = loader.loadTestsFromName('test_compare_ipopt_fatrop_position.TestOCPcalcpos.test_fatrop_solver_comparison3')
     # runner = unittest.TextTestRunner()
     # runner.run(suite)

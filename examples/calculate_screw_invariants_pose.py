@@ -4,7 +4,7 @@
 from invariants_py import data_handler as dh
 import numpy as np
 from invariants_py.reparameterization import interpT
-from invariants_py.calculate_invariants.opti_calculate_screw_invariants_pose import OCP_calc_pose
+from invariants_py.calculate_invariants.opti_calculate_screw_invariants_pose_fatrop import OCP_calc_pose
 
 import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as R
@@ -147,33 +147,28 @@ def main():
     
     # Compute the number of new samples
     N = int(1 + np.floor(timestamps[-1] / dt))
+    print(f'Number of samples: {N}')
     
     # Generate new equidistant time vector
     time_new = np.linspace(0, timestamps[-1], N)
     
     # Interpolate pose matrices to new time vector
-    T = interpT(timestamps, T, time_new)
+    T = interpT(time_new, timestamps, T)
     
     # Plot the input trajectory
     plot_trajectory_kettle(T, 'Input Trajectory')
     
     # Initialize OCP object and calculate pose
-    OCP = OCP_calc_pose(T, rms_error_traj=5 * 10**-2)
+    OCP = OCP_calc_pose(N, rms_error_traj_pos = 1e-3, rms_error_traj_rot= 1e-2, solver='fatrop')
 
     # Calculate screw invariants and other outputs
-    U, T_sol_, T_isa_ = OCP.calculate_invariants(T, dt)
+    U, T_sol, T_isa = OCP.calculate_invariants(T, dt)
     
-    # Initialize an array for the solution trajectory
-    T_sol = np.zeros((N, 4, 4))
-    for k in range(N):
-        T_sol[k, :3, :] = T_sol_[k]
-        T_sol[k, 3, 3] = 1
-
     # Plot the reconstructed trajectory
     plot_trajectory_kettle(T_sol, 'Reconstructed Trajectory')
     
     # Plot the screw invariants
-    plot_screw_invariants(time_new[:-1], U.T)
+    plot_screw_invariants(time_new, U)
     
     # Display the plots if not running in a non-interactive backend
     if plt.get_backend() != 'agg':
