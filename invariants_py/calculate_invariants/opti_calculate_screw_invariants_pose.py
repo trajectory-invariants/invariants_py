@@ -2,6 +2,13 @@ import numpy as np
 import casadi as cas
 from invariants_py.dynamics_screw_invariants import define_integrator_invariants_pose
 from invariants_py import ocp_helper
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+def form_homogeneous_matrix(T):
+    T_hom = np.eye(4)
+    T_hom[:3, :] = T
+    return T_hom
 
 class OCP_calc_pose:    
 
@@ -29,13 +36,13 @@ class OCP_calc_pose:
         opti.subject_to(ocp_helper.tril_vec(T_obj[0][0:3,0:3].T @ T_obj[0][0:3,0:3] - np.eye(3)) == 0)
 
         # Dynamics constraints (Multiple shooting)
-        integrator = define_integrator_invariants_pose(h)
+        geometric_integrator = define_integrator_invariants_pose(h)
         for k in range(N-1):
             # Integrate current state to obtain next state (next rotation and position)
-            Xk_end = integrator(X[k],U[:,k],h)
+            Xk_end = geometric_integrator(X[k],U[:,k],h)
             
             # Continuity constraint (closing the gap)
-            opti.subject_to(X[k+1]- Xk_end == 0)
+            opti.subject_to(X[k+1] == Xk_end)
             
         # Lower bounds on controls
         if bool_unsigned_invariants:
@@ -45,7 +52,7 @@ class OCP_calc_pose:
         # Measurement fitting constraint
         trajectory_error_pos = 0
         trajectory_error_rot = 0
-        for k in range(N-1):
+        for k in range(N):
             err_pos = T_obj[k][0:3,3] - T_obj_m[k][0:3,3] # position error
             err_rot = (T_obj[k][0:3,0:3].T @ T_obj_m[k][0:3,0:3]) - np.eye(3) # orientation error
             trajectory_error_pos = trajectory_error_pos + cas.dot(err_pos,err_pos)
@@ -62,7 +69,7 @@ class OCP_calc_pose:
             objective_reg = objective_reg + cas.dot(err_abs,err_abs) # cost term
         objective = objective_reg/(N-1) # normalize with window length
 
-        #objective = 1e-4*objective + objective_fit
+        #objective = 1e-8*objective + objective_fit
 
         # Solver
         opti.minimize(objective)
@@ -100,9 +107,10 @@ class OCP_calc_pose:
         sol = self.opti.solve()
 
         # Return solution
-        T_isa = np.array([sol.value(i) for i in self.T_isa])
-        T_obj = [sol.value(self.T_obj[k]) for k in range(self.N)]
-        U = sol.value(self.U)
+        T_isa = np.array([form_homogeneous_matrix(sol.value(i)) for i in self.T_isa])
+        T_obj = np.array([form_homogeneous_matrix(sol.value(i)) for i in self.T_obj])
+        U = np.array(sol.value(self.U))
+        U = np.append(U, [U[-1, :]], axis=0)
         
         return U, T_obj, T_isa
        
@@ -112,7 +120,7 @@ if __name__ == "__main__":
     import invariants_py.kinematics.orientation_kinematics as SE3
     
     # Test data    
-    N = 10
+    N = 100
     T_start = np.eye(4)  # Rotation matrix 1
     T_mid = np.eye(4)
     T_mid[:3, :3] = SE3.rotate_z(np.pi)  # Rotation matrix 3
@@ -128,13 +136,50 @@ if __name__ == "__main__":
     #     print(np.linalg.norm(T_obj_m[i,0:3,0:3].T @ T_obj_m[i,0:3,0:3] - np.eye(3)))
 
     
-    OCP = OCP_calc_pose(N, rms_error_traj_pos = 10**-3)
+    OCP = OCP_calc_pose(N, rms_error_traj_pos = 10e-3, rms_error_traj_rot = 10e-3, bool_unsigned_invariants=True)
 
     # Example: calculate invariants for a given trajectory
     h = 0.01 # step size for integration of dynamic equations
-
     U, T_obj, T_isa = OCP.calculate_invariants(T_obj_m, h)
-    #print("Invariants U: ", U)
-    # print("Invariants U: ", U.T)
-    # #print("T_obj: ", T_obj)
+
+    print("Invariants U: ", U)
+    print("T_obj: ", T_obj)
     print("T_isa: ", T_isa)
+
+    # Assuming T_isa is already defined and is an Nx4x4 matrix
+    N = T_isa.shape[0]
+
+    # Extract points and directions
+    points = T_isa[:, :3, 3]  # First three elements of the fourth column
+    directions = T_isa[:, :3, 0]  # First three elements of the first column
+
+    # Create a 3D plot
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Plot the points
+    ax.scatter(points[:, 0], points[:, 1], points[:, 2], color='r', label='Points on the line')
+
+    # Plot the directions as lines
+    for i in range(N):
+        start_point = points[i] - directions[i] * 0.1 
+        end_point = points[i] + directions[i] * 0.1  # Scale the direction for better visualization
+        ax.plot([start_point[0], end_point[0]], [start_point[1], end_point[1]], [start_point[2], end_point[2]], color='b')
+
+    # Set axis limits
+    ax.set_xlim([-0.1, +0.1])
+    ax.set_ylim([-0.1, +0.1])
+    ax.set_zlim([-0.1, +0.1])
+
+    # Set labels
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.set_title('Plotting the instantaneous screw axis')
+
+    # Add legend
+    ax.legend()
+
+    # Show plot
+    plt.show()
+
