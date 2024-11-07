@@ -159,7 +159,7 @@ def main():
     plot_trajectory_kettle(T, 'Input Trajectory')
     
     # Initialize OCP object and calculate pose
-    OCP = OCP_calc_pose(N, rms_error_traj_pos = 1e-3, rms_error_traj_rot= 1e-2, solver='fatrop')
+    OCP = OCP_calc_pose(N, rms_error_traj_pos = 1e-3, rms_error_traj_rot= 1e-2, solver='fatrop', bool_unsigned_invariants=False)
 
     # Calculate screw invariants and other outputs
     U, T_sol, T_isa = OCP.calculate_invariants(T, dt)

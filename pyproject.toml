@@ -9,9 +9,9 @@ authors = [ {name = "Maxim Vochten"},
 readme = "README.md"
 requires-python = ">=3.8"
 keywords = ["trajectory analysis", "trajectory generation", "invariant", "coordinate-invariant", "trajectory representation", "trajectory optimization", "trajectory planning", "robotics", "dynamics", "kinematics", "screw theory", "optimal control", "geometric optimal control", "differential geometry", "optimization", "casadi", "python"]
-dependencies = [ # it is possible to have optional dependencies
+dependencies = [ # keep dependencies limited if possible, (you can also have optional dependencies)
     "scipy",
-    "casadi>=3.6.7",
+    "casadi>=3.6.7", # to use the fatrop solver we need casadi>=3.6.7
     "PyQt5",
     "matplotlib",
     "numpy",
@@ -22,7 +22,7 @@ dependencies = [ # it is possible to have optional dependencies
     "jupyter",
     "yourdfpy"
 ]
-classifiers = [ # only relevant/used for PyPI
+classifiers = [ # these classifiers are used to add labels to the project on PyPI: https://pypi.org/project/invariants-py/
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
