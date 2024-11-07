@@ -2,8 +2,8 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
+    # branches:
+    #   - main
     paths-ignore:
       - '**/*.md'  # Do not run workflow if only markdown files are changed
   pull_request:
