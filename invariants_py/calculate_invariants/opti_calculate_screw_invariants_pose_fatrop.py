@@ -150,7 +150,7 @@ if __name__ == "__main__":
     # Interpolate between R_start and R_end
     T_obj_m = interpT(np.linspace(0,1,N), np.array([0,0.5,1]), np.stack([T_start, T_mid, T_end],0))
 
-    OCP = OCP_calc_pose(N, rms_error_traj_pos = 10e-3, rms_error_traj_rot = 10e-3, bool_unsigned_invariants=True, solver='fatrop')
+    OCP = OCP_calc_pose(N, rms_error_traj_pos = 10e-3, rms_error_traj_rot = 10e-3, bool_unsigned_invariants=True, solver='ipopt')
 
     # Example: calculate invariants for a given trajectory
     h = 0.01 # step size for integration of dynamic equations
