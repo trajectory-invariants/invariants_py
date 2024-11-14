@@ -8,6 +8,9 @@ import invariants_py.kinematics.orientation_kinematics as S03
 import numpy as np
 import matplotlib.pyplot as plt
 from invariants_py.calculate_invariants.opti_calculate_screw_invariants_pose_fatrop import OCP_calc_pose
+import matplotlib.animation as animation
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+
 
 def plot_pose_frames(T_obj, length=0.1, skip_frames=5):
     """
@@ -89,7 +92,7 @@ def plot_instantaneous_screw_axis(T_isa):
     plt.show()
 
 # Plot both the pose frames and the instantaneous screw axis
-def plot_combined(T_obj, T_isa, length=0.1, skip_frames=5):
+def plot_combined(T_obj, T_isa, length=0.1, skip_frames=5, save_animation=False, filename='animation.gif'):
     """
     Plots the trajectory, pose frames, and instantaneous screw axis in a 3D plot.
 
@@ -105,7 +108,7 @@ def plot_combined(T_obj, T_isa, length=0.1, skip_frames=5):
     # Extract rotation matrices and positions from T_obj
     R = T_obj[:, :3, :3]
     p = np.squeeze(T_obj[:, :3, 3])
-
+    p_isa = np.squeeze(T_isa[:, :3, 3])
     # Extract points and directions from T_isa
     points = T_isa[:, :3, 3]  # First three elements of the fourth column
     directions = T_isa[:, :3, 0]  # First three elements of the first column
@@ -114,38 +117,79 @@ def plot_combined(T_obj, T_isa, length=0.1, skip_frames=5):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
-    # Plot the trajectory
-    ax.plot(p[:, 0], p[:, 1], p[:, 2], '-', color='blue', label='Trajectory')
-
-    # Plot the pose frames
-    for i, (R_i, p_i) in enumerate(zip(R[::skip_frames], p[::skip_frames])):
-        ax.quiver(p_i[0], p_i[1], p_i[2], R_i[0, 0], R_i[1, 0], R_i[2, 0], color='r', length=length)
-        ax.quiver(p_i[0], p_i[1], p_i[2], R_i[0, 1], R_i[1, 1], R_i[2, 1], color='g', length=length)
-        ax.quiver(p_i[0], p_i[1], p_i[2], R_i[0, 2], R_i[1, 2], R_i[2, 2], color='b', length=length)
-
-    # Plot the points on the instantaneous screw axis
-    ax.scatter(points[:, 0], points[:, 1], points[:, 2], color='r', label='Points on the line')
-
-    # Plot the directions as lines
-    for i in range(points.shape[0]):
-        start_point = points[i] - directions[i] * 1.0 
-        end_point = points[i] + directions[i] * 1.0 # Scale the direction for better visualization
-        ax.plot([start_point[0], end_point[0]], [start_point[1], end_point[1]], [start_point[2], end_point[2]], color='k')
-
     # Set labels
     ax.set_xlabel('X [m]')
     ax.set_ylabel('Y [m]')
     ax.set_zlabel('Z [m]')
     ax.set_aspect('equal')
+    
+
     ax.set_title('Trajectory, Pose Frames, and Instantaneous Screw Axis')
+    
+    def update_frame(frame):
+        ax.clear()
+        
+        ax.plot(p[:, 0], p[:, 1], p[:, 2], '-', color='blue', label='Object trajectory')
+        ax.plot(p_isa[:frame, 0], p_isa[:frame, 1], p_isa[:frame, 2], '--', color='black', label='Instantaneous screw axis')
+        
+        # Plot the object pose frames
+        R = T_obj[frame, :3, :3]
+        p_i = T_obj[frame, :3, 3]
+        ax.quiver(p_i[0], p_i[1], p_i[2], R[0,0], R[1,0], R[2,0], color='r', length = length)
+        ax.quiver(p_i[0], p_i[1], p_i[2], R[0,1], R[1,1], R[2,1], color='g', length = length)
+        ax.quiver(p_i[0], p_i[1], p_i[2], R[0,2], R[1,2], R[2,2], color='b', length = length)
+        # Plot the cube
+        cube_length = 0.15
+        cube_width = 0.1
+        cube_height = 0.2
+        cube_vertices = np.array([
+            [0, 0, 0],
+            [cube_length, 0, 0],
+            [cube_length, cube_width, 0],
+            [0, cube_width, 0],
+            [0, 0, cube_height],
+            [cube_length, 0, cube_height],
+            [cube_length, cube_width, cube_height],
+            [0, cube_width, cube_height]
+        ])
+        cube_vertices = np.dot(cube_vertices, R.T) + p_i
+        faces = [
+            [cube_vertices[j] for j in [0, 1, 2, 3]],
+            [cube_vertices[j] for j in [4, 5, 6, 7]],
+            [cube_vertices[j] for j in [0, 1, 5, 4]],
+            [cube_vertices[j] for j in [2, 3, 7, 6]],
+            [cube_vertices[j] for j in [0, 3, 7, 4]],
+            [cube_vertices[j] for j in [1, 2, 6, 5]]
+        ]
+        ax.add_collection3d(Poly3DCollection(faces, facecolors='grey', linewidths=1, edgecolors='b', alpha=.25))
+        
+        # Plot the moving ISA pose frames
+        R_isa = T_isa[frame, :3, :3]
+        p_isa_i = T_isa[frame, :3, 3]
+        ax.quiver(p_isa_i[0], p_isa_i[1], p_isa_i[2], R_isa[0, 0], R_isa[1, 0], R_isa[2, 0], color='r', length=length)
+        ax.quiver(p_isa_i[0], p_isa_i[1], p_isa_i[2], R_isa[0, 1], R_isa[1, 1], R_isa[2, 1], color='g', length=length)
+        ax.quiver(p_isa_i[0], p_isa_i[1], p_isa_i[2], R_isa[0, 2], R_isa[1, 2], R_isa[2, 2], color='b', length=length)
+        
+        # Plot the line of the ISA
+        start_point = points[frame] - directions[frame] * 0.5
+        end_point = points[frame] + directions[frame] * 0.5 # Scale the direction for better visualization
+        ax.plot([start_point[0], end_point[0]], [start_point[1], end_point[1]], [start_point[2], end_point[2]], color='k')
+        
+        # Remove grid, axes, and ticks
+        #ax.grid(False)
+        #ax.set_axis_off()
+        #ax.set_xticks([])
+        #ax.set_yticks([])
+        #ax.set_zticks([])
 
-    # Add legend
-    ax.legend()
+    if plt.get_backend() != 'agg':
+        ani = animation.FuncAnimation(fig, update_frame, frames=len(T_obj_m), interval=100, repeat=True)
+        plt.show()
+        if save_animation:
+            ani.save(filename, writer='imagemagick', fps=60)        
 
-    # Show plot
-    plt.show()
-
-# Synthetic pose data    
+# Synthetic pose data  
+# there is a first-order discontinuity at the midpoint, solve this by numerically integrating the screw twist
 N = 100
 T_start = np.eye(4)  # pose matrix 1
 T_mid = np.eye(4)
@@ -185,7 +229,7 @@ plot_pose_frames(T_obj_m)
 #     twist_vectors[i, :] = twist_vector
 # print(twist_vectors)
 
-OCP = OCP_calc_pose(N, rms_error_traj_pos = 10e-3, rms_error_traj_rot = 10e-3, bool_unsigned_invariants=True, solver='fatrop')
+OCP = OCP_calc_pose(N, rms_error_traj_pos = 10e-4, rms_error_traj_rot = 10e-4, bool_unsigned_invariants=True, solver='fatrop')
 
 # Example: calculate invariants for a given trajectory
 h = 0.01 # step size for integration of dynamic equations
