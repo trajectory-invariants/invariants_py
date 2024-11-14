@@ -137,15 +137,15 @@ class OCP_calc_pose:
 if __name__ == "__main__":
     
     from invariants_py.reparameterization import interpT
-    import invariants_py.kinematics.orientation_kinematics as SE3
+    import invariants_py.kinematics.orientation_kinematics as SO3
     
     # Test data    
     N = 100
     T_start = np.eye(4)  # Rotation matrix 1
     T_mid = np.eye(4)
-    T_mid[:3, :3] = SE3.rotate_z(np.pi)  # Rotation matrix 3
+    T_mid[:3, :3] = SO3.rotate_z(np.pi)  # Rotation matrix 3
     T_end = np.eye(4)
-    T_end[:3, :3] = SE3.RPY(np.pi/2, 0, np.pi/2)  # Rotation matrix 2
+    T_end[:3, :3] = SO3.RPY(np.pi/2, 0, np.pi/2)  # Rotation matrix 2
     
     # Interpolate between R_start and R_end
     T_obj_m = interpT(np.linspace(0,1,N), np.array([0,0.5,1]), np.stack([T_start, T_mid, T_end],0))

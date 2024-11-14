@@ -311,7 +311,7 @@ def estimate_initial_frames(vector_traj):
     
     #TODO  this is not correct yet, ex not perpendicular to ey + not robust for singularities, these parts must still be transferred from Matlab
     
-    ex = vector_traj / np.linalg.norm(vector_traj,axis=1).reshape(N,1)
+    ex = vector_traj / (np.linalg.norm(vector_traj,axis=1).reshape(N,1)+0.000001)
     ez = np.tile( np.array((0,0,1)), (N,1) )
     ey = np.array([ np.cross(ez[i,:],ex[i,:]) for i in range(N) ])
 

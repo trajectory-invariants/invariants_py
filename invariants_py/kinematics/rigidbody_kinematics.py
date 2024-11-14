@@ -263,6 +263,8 @@ def logm_T(T):
     This function calculates the matrix logarithm corresponding to the displacement twist
     of a given homogeneous transformation matrix.
 
+    Note: this implementation is more efficient than scipy.linalg.logm for screws.
+
     Parameters
     ----------
     T : numpy.ndarray

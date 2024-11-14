@@ -50,6 +50,8 @@ class OCP_calc_pos:
             
         # Lower bounds on controls
         if bool_unsigned_invariants:
+            # positive vs negative velocities
+            # false means both pos and neg values are allowed
             opti.subject_to(U[0,:]>=0) # lower bounds on control
             #opti.subject_to(U[1,:]>=0) # lower bounds on control
 
@@ -60,6 +62,7 @@ class OCP_calc_pos:
          
         # Additional constraint: First invariant remains constant throughout the window
         if geometric:
+            # enforce a fixed velocity for the entire trajectory
             for k in range(window_len-2):
                 opti.subject_to(U[0,k+1] == U[0,k])
     
@@ -67,7 +70,9 @@ class OCP_calc_pos:
         trajectory_error = 0
         for k in range(window_len):
             err_pos = p_obj[k] - p_obj_m[k] # position error
-            trajectory_error = trajectory_error + cas.dot(err_pos,err_pos)    
+            trajectory_error = trajectory_error + cas.dot(err_pos,err_pos) 
+        
+        # r.24 in paper [Maxim 2023]   
         opti.subject_to(trajectory_error  < window_len*rms_error_traj**2)
 
         # Boundary constraints

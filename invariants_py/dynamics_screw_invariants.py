@@ -29,7 +29,6 @@ def transform_screw_cas(T, twist):
     v = twist[3:]
 
     omega_new = R @ omega
-    #v_new = R @ (v - cas.cross(omega, p))
     v_new = R @ v - cas.cross(p, R @ omega)
 
     return cas.vertcat(omega_new, v_new)

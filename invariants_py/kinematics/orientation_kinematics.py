@@ -242,14 +242,17 @@ def logm(R):
     -------
     A (3x3) skew-symmetric matrix corresponding to the displacement rotation
     """
-    # Cosine of the rotation angle
+    
+    assert R.shape == (3, 3), "Input must be a 3x3 matrix"
+    
+    # Calculate cosine of the rotation angle
     ca = (trace(R)-1)/2.0
 
-    # Special case rotation angle = 0
+    # Special case: rotation angle = 0
     if np.isclose(ca,1):
         return np.zeros((3,3))
     
-    # Special case rotation angle = pi or -pi
+    # Special case: rotation angle = pi or -pi
     if np.isclose(ca,-1):
         _,_,VT = np.linalg.svd(R - np.eye(3)) # R*v = v --> (R-I)*v = 0
         rotation_vec = VT[-1,:]

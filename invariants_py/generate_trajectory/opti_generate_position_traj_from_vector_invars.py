@@ -159,7 +159,7 @@ class OCP_gen_pos:
         
         return invariants, calculated_trajectory, calculated_movingframe
 
-def generate_trajectory_translation(invariant_model, boundary_constraints, N=40):
+def generate_trajectory_translation(invariant_model, boundary_constraints, N=100):
     
     # Specify optimization problem symbolically
     OCP = OCP_gen_pos(N = N)

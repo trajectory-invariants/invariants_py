@@ -134,12 +134,12 @@ class OCP_gen_pose:
         if include_robot_model:
             objective_invariants = ocp.sum(1/window_len*cas.dot(w_invars*(invars - invars_demo),w_invars*(invars - invars_demo)),include_last=True)
             # Objective for joint limits
-            e_pos = cas.dot(p_obj_fwkin - p_obj,p_obj_fwkin - p_obj)
-            e_rot = cas.dot(R_obj.T @ R_obj_fwkin - np.eye(3),R_obj.T @ R_obj_fwkin - np.eye(3))
-            objective_inverse_kin = ocp.sum(e_pos + e_rot + 0.001*cas.dot(qdot,qdot),include_last = True)
-            # ocp.subject_to(p_obj == p_obj_fwkin)
-            # ocp.subject_to(tril_vec_no_diag(R_obj.T @ R_obj_fwkin - np.eye(3)) == 0.)
-            # objective_inverse_kin = ocp.sum(0.001*cas.dot(qdot,qdot),include_last = True)
+            # e_pos = cas.dot(p_obj_fwkin - p_obj,p_obj_fwkin - p_obj)
+            # e_rot = cas.dot(R_obj.T @ R_obj_fwkin - np.eye(3),R_obj.T @ R_obj_fwkin - np.eye(3))
+            # objective_inverse_kin = ocp.sum(e_pos + e_rot + 0.001*cas.dot(qdot,qdot),include_last = True)
+            ocp.subject_to(p_obj - p_obj_fwkin == 0)
+            ocp.subject_to(tril_vec_no_diag(R_obj.T @ R_obj_fwkin - np.eye(3)) == 0.)
+            objective_inverse_kin = ocp.sum(0.001*cas.dot(qdot,qdot),include_last = True)
             objective = ocp.sum(objective_invariants + objective_inverse_kin, include_last = True)
         else:
             objective = ocp.sum(1/window_len*cas.dot(w_invars*(invars - invars_demo),w_invars*(invars - invars_demo)),include_last=True)
@@ -152,7 +152,7 @@ class OCP_gen_pose:
             ocp._method.set_name("/codegen/generation_pose")
         else:
             ocp.method(rockit.MultipleShooting(N=window_len-1))
-            ocp.solver('ipopt', {'expand':True})
+            ocp.solver('ipopt', {'expand':True, 'ipopt.max_iter': max_iters})
             # ocp.solver('ipopt',{"print_time":True,"expand":True},{'tol':1e-4,'print_level':0,'ma57_automatic_scaling':'no','linear_solver':'mumps','max_iter':100})
 
         # Solve already once with dummy values for code generation (TODO: can this step be avoided somehow?)
@@ -176,7 +176,7 @@ class OCP_gen_pose:
         if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:
             ocp.set_value(p_obj_start, p_obj_dummy)
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
-            ocp.set_value(p_obj_end, p_obj_dummy + np.array([0.01,0,0]))
+            ocp.set_value(p_obj_end, p_obj_dummy + np.array([0.5,0,0]))
         if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
             ocp.set_value(R_obj_start, np.eye(3))
         if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
