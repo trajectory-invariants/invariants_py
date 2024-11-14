@@ -32,9 +32,11 @@ def plot_pose_frames(T_obj, length=0.1, skip_frames=5):
         ax.quiver(p_i[0], p_i[1], p_i[2], R_i[0, 0], R_i[1, 0], R_i[2, 0], color='r', length=length)
         ax.quiver(p_i[0], p_i[1], p_i[2], R_i[0, 1], R_i[1, 1], R_i[2, 1], color='g', length=length)
         ax.quiver(p_i[0], p_i[1], p_i[2], R_i[0, 2], R_i[1, 2], R_i[2, 2], color='b', length=length)
+        
     ax.set_xlabel('X [m]')
     ax.set_ylabel('Y [m]')
     ax.set_zlabel('Z [m]')
+    ax.set_aspect('equal')
     plt.title('Trajectory and pose frames')
     if plt.get_backend() != 'agg':
         plt.show()
@@ -77,6 +79,7 @@ def plot_instantaneous_screw_axis(T_isa):
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
+    ax.set_aspect('equal')
     ax.set_title('Plotting the instantaneous screw axis')
 
     # Add legend
@@ -127,12 +130,13 @@ def plot_combined(T_obj, T_isa, length=0.1, skip_frames=5):
     for i in range(points.shape[0]):
         start_point = points[i] - directions[i] * 1.0 
         end_point = points[i] + directions[i] * 1.0 # Scale the direction for better visualization
-        ax.plot([start_point[0], end_point[0]], [start_point[1], end_point[1]], [start_point[2], end_point[2]], color='b')
+        ax.plot([start_point[0], end_point[0]], [start_point[1], end_point[1]], [start_point[2], end_point[2]], color='k')
 
     # Set labels
     ax.set_xlabel('X [m]')
     ax.set_ylabel('Y [m]')
     ax.set_zlabel('Z [m]')
+    ax.set_aspect('equal')
     ax.set_title('Trajectory, Pose Frames, and Instantaneous Screw Axis')
 
     # Add legend
@@ -143,27 +147,27 @@ def plot_combined(T_obj, T_isa, length=0.1, skip_frames=5):
 
 # Synthetic pose data    
 N = 100
-# T_start = np.eye(4)  # pose matrix 1
-# T_mid = np.eye(4)
-# T_mid[:3, :3] = S03.rotate_z(np.pi)  # pose matrix 3
-# T_mid[:3, 3] = np.array([0.5, 0.5, 0.5])
-# T_end = np.eye(4)
-# T_end[:3, :3] = S03.RPY(np.pi/2, 0, np.pi/2)  # pose matrix 2
-# T_end[:3, 3] = np.array([1, 1, 1])
-
-# # Interpolate between R_start and R_end
-# T_obj_m = interpT(np.linspace(0,1,N), np.array([0,0.5,1]), np.stack([T_start, T_mid, T_end],0))
-
 T_start = np.eye(4)  # pose matrix 1
-#T_mid = np.eye(4)
-#T_mid[:3, :3] = S03.rotate_z(np.pi)  # pose matrix 3
-#T_mid[:3, 3] = np.array([0.5, 0.5, 0.5])
+T_mid = np.eye(4)
+T_mid[:3, :3] = S03.rotate_z(np.pi)  # pose matrix 3
+T_mid[:3, 3] = np.array([0.5, 0.5, 0.5])
 T_end = np.eye(4)
-T_end[:3, :3] = S03.rotate_z(np.pi) # pose matrix 2
+T_end[:3, :3] = S03.RPY(np.pi/2, 0, np.pi/2)  # pose matrix 2
 T_end[:3, 3] = np.array([1, 1, 1])
 
 # Interpolate between R_start and R_end
-T_obj_m = interpT(np.linspace(0,1,N), np.array([0,1]), np.stack([T_start, T_end],0))
+T_obj_m = interpT(np.linspace(0,1,N), np.array([0,0.5,1]), np.stack([T_start, T_mid, T_end],0))
+
+# T_start = np.eye(4)  # pose matrix 1
+# #T_mid = np.eye(4)
+# #T_mid[:3, :3] = S03.rotate_z(np.pi)  # pose matrix 3
+# #T_mid[:3, 3] = np.array([0.5, 0.5, 0.5])
+# T_end = np.eye(4)
+# T_end[:3, :3] = S03.rotate_z(np.pi) # pose matrix 2
+# T_end[:3, 3] = np.array([1, 1, 1])
+
+# # Interpolate between R_start and R_end
+# T_obj_m = interpT(np.linspace(0,1,N), np.array([0,1]), np.stack([T_start, T_end],0))
 
 
 # Call the function with the synthetic data

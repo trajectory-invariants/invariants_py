@@ -15,6 +15,7 @@ class OCP_calc_pose:
     def __init__(self, N, 
                 rms_error_traj_pos = 10**-3,
                 rms_error_traj_rot = 10**-2,
+                length_scale = 1,
                 bool_unsigned_invariants = False):
                
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
@@ -65,8 +66,11 @@ class OCP_calc_pose:
         # Minimize moving frame invariants to deal with singularities and noise
         objective_reg = 0
         for k in range(N-1):
-            err_abs = U[[1,2,4,5],k] # value of moving frame invariants
+            err_abs_rot = U[1:3,k]*length_scale # rotational invariants (scaled to become comparable to translation invariants)
+            err_abs_trans = U[4:6,k] # translational invariants
+            err_abs = cas.vertcat(err_abs_rot,err_abs_trans) # value of moving frame invariants
             objective_reg = objective_reg + cas.dot(err_abs,err_abs) # cost term
+
         objective = objective_reg/(N-1) # normalize with window length
 
         #objective = 1e-8*objective + objective_fit
