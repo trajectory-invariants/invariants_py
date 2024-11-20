@@ -36,10 +36,20 @@ nb_samples = 200
 trajectory = np.column_stack((df['x'], df['y'], df['z']))
 timestamps = df['timestamp'].values
 #downsampled_indices = np.linspace(0, len(trajectory) - 1, nb_samples, dtype=int)
-trajectory = trajectory[0:200]*10 # correction: the time step should be around 0.1s
-timestamps = timestamps[0:200]
+trajectory = trajectory[0:200] # correction: the time step should be around 0.1s
+timestamps = timestamps[0:200]*10
 print(timestamps)
 print(trajectory)
+
+#/*********************************************************************************************************************/
+#/* Option 1: Calculate invariants using discretized analytical formulas 
+#/*********************************************************************************************************************/
+
+
+
+#/*********************************************************************************************************************/
+#/* Option 2: Calculate invariants using optimal control problem (OCP) method */
+#/*********************************************************************************************************************/
 
 # Options
 choice_invariants = "vector_invariants" # options: {vector_invariants, screw_invariants}
@@ -48,7 +58,7 @@ progress = "time" # options: {time, arclength}. This is the progress parameter w
 normalized_progress = False # scale progress to be between 0 and 1
 scale_invariance = False # scale trajectory to unit length, where length is defined by the progress parameter (e.g. arclength)
 ocp_implementation = "rockit" # options: {rockit, optistack}
-solver = "fatrop" # options: {ipopt, fatrop}
+solver = "ipopt" # options: {ipopt, fatrop}
 rms_error_tolerance = 1e-1
 solver_options = {"max_iter": 200}
 

@@ -70,7 +70,7 @@ class InvariantsHandler:
                 fatrop_solver = True
             else:
                 fatrop_solver = False
-            FS_calculation_problem = FS_calculation_rockit.OCP_calc_pos(window_len=nb_samples, geometric=constant_invariant, fatrop_solver=fatrop_solver, rms_error_traj=self.rms_error_tolerance)
+            FS_calculation_problem = FS_calculation_rockit.OCP_calc_pos(window_len=nb_samples, geometric=constant_invariant, fatrop_solver=fatrop_solver, rms_error_traj=self.rms_error_tolerance, solver_options=self.solver_options)
         elif self.ocp_implementation == "optistack":
             print('Calculating with optistack and ipopt')
             
