@@ -15,7 +15,7 @@ from scipy.spatial.transform import Rotation as R
 from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize
 import invariants_py.plotting_functions.plotters as pl
 from invariants_py.reparameterization import interpR
-from invariants_py.initialization import initial_trajectory_movingframe_rotation
+from invariants_py.ocp_initialization import initial_trajectory_movingframe_rotation
 
 # define class for OCP results
 class OCP_results:

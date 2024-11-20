@@ -2,7 +2,7 @@ import numpy as np
 import casadi as cas
 from invariants_py.dynamics_vector_invariants import define_integrator_invariants_position_jerkmodel
 from invariants_py.ocp_helper import jerk_invariant
-import invariants_py.initialization as initialization
+import invariants_py.ocp_initialization as initialization
 
 class OCP_calc_pos:
 

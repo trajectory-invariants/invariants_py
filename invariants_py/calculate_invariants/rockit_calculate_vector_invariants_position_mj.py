@@ -3,7 +3,7 @@ import numpy as np
 import casadi as cas
 import invariants_py.dynamics_vector_invariants as dynamics
 import invariants_py.ocp_helper as ocp_helper
-from invariants_py import initialization
+from invariants_py import ocp_initialization
 from invariants_py.ocp_helper import check_solver
 
 class OCP_calc_pos:
@@ -173,7 +173,7 @@ class OCP_calc_pos:
 
             Pdiff = np.diff(measured_positions, axis=0)
             Pdiff = np.vstack((Pdiff, Pdiff[-1]))
-            [ex,ey,ez] = initialization.estimate_initial_frames(Pdiff)
+            [ex,ey,ez] = ocp_initialization.estimate_initial_frames(Pdiff)
 
             #[ex,ey,ez] = initialization.initialize_VI_pos(measured_positions)
             

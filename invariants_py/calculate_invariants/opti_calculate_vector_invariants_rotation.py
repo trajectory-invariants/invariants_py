@@ -99,7 +99,8 @@ class OCP_calc_rot:
          
     def calculate_invariants(self,trajectory_meas,stepsize, choice_initialization=2): 
         
-        from invariants_py.initialization import calculate_velocity_from_discrete_rotations, estimate_movingframes, estimate_vector_invariants
+        from invariants_py.ocp_initialization import calculate_velocity_from_discrete_rotations, estimate_vector_invariants
+        from invariants_py.discretized_vector_invariants import estimate_movingframes
         from invariants_py.dynamics_vector_invariants import reconstruct_rotation_traj
         from invariants_py.kinematics.screw_kinematics import average_vector_orientation_frame
 

@@ -1,11 +1,8 @@
 # Example for calculating invariants from a long trial of position data.
 
 import pandas as pd
-from mpl_toolkits.mplot3d import Axes3D
-from invariants_py.calculate_invariants.rockit_calculate_vector_invariants_position import OCP_calc_pos
 import numpy as np
 import matplotlib.pyplot as plt
-from invariants_py.reparameterization import reparameterize_positiontrajectory_arclength
 from invariants_py.data_handler import find_data_path
 from invariants_py import invariants_handler
 
@@ -39,7 +36,7 @@ nb_samples = 200
 trajectory = np.column_stack((df['x'], df['y'], df['z']))
 timestamps = df['timestamp'].values
 #downsampled_indices = np.linspace(0, len(trajectory) - 1, nb_samples, dtype=int)
-trajectory = trajectory[0:200]
+trajectory = trajectory[0:200]*10 # correction: the time step should be around 0.1s
 timestamps = timestamps[0:200]
 print(timestamps)
 print(trajectory)

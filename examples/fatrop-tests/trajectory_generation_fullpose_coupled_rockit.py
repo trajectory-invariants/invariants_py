@@ -19,7 +19,7 @@ from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotatio
 import invariants_py.plotting_functions.plotters as pl
 import invariants_py.collision_detection_bottle as cd
 from invariants_py.reparameterization import interpR
-from invariants_py.initialization import initial_trajectory_movingframe_rotation
+from invariants_py.ocp_initialization import initial_trajectory_movingframe_rotation
 import random
 
 

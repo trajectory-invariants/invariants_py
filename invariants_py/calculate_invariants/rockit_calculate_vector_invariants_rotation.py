@@ -5,7 +5,7 @@ import casadi as cas
 import rockit
 from invariants_py.dynamics_vector_invariants import integrate_vector_invariants_rotation
 import invariants_py.kinematics.orientation_kinematics as SO3
-from invariants_py.initialization import initialize_VI_rot2
+from invariants_py.ocp_initialization import initialize_VI_rot2
 from invariants_py.ocp_helper import check_solver, tril_vec
 
 class OCP_calc_rot:

@@ -5,7 +5,7 @@ import invariants_py.dynamics_vector_invariants as dynamics
 import time
 from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag
 from invariants_py.kinematics.orientation_kinematics import rotate_x
-from invariants_py.initialization import generate_initvals_from_constraints
+from invariants_py.ocp_initialization import generate_initvals_from_constraints
 
 class OCP_gen_rot:
 

@@ -2,7 +2,7 @@ import numpy as np
 import casadi as cas
 import invariants_py.dynamics_vector_invariants as dynamics
 from invariants_py import ocp_helper
-from invariants_py.initialization import generate_initvals_from_constraints
+from invariants_py.ocp_initialization import generate_initvals_from_constraints
 from invariants_py import spline_handler as sh
 
 class OCP_gen_pos:

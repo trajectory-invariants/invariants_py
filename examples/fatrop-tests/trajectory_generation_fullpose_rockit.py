@@ -21,7 +21,7 @@ import invariants_py.plotting_functions.plotters as pl
 import random
 import invariants_py.collision_detection_bottle as cd
 from invariants_py.reparameterization import interpR
-from invariants_py.initialization import initial_trajectory_movingframe_rotation
+from invariants_py.ocp_initialization import initial_trajectory_movingframe_rotation
 
 # choose solver
 use_fatrop_solver = True # True = fatrop, False = ipopt

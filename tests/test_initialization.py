@@ -1,6 +1,6 @@
 import numpy as np
 import unittest
-from invariants_py.initialization import calculate_tangent
+from invariants_py.discretized_vector_invariants import calculate_tangent
 
 class TestEstimateFirstAxis(unittest.TestCase):
     def test_all_zeros(self):

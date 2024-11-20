@@ -20,7 +20,7 @@ Usage:
 import numpy as np
 import casadi as cas
 import rockit
-from invariants_py import ocp_helper, initialization
+from invariants_py import ocp_helper, ocp_initialization
 from invariants_py.ocp_helper import check_solver
 from invariants_py.dynamics_vector_invariants import integrate_vector_invariants_position
 
@@ -212,7 +212,7 @@ class OCP_calc_pos:
                 self.values_variables = [temp0,temp1,R_t_init]
             else:         
                 # Initialize states and controls using measurements
-                self.values_variables = initialization.initialize_VI_pos2(measured_positions,stepsize)
+                self.values_variables = ocp_initialization.initialize_VI_pos2(measured_positions,stepsize)
                 self.first_time = False
 
         # Solve the optimization problem for the given measurements starting from previous solution

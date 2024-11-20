@@ -3,97 +3,6 @@ import invariants_py.kinematics.orientation_kinematics as SO3
 from invariants_py.reparameterization import interpR
 from math import atan2
 
-def initial_trajectory_movingframe_rotation(R_obj_start,R_obj_end,N=100):
-
-    skew_angle = SO3.logm(R_obj_start.T @ R_obj_end)
-    angle_vec_in_body = np.array([skew_angle[2,1],skew_angle[0,2],skew_angle[1,0]])
-    angle_vec_in_world = R_obj_start@angle_vec_in_body
-    angle_norm = np.linalg.norm(angle_vec_in_world)
-    U_init = np.tile(np.array([angle_norm,0.001,0.001]),(N-1,1))
-    e_x_fs_init = angle_vec_in_world/angle_norm
-    e_y_fs_init = [0,1,0]
-    e_y_fs_init = e_y_fs_init - np.dot(e_y_fs_init,e_x_fs_init)*e_x_fs_init
-    e_y_fs_init = e_y_fs_init/np.linalg.norm(e_y_fs_init)
-    e_z_fs_init = np.cross(e_x_fs_init,e_y_fs_init)
-    R_r_init = np.array([e_x_fs_init,e_y_fs_init,e_z_fs_init]).T
-
-    R_r_init_array = []
-    for k in range(N):
-        R_r_init_array.append(R_r_init)
-    R_r_init_array = np.array(R_r_init_array)
-
-    return R_r_init, R_r_init_array, U_init
-
-def generate_initvals_from_constraints(boundary_constraints,N, skip = {}, q_init = None):
-    solution_pos = None
-    solution_rot = None
-
-    if "position" in boundary_constraints and "position" not in skip:
-        # Generate initial trajectory using linear interpolation
-        p1 = boundary_constraints["position"]["final"]
-        p0 = boundary_constraints["position"]["initial"]
-        initial_trajectory = np.linspace(p0, p1, N).T
-
-        # Generate corresponding initial invariants
-        diff_vector = np.array(p1) - np.array(p0)
-        L = np.linalg.norm(diff_vector)
-        initial_invariants = np.tile(np.array([[L],[0.0001],[0.0001]]),(1,N-1))
-
-        # Generate corresponding initial moving frames using Gram-Schmidt process
-        e_x = diff_vector / L
-        e_y = np.array([0, 1, 0]) - np.dot(np.array([0, 1, 0]), e_x) * e_x
-        e_y = e_y / np.linalg.norm(e_y)
-        e_z = np.cross(e_x, e_y)
-        R_mf = np.column_stack((e_x, e_y, e_z))
-        initial_movingframes = np.tile(R_mf, (N,1,1))
-
-        initial_values = {
-            "trajectory": {
-                "position": initial_trajectory.T
-            },
-            "moving-frame": {
-                "translational": initial_movingframes
-            },
-            "invariants": {
-                "translational": initial_invariants
-            }
-        }
-
-        R_t_sol = np.zeros((3,3*N))
-        for i in range(N):
-            R_t_sol[:,3*i:3*(i+1)] = np.array([e_x,e_y,e_z]) 
-
-        solution_pos = [initial_invariants, initial_trajectory, R_t_sol]
-
-    if "orientation" in boundary_constraints and "orientation" not in skip:
-        R0 = boundary_constraints["orientation"]["initial"]
-        R1 = boundary_constraints["orientation"]["final"]
-        # Linear initialization
-        initial_trajectory = interpR(np.linspace(0, 1, N), [0,1], np.array([R0, R1]))
-
-        _, R_r, initial_invariants = initial_trajectory_movingframe_rotation(R0, R1, N)
-        
-        R_r_sol = np.zeros((3,3*N))
-        R_obj_sol = np.zeros((3,3*N))
-        for i in range(N):
-            R_r_sol[:,3*i:3*(i+1)] = np.array([R_r[i,0],R_r[i,1],R_r[i,2]]) 
-            R_obj_sol[:,3*i:3*(i+1)] = np.array([initial_trajectory[i,0],initial_trajectory[i,1],initial_trajectory[i,2]]) 
-
-        solution_rot = [initial_invariants.T, R_r_sol, R_obj_sol]
-  
-    if solution_pos is not None:
-        if solution_rot is not None:
-            solution = [np.vstack((solution_rot[0],solution_pos[0]))] + solution_pos[1:] + solution_rot[1:] # concatenate invariants and combine lists
-        else:
-            solution = [solution_pos,initial_values]
-    else:
-        solution = solution_rot
-    
-    if q_init is not None:
-        solution.append(q_init.T)
-    
-    return solution
-
 def calculate_velocity_from_discrete_rotations(R, timestamps):
     """
     In this code, rotational velocity is calculated based on discrete
@@ -132,7 +41,6 @@ def calculate_velocity_from_discrete_rotations(R, timestamps):
     rot_velocity[N - 1, :] = omega
 
     return rot_velocity
-
 
 def calculate_tangent(vector_traj):
     """
@@ -187,7 +95,7 @@ def calculate_binormal(vector_traj,tangent, reference_vector=None):
         vector_traj: trajectory vector          (Nx3)
         tangent: first axis of the moving frame (Nx3)
     Output:
-        binormal: second axis of the moving frame (Nx3)
+        binormal: third axis of the moving frame (Nx3)
     """
     N = np.size(vector_traj, 0)
     binormal = np.zeros((N, 3))
