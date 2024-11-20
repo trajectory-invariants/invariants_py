@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from invariants_py.reparameterization import reparameterize_positiontrajectory_arclength
 from invariants_py.data_handler import find_data_path
+from invariants_py import invariants_handler
 
 # Load the CSV file
 df = pd.read_csv(find_data_path('trajectory_long.csv'))
@@ -33,27 +34,33 @@ ax.set_zlabel('Z')
 ax.set_title('3D Trajectory')
 plt.show()
 
-# Prepare the trajectory data
+# Downsample the trajectory to 400 samples
+nb_samples = 200
 trajectory = np.column_stack((df['x'], df['y'], df['z']))
 timestamps = df['timestamp'].values
-stepsize = np.mean(np.diff(timestamps))
+#downsampled_indices = np.linspace(0, len(trajectory) - 1, nb_samples, dtype=int)
+trajectory = trajectory[0:200]
+timestamps = timestamps[0:200]
+print(timestamps)
+print(trajectory)
 
-# Downsample the trajectory to 100 samples
-downsampled_indices = np.linspace(0, len(trajectory) - 1, 400, dtype=int)
-trajectory = trajectory[downsampled_indices]/1000 # Convert to meters
-timestamps = timestamps[downsampled_indices]
-stepsize = np.mean(np.diff(timestamps))
+# Options
+choice_invariants = "vector_invariants" # options: {vector_invariants, screw_invariants}
+trajectory_type = "position" # options: {position, pose}
+progress = "time" # options: {time, arclength}. This is the progress parameter with which trajectory/invariants evolve.
+normalized_progress = False # scale progress to be between 0 and 1
+scale_invariance = False # scale trajectory to unit length, where length is defined by the progress parameter (e.g. arclength)
+ocp_implementation = "rockit" # options: {rockit, optistack}
+solver = "fatrop" # options: {ipopt, fatrop}
+rms_error_tolerance = 1e-1
+solver_options = {"max_iter": 200}
 
-# Reparameterize the trajectory based on arclength
-# Note: The reparameterization is not necessary if the data size is within the limit
-trajectory, arclength, arclength_n, nb_samples, stepsize = reparameterize_positiontrajectory_arclength(trajectory)
+# Initialize the InvariantsHandler class with the given options
+ih = invariants_handler.InvariantsHandler(choice_invariants=choice_invariants, trajectory_type=trajectory_type, progress=progress, normalized_progress=normalized_progress, scale_invariant=scale_invariance, ocp_implementation=ocp_implementation, solver=solver, rms_error_tolerance=rms_error_tolerance, solver_options=solver_options)
+invariants, progress, reconstructed_trajectory, moving_frames = ih.calculate_invariants_translation(timestamps, trajectory)
 
-# Use the standard approach if the data size is within the limit
-ocp = OCP_calc_pos(window_len=len(trajectory),fatrop_solver=True,geometric=True)
-invariants, reconstructed_trajectory, moving_frames = ocp.calculate_invariants(trajectory, stepsize)
-
-invariants[:,1] = invariants[:,1]/invariants[:,0] # get geometric curvature
-invariants[:,2] = invariants[:,2]/invariants[:,0] # get geometric torsion
+# Reconstruct the trajectory from the invariants
+reconstructed_trajectory2, _, _ = ih.reconstruct_trajectory(invariants, position_init=trajectory[0, :], movingframe_init=moving_frames[0, :, :])
 
 # Plot the calculated invariants as subplots
 fig, axs = plt.subplots(3, 1, figsize=(10, 8))
@@ -88,6 +95,9 @@ plt.plot(timestamps, trajectory[:, 2], label='Original z')
 plt.plot(timestamps, reconstructed_trajectory[:, 0], label='Reconstructed x')
 plt.plot(timestamps, reconstructed_trajectory[:, 1], label='Reconstructed y')
 plt.plot(timestamps, reconstructed_trajectory[:, 2], label='Reconstructed z')
+plt.plot(timestamps, reconstructed_trajectory2[:, 0], label='Reconstructed x2')
+plt.plot(timestamps, reconstructed_trajectory2[:, 1], label='Reconstructed y2')
+plt.plot(timestamps, reconstructed_trajectory2[:, 2], label='Reconstructed z2')
 plt.xlabel('Timestamp')
 plt.ylabel('Coordinates')
 plt.legend()
@@ -99,6 +109,7 @@ fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 ax.plot(trajectory[:, 0], trajectory[:, 1], trajectory[:, 2])
 ax.plot(reconstructed_trajectory[:, 0], reconstructed_trajectory[:, 1], reconstructed_trajectory[:, 2])
+ax.plot(reconstructed_trajectory2[:, 0], reconstructed_trajectory2[:, 1], reconstructed_trajectory2[:, 2])
 ax.set_aspect('equal')
 ax.set_xlabel('X')
 ax.set_ylabel('Y')
