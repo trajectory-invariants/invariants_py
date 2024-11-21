@@ -5,15 +5,29 @@ import numpy as np
 import matplotlib.pyplot as plt
 from invariants_py.data_handler import find_data_path
 from invariants_py import invariants_handler
+from invariants_py import plotters
 
 # Load the CSV file
 df = pd.read_csv(find_data_path('trajectory_long.csv'))
 
-# Plot xyz coordinates with respect to timestamp
+# Downsample the trajectory to 400 samples
+nb_samples = 200
+trajectory = np.column_stack((df['x'], df['y'], df['z']))
+timestamps = df['timestamp'].values
+downsampled_indices = np.linspace(0, len(trajectory) - 1, nb_samples, dtype=int)
+#trajectory = trajectory[0:200] # correction: the time step should be around 0.1s
+#timestamps = timestamps[0:200]*10
+trajectory = trajectory[downsampled_indices]
+timestamps = timestamps[downsampled_indices]*10
+
+# print(timestamps)
+# print(trajectory)
+
+#Plot xyz coordinates with respect to timestamp
 plt.figure()
-plt.plot(df['timestamp'], df['x'], label='x')
-plt.plot(df['timestamp'], df['y'], label='y')
-plt.plot(df['timestamp'], df['z'], label='z')
+plt.plot(timestamps, trajectory[:,0], label='x')
+plt.plot(timestamps, trajectory[:,1], label='y')
+plt.plot(timestamps, trajectory[:,2], label='z')
 plt.xlabel('Timestamp')
 plt.ylabel('Coordinates')
 plt.legend()
@@ -23,7 +37,7 @@ plt.show()
 # Plot the trajectory in 3D
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-ax.plot(df['x'], df['y'], df['z'])
+ax.plot(trajectory[:,0], trajectory[:,1], trajectory[:,2])
 ax.set_aspect('equal')
 ax.set_xlabel('X')
 ax.set_ylabel('Y')
@@ -31,19 +45,40 @@ ax.set_zlabel('Z')
 ax.set_title('3D Trajectory')
 plt.show()
 
-# Downsample the trajectory to 400 samples
-nb_samples = 200
-trajectory = np.column_stack((df['x'], df['y'], df['z']))
-timestamps = df['timestamp'].values
-#downsampled_indices = np.linspace(0, len(trajectory) - 1, nb_samples, dtype=int)
-trajectory = trajectory[0:200] # correction: the time step should be around 0.1s
-timestamps = timestamps[0:200]*10
-print(timestamps)
-print(trajectory)
-
 #/*********************************************************************************************************************/
 #/* Option 1: Calculate invariants using discretized analytical formulas 
 #/*********************************************************************************************************************/
+
+from invariants_py import discretized_vector_invariants as dvi
+invariants_init, trajectory_init, moving_frames_init = dvi.calculate_discretized_invariants(trajectory, timestamps)
+
+print(invariants_init)
+plotters.plot_moving_frames(trajectory, moving_frames_init) # calculated moving frames along trajectory
+
+# Plot the invariants_init
+fig, axs = plt.subplots(3, 1, figsize=(10, 8))
+
+axs[0].plot(timestamps, invariants_init[:, 0], label='Invariant 1')
+axs[0].plot(0, 0, label='Invariant 1')
+axs[0].set_xlabel('Timestamp')
+axs[0].set_ylabel('Invariant 1')
+axs[0].legend()
+axs[0].set_title('Calculated Geometric Invariant 1')
+
+axs[1].plot(timestamps, invariants_init[:, 1], label='Invariant 2')
+axs[1].set_xlabel('Timestamp')
+axs[1].set_ylabel('Invariant 2')
+axs[1].legend()
+axs[1].set_title('Calculated Geometric Invariant 2')
+
+axs[2].plot(timestamps, invariants_init[:, 2], label='Invariant 3')
+axs[2].set_xlabel('Timestamp')
+axs[2].set_ylabel('Invariant 3')
+axs[2].legend()
+axs[2].set_title('Calculated Geometric Invariant 3')
+
+plt.tight_layout()
+plt.show()
 
 
 

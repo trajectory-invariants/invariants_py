@@ -1,7 +1,7 @@
 import numpy as np
 import invariants_py.kinematics.orientation_kinematics as SO3
 from invariants_py.reparameterization import interpR
-from invariants_py.discretized_vector_invariants import estimate_vector_invariants, estimate_initial_frames, calculate_velocity_from_discrete_rotations
+from invariants_py.discretized_vector_invariants import calculate_vector_invariants, calculate_velocity_from_discrete_rotations
 
 
 def initial_trajectory_movingframe_rotation(R_obj_start,R_obj_end,N=100):
@@ -120,6 +120,19 @@ def  initialize_VI_pos(input_trajectory):
     invars = np.vstack((1e0*np.ones((1,N-1)),1e-1*np.ones((1,N-1)), 1e-12*np.ones((1,N-1))))
     return [invars, p_obj_sol, R_t]
 
+def estimate_initial_frames(vector_traj):    
+    # Estimate initial moving frames based on measurements
+    
+    N = np.size(vector_traj,0)
+    
+    #TODO  this is not correct yet, ex not perpendicular to ey + not robust for singularities, these parts must still be transferred from Matlab
+    
+    ex = vector_traj / (np.linalg.norm(vector_traj,axis=1).reshape(N,1)+0.000001)
+    ez = np.tile( np.array((0,0,1)), (N,1) )
+    ey = np.array([ np.cross(ez[i,:],ex[i,:]) for i in range(N) ])
+
+    return ex,ey,ez
+
 def  initialize_VI_pos2(measured_positions,stepsize):
     
     N = np.size(measured_positions,0)
@@ -132,7 +145,7 @@ def  initialize_VI_pos2(measured_positions,stepsize):
     for i in range(N):
         R_t_init2[i,:,:] = np.column_stack((ex[i,:],ey[i,:],ez[i,:]))
     #print(R_t_init2)
-    invars = estimate_vector_invariants(R_t_init2,Pdiff,stepsize) + 1e-12*np.ones((N,3))
+    invars = calculate_vector_invariants(R_t_init2,Pdiff,stepsize) + 1e-12*np.ones((N,3))
     #print(invars)
 
     R_t_init = np.zeros((9,N))
