@@ -41,7 +41,7 @@ def calculate_velocity_from_discrete_rotations(R, timestamps):
 
     return rot_velocity
 
-def calculate_tangent(vector_traj, tolerance_singularity):
+def calculate_tangent(vector_traj, tolerance_singularity = 1e-2):
     """
     Estimate the first axis of the moving frame based on the given trajectory.
     The first axis is calculated by normalizing the trajectory vector.
