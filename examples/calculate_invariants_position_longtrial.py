@@ -93,13 +93,16 @@ progress = "time" # options: {time, arclength}. This is the progress parameter w
 normalized_progress = False # scale progress to be between 0 and 1
 scale_invariance = False # scale trajectory to unit length, where length is defined by the progress parameter (e.g. arclength)
 ocp_implementation = "rockit" # options: {rockit, optistack}
-solver = "ipopt" # options: {ipopt, fatrop}
-rms_error_tolerance = 1e-1
-solver_options = {"max_iter": 200}
+solver = "fatrop" # options: {ipopt, fatrop}
+rms_error_tolerance = 1e-3
+solver_options = {"max_iter": 500}
 
 # Initialize the InvariantsHandler class with the given options
 ih = invariants_handler.InvariantsHandler(choice_invariants=choice_invariants, trajectory_type=trajectory_type, progress=progress, normalized_progress=normalized_progress, scale_invariant=scale_invariance, ocp_implementation=ocp_implementation, solver=solver, rms_error_tolerance=rms_error_tolerance, solver_options=solver_options)
 invariants, progress, reconstructed_trajectory, moving_frames = ih.calculate_invariants_translation(timestamps, trajectory)
+
+# TODO hide output dummy solve
+# TODO add check constraint violation to see when solver did not converge
 
 # Reconstruct the trajectory from the invariants
 reconstructed_trajectory2, _, _ = ih.reconstruct_trajectory(invariants, position_init=trajectory[0, :], movingframe_init=moving_frames[0, :, :])
