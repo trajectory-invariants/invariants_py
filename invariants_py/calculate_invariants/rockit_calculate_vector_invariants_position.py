@@ -91,7 +91,7 @@ class OCP_calc_pos:
             running_ek = ocp.state() # running sum of squared error
             ocp.subject_to(ocp.at_t0(running_ek == 0))
             ocp.set_next(running_ek, running_ek + ek) # sum over the control grid
-            ocp.subject_to(ocp.at_tf( (running_ek + ek) < N*rms_error_traj**2 ))
+            ocp.subject_to(ocp.at_tf( (running_ek + ek)/(N*rms_error_traj**2) < 1 ))
             
             # TODO this is still needed because last sample is not included in the sum now
             #total_ek = ocp.state() # total sum of squared error
@@ -143,7 +143,10 @@ class OCP_calc_pos:
             ocp._method.set_option("tol",tolerance)
             ocp._method.set_option("print_level",print_level)
             ocp._method.set_option("max_iter",max_iter)
-            ocp._method.set_option("linsol_lu_fact_tol",1e-12)
+            ocp._method.set_option("linsol_lu_fact_tol",1e-6)
+            ocp._method.set_option("linsol_perturbed_mode","no")
+            ocp._method.set_option("mu_init",1e5)
+
         else:
             ocp.method(rockit.MultipleShooting(N=N-1))
             ocp.solver('ipopt', {'expand':True, 'print_time':False, 'ipopt.tol':tolerance, 'ipopt.print_info_string':'yes', 'ipopt.max_iter':max_iter, 'ipopt.print_level':print_level, 'ipopt.ma57_automatic_scaling':'no', 'ipopt.linear_solver':'mumps'})
@@ -216,6 +219,11 @@ class OCP_calc_pos:
                 self.first_time = False
 
         # Solve the optimization problem for the given measurements starting from previous solution
+        
+        # print(measured_positions.T)
+        # print(stepsize)
+        # print(*self.values_variables)
+        
         self.values_variables = self.ocp_function(measured_positions.T, stepsize, *self.values_variables)
 
         # Return the results    
