@@ -85,13 +85,13 @@ class OCP_calc_pos:
         if not fatrop_solver:
             # sum of squared position errors in the window should be less than the specified tolerance rms_error_traj
             total_ek = ocp.sum(ek,grid='control',include_last=True)
-            ocp.subject_to(total_ek < N*rms_error_traj**2)
+            ocp.subject_to(total_ek < (N*rms_error_traj**2))
         else:
             # Fatrop does not support summing over grid points inside a constraint, so we implement the sum using a running cost to achieve the same result as above
             running_ek = ocp.state() # running sum of squared error
             ocp.subject_to(ocp.at_t0(running_ek == 0))
             ocp.set_next(running_ek, running_ek + ek) # sum over the control grid
-            ocp.subject_to(ocp.at_tf( (running_ek + ek)/(N*rms_error_traj**2) < 1 ))
+            ocp.subject_to(ocp.at_tf( (running_ek + ek) < (N*rms_error_traj**2) ))
             
             # TODO this is still needed because last sample is not included in the sum now
             #total_ek = ocp.state() # total sum of squared error
