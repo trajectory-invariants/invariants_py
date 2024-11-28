@@ -1,7 +1,7 @@
 import numpy as np
 import invariants_py.kinematics.orientation_kinematics as SO3
 from invariants_py.reparameterization import interpR
-from invariants_py.discretized_vector_invariants import calculate_vector_invariants, calculate_velocity_from_discrete_rotations
+from invariants_py.discretized_vector_invariants import calculate_discretized_invariants, calculate_velocity_from_discrete_rotations
 
 
 def initial_trajectory_movingframe_rotation(R_obj_start,R_obj_end,N=100):
@@ -204,26 +204,28 @@ def estimate_initial_frames(vector_traj):
 def  initialize_VI_pos2(measured_positions,stepsize):
     
     N = np.size(measured_positions,0)
-    Pdiff = np.diff(measured_positions, axis=0)
-    Pdiff = np.vstack((Pdiff, Pdiff[-1]))
+    invariants, meas_pos, mf = calculate_discretized_invariants(measured_positions,stepsize)
+    
+    #Pdiff = np.diff(measured_positions, axis=0)
+    #Pdiff = np.vstack((Pdiff, Pdiff[-1]))
 
-    [ex,ey,ez] = estimate_initial_frames(Pdiff)
+    #[ex,ey,ez] = estimate_initial_frames(Pdiff)
 
-    R_t_init2 = np.zeros((N,3,3))
-    for i in range(N):
-        R_t_init2[i,:,:] = np.column_stack((ex[i,:],ey[i,:],ez[i,:]))
+    #R_t_init2 = np.zeros((N,3,3))
+    #for i in range(N):
+    #    R_t_init2[i,:,:] = np.column_stack((ex[i,:],ey[i,:],ez[i,:]))
     #print(R_t_init2)
-    invars = calculate_vector_invariants(R_t_init2,Pdiff,stepsize) + 1e-12*np.ones((N,3))
+    #invars = calculate_vector_invariants(R_t_init2,Pdiff,stepsize) + 1e-12*np.ones((N,3))
     #print(invars)
 
     R_t_init = np.zeros((9,N))
     for i in range(N):
-        R_t_init[:,i] = np.hstack([ex[i,:],ey[i,:],ez[i,:]])   
+        R_t_init[:,i] = np.hstack([mf[i,0],mf[i,1],mf[i,2]])   
 
-    p_obj_sol =  measured_positions.T 
+    p_obj_sol =  meas_pos.T 
     #invars = np.vstack((1e0*np.ones((1,N-1)),1e-1*np.ones((1,N-1)), 1e-12*np.ones((1,N-1))))
     
-    return [invars[:-1,:].T, p_obj_sol, R_t_init]
+    return [invariants[:-1,:].T, p_obj_sol, R_t_init]
 
 def initialize_VI_rot(input_trajectory):
 
