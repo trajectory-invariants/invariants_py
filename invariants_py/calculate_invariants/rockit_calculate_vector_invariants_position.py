@@ -22,11 +22,12 @@ import casadi as cas
 import rockit
 from invariants_py import ocp_helper, ocp_initialization
 from invariants_py.ocp_helper import check_solver
-from invariants_py.dynamics_vector_invariants import integrate_vector_invariants_position
+from invariants_py.dynamics_vector_invariants import integrate_vector_invariants_position, integrate_vector_invariants_position_seq
+from invariants_py import discretized_vector_invariants as dvi
 
 class OCP_calc_pos:
     
-    def __init__(self, window_len=100, rms_error_traj=10**-3, fatrop_solver=False, bool_unsigned_invariants=False, planar_task=False, solver_options = {}, geometric=False):
+    def __init__(self, window_len=100, rms_error_traj=10**-3, fatrop_solver=False, bool_unsigned_invariants=False, planar_task=False, solver_options = {}, geometric=False, periodic=False):
         """
         Initializes an instance of the RockitCalculateVectorInvariantsPosition class.
         It specifies the optimal control problem (OCP) for calculating the invariants of a trajectory in a symbolic way.
@@ -76,15 +77,20 @@ class OCP_calc_pos:
 
         # Lower bounds on controls
         if bool_unsigned_invariants:
-            ocp.subject_to(invars[0,:]>=0) # velocity always positive
-            #ocp.subject_to(invars[1,:]>=0) # curvature rate always positive
+            ocp.subject_to(invars[0]>=0) # velocity always positive
+            #ocp.subject_to(invars[1]>=0) # curvature rate always positive
+
+        #ocp.subject_to(-np.pi <= invars[1,:]*h) # curvature rate bounded by 1
+        #ocp.subject_to(-np.pi <= invars[2,:]*h) # curvature rate bounded by 1
+        #ocp.subject_to(invars[1,:]*h <= np.pi) # curvature rate bounded by 1
+        #ocp.subject_to(invars[2,:]*h <= np.pi) # curvature rate bounded by 1
 
         # Measurement fitting constraint
         # TODO: what about specifying the tolerance per sample instead of the sum?
         ek = cas.dot(p_obj - p_obj_m, p_obj - p_obj_m) # squared position error
         if not fatrop_solver:
             # sum of squared position errors in the window should be less than the specified tolerance rms_error_traj
-            total_ek = ocp.sum(ek,grid='control',include_last=True)
+            total_ek = ocp.sum(ek,grid='control',include_last=True)          
             ocp.subject_to(total_ek < (N*rms_error_traj**2))
             
             #ocp.subject_to(ek < 0.01**2)
@@ -103,11 +109,16 @@ class OCP_calc_pos:
             #ocp.subject_to(p_obj - p_obj_m < np.array((0.0001,0.0001,0.0001))) # squared position error at each sample should be less than the specified tolerance rms_error_traj
            
             
-            # TODO this is still needed because last sample is not included in the sum now
-            #total_ek = ocp.state() # total sum of squared error
-            #ocp.set_next(total_ek, total_ek)
-            #ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
-            # total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
+            #ocp.subject_to(ek < rms_error_traj**2) # squared position error should be less than the specified tolerance rms_error_traj
+            
+        #     # TODO this is still needed because last sample is not included in the sum now
+        #     #total_ek = ocp.state() # total sum of squared error
+        #     #ocp.set_next(total_ek, total_ek)
+        #     #ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
+        #     # total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
+        
+        #total_ek = ocp.sum(ek,grid='control',include_last=True)
+        #ocp.add_objective(total_ek/N)
         
         #ocp.subject_to(total_ek/N < rms_error_traj**2)
         #total_ek_scaled = running_ek/N/rms_error_traj**2 # scaled total error
@@ -128,6 +139,12 @@ class OCP_calc_pos:
             L = ocp.state()  # introduce extra state L for the speed
             ocp.set_next(L, L)  # enforce constant speed
             ocp.subject_to(invars[0] - L == 0, include_last=False)  # relate to first invariant
+
+        #if periodic:
+        #    ocp.subject_to(ocp.at_tf(p_obj) - ocp.at_t0(p_obj) == 0)
+        #     # Periodic boundary conditions (optional)   
+        #     ocp.subject_to(ocp.at_tf(R_t) == ocp.at_t0(R_t))
+            
             
         """ Objective function """
 
@@ -232,7 +249,7 @@ class OCP_calc_pos:
         
         # print(measured_positions.T)
         # print(stepsize)
-        # print(*self.values_variables)
+        # print(*self.values_variables)False
         
         self.values_variables = self.ocp_function(measured_positions.T, stepsize, *self.values_variables)
 

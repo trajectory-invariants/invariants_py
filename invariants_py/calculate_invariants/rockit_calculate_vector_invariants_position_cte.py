@@ -9,14 +9,11 @@ class OCP_calc_pos:
     
     def __init__(self, 
                  window_len=100, 
-                 w_pos = 1, w_rot = 1, 
-                 w_deriv = (10**-6)*np.array([1.0, 1.0, 1.0]), 
-                 w_abs = (10**-10)*np.array([1.0, 1.0]), 
                  bool_unsigned_invariants = False, 
                  planar_task = False, 
-                 geometric = False,
                  fatrop_solver = True,
                  solver_options = {}):
+        
         # TODO change "planar_task" to "planar_trajectory"
         # TODO change bool_unsigned_invariants to positive_velocity
 
@@ -46,7 +43,7 @@ class OCP_calc_pos:
         
         # System dynamics (integrate current states + controls to obtain next states)
         # this relates the states/controls over the whole window
-        (R_t_plus1, p_obj_plus1) = integrate_vector_invariants_position_seq(R_t, p_obj, invars, h)
+        (R_t_plus1, p_obj_plus1) = integrate_vector_invariants_position(R_t, p_obj, invars, h)
         ocp.set_next(p_obj,p_obj_plus1)
         ocp.set_next(R_t,R_t_plus1)
 
@@ -120,9 +117,9 @@ class OCP_calc_pos:
         """ Objective function """
 
         # Minimize moving frame invariants to deal with singularities and noise
-        objective_reg = ocp.sum(cas.dot(invars[:3],invars[:3]))
-        objective = 10e-10*objective_reg/(N-1)
-        ocp.add_objective(objective)
+        # objective_reg = ocp.sum(cas.dot(invars[:3],invars[:3]))
+        # objective = 10e-10*objective_reg/(N-1)
+        # ocp.add_objective(objective)
 
         # objective_reg2 = ocp.sum(cas.dot(invars_deriv,invars_deriv))
         # objective_reg2_scaled = 0.000001*objective_reg2/(N-1)  

@@ -141,15 +141,15 @@ def calculate_binormal(vector_traj,tangent, tolerance_singularity, reference_vec
         
     return binormal
 
-def calculate_moving_frames(vector_traj, tolerance_singularity = 1e-2):
+def calculate_moving_frames(vector_traj, tolerance_singularity_vel = 1e-2, tolerance_singularity_curv = 1e-2):
 
     N = np.size(vector_traj, 0)
 
     # Calculate first axis
-    e_tangent = calculate_tangent(vector_traj, tolerance_singularity)
+    e_tangent = calculate_tangent(vector_traj, tolerance_singularity_vel)
 
     # Calculate third axis
-    e_binormal = calculate_binormal(vector_traj,e_tangent,tolerance_singularity,reference_vector=np.array([0,0,1]))
+    e_binormal = calculate_binormal(vector_traj,e_tangent,tolerance_singularity_curv,reference_vector=np.array([0,0,1]))
 
     # Calculate second axis as cross product of third and first axis
     e_normal = np.array([ np.cross(e_binormal[i,:],e_tangent[i,:]) for i in range(N) ])
@@ -214,7 +214,7 @@ def calculate_vector_invariants(R_mf_traj,vector_traj,progress_step):
     
     return invariants
 
-def calculate_discretized_invariants(measured_positions, progress_step, tolerance_singularity = 1e0):
+def calculate_discretized_invariants(measured_positions, progress_step, tolerance_singularity_vel = 1e-1, tolerance_singularity_curv = 1e-2):
     """
     Calculate the vector invariants of a measured position trajectory 
     based on a discrete approximation of the moving frame.
@@ -236,7 +236,7 @@ def calculate_discretized_invariants(measured_positions, progress_step, toleranc
     #print(vel_vector)
     
     # Calculate the moving frame
-    R_mf_traj = calculate_moving_frames(vel_vector, tolerance_singularity)
+    R_mf_traj = calculate_moving_frames(vel_vector, tolerance_singularity_vel, tolerance_singularity_curv)
     #print(R_mf_traj)
 
     # Calculate the invariants
