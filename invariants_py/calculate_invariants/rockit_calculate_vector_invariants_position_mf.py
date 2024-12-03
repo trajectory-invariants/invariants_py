@@ -1,22 +1,3 @@
-'''
-This class is used to calculate the invariants of a measured position trajectory using the Rockit optimal control problem (OCP) framework.
-
-The invariants are calculated by finding the invariant control inputs that reconstruct a trajectory such that it lies within a specified tolerance from the measured trajectory, while minimizing the curvature and torsion rate of the trajectory to deal with noise and singularities.
-
-Usage:
-    # Example data (helix)
-    N = 100
-    t = np.linspace(0, 4, N)
-    measured_positions = np.column_stack((1 * np.cos(t), 1 * np.sin(t), 0.1 * t))
-    stepsize = t[1]-t[0]
-
-    # Specify optimal control problem (OCP)
-    OCP = OCP_calc_pos(window_len=N, rms_error_traj=10**-3)
-
-    # Calculate invariants
-    invariants,trajectory,moving-frames = OCP.calculate_invariants(measured_positions, stepsize)
-'''
-
 import numpy as np
 import casadi as cas
 import rockit
@@ -26,18 +7,17 @@ from invariants_py.dynamics_vector_invariants import integrate_vector_invariants
 
 class OCP_calc_pos:
     
-    def __init__(self, window_len=100, rms_error_traj=10**-2, fatrop_solver=False, bool_unsigned_invariants=False, planar_task=False, geometric = False, solver_options = {}):
-        """
-        Initializes an instance of the RockitCalculateVectorInvariantsPosition class.
-        It specifies the optimal control problem (OCP) for calculating the invariants of a trajectory in a symbolic way.
+    def __init__(self, 
+                 window_len=100, 
+                 w_pos = 1, w_rot = 1, 
+                 w_deriv = (10**-6)*np.array([1.0, 1.0, 1.0]), 
+                 w_abs = (10**-10)*np.array([1.0, 1.0]), 
+                 fatrop_solver=False, 
+                 bool_unsigned_invariants=False, 
+                 planar_task=False, 
+                 geometric = False, 
+                 solver_options = {}):
 
-        Args:
-            window_len (int, optional): The length of the window of trajectory measurmeents in the optimization problem. Defaults to 100.
-            rms_error_traj (float, optional): The tolerance for the squared RMS error of the trajectory. Defaults to 10**-2.
-            fatrop_solver (bool, optional): Flag indicating whether to use the Fatrop solver. Defaults to False.
-            bool_unsigned_invariants (bool, optional): Flag indicating whether to enforce unsigned invariants. Defaults to False.
-            planar_task (bool, optional): Flag indicating whether the task is planar. Defaults to False.
-        """
         # TODO change "planar_task" to "planar_trajectory"
         # TODO change bool_unsigned_invariants to positive_velocity
 
@@ -84,29 +64,9 @@ class OCP_calc_pos:
 
         # Measurement fitting constraint
         # TODO: what about specifying the tolerance per sample instead of the sum?
-        ek = cas.dot(p_obj - p_obj_m, p_obj - p_obj_m) # squared position error
-        if not fatrop_solver:
-            # sum of squared position errors in the window should be less than the specified tolerance rms_error_traj
-            total_ek = ocp.sum(ek,grid='control',include_last=True)
-            ocp.subject_to(total_ek/N < rms_error_traj**2)
-        #else:
-            # # Fatrop does not support summing over grid points inside the constraint, so we implement it differently to achieve the same result
-            # running_ek = ocp.state() # running sum of squared error
-            # ocp.subject_to(ocp.at_t0(running_ek == 0))
-            # ocp.set_next(running_ek, running_ek + ek)
-            # ocp.subject_to(ocp.at_tf(1000*running_ek/N < 1000*rms_error_traj**2)) # scaling to avoid numerical issues in fatrop
-            
-            # # TODO this is still needed because last sample is not included in the sum now
-            # total_ek = ocp.state() # total sum of squared error
-            # ocp.set_next(total_ek, total_ek)
-            # ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
-            # # total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
-            # ocp.subject_to(1000*total_ek/N < 1000*rms_error_traj**2)
-            # #total_ek_scaled = running_ek/N/rms_error_traj**2 # scaled total error
-            # #ocp.subject_to(ocp.at_tf(total_ek_scaled < 1))
-            
-            #ocp.subject_to(ek < rms_error_traj**2)
 
+        
+        #total_ek = ocp.sum(ek,grid='control',include_last=True
         # Boundary conditions (optional, but may help to avoid straight line fits)
         #ocp.subject_to(ocp.at_t0(p_obj == p_obj_m)) # fix first position to measurement
         #ocp.subject_to(ocp.at_tf(p_obj == p_obj_m)) # fix last position to measurement
@@ -126,16 +86,17 @@ class OCP_calc_pos:
         """ Objective function """
 
         # Minimize moving frame invariants to deal with singularities and noise
-        objective_reg = ocp.sum(cas.dot(invars[1:3],invars[1:3]))
-        objective = 0.000001*objective_reg/(N-1)
-        ocp.add_objective(objective)
+        deriv_invariants_weighted = w_deriv**(0.5)*invars_deriv
+        cost_deriv_invariants = ocp.sum(cas.dot(deriv_invariants_weighted,deriv_invariants_weighted))/(N-1)
+        ocp.add_objective(cost_deriv_invariants)
+        
+        abs_invariants_weighted = w_abs**(0.5)*invars[1:3]
+        cost_absolute_invariants = ocp.sum(cas.dot(abs_invariants_weighted,abs_invariants_weighted))/(N-1)
+        ocp.add_objective(cost_absolute_invariants)
 
-        objective_reg2 = ocp.sum(cas.dot(invars_deriv,invars_deriv))
-        objective_reg2_scaled = 0.000001*objective_reg2/(N-1)  
-        ocp.add_objective(objective_reg2_scaled)
-
-        objective_fit = ocp.sum(ek, include_last=True)
-        ocp.add_objective(objective_fit)
+        pos_error_weighted = w_pos**(0.5)*(p_obj_m - p_obj)
+        cost_fitting = ocp.sum(cas.dot(pos_error_weighted, pos_error_weighted),grid='control',include_last=True)/N 
+        ocp.add_objective(cost_fitting)
 
         """ Solver definition """
 
@@ -289,18 +250,18 @@ if __name__ == "__main__":
     # Example data for measured positions and stepsize
     N = 100
     t = np.linspace(0, 4, N)
-    measured_positions = np.column_stack((1 * np.cos(t), 1 * np.sin(t), 0.1 * t))
+    measured_positions = np.column_stack((1 * np.cos(t), 1 * np.sin(t), 0.1 * t)) + np.random.normal(0, 0.001, (N, 3))
     stepsize = t[1]-t[0]
 
     # Test the functionalities of the class
-    OCP = OCP_calc_pos(window_len=N, rms_error_traj=10**-3, fatrop_solver=True)
+    OCP = OCP_calc_pos(window_len=N, fatrop_solver=True)
 
     # Call the calculate_invariants function and measure the elapsed time
     #start_time = time.time()
-    calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants_OLD(measured_positions, stepsize)
+    calc_invariants, calc_trajectory, calc_movingframes = OCP.calculate_invariants(measured_positions, stepsize)
     #elapsed_time = time.time() - start_time
 
-    ocp_helper.solution_check_pos(measured_positions,calc_trajectory,rms = 10**-3)
+    #ocp_helper.solution_check_pos(measured_positions,calc_trajectory,rms = 10**-3)
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
