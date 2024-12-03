@@ -204,7 +204,7 @@ def estimate_initial_frames(vector_traj):
 def  initialize_VI_pos2(measured_positions,stepsize):
     
     N = np.size(measured_positions,0)
-    invariants, meas_pos, mf = calculate_discretized_invariants(measured_positions,stepsize)
+    invariants, meas_pos, mf = calculate_discretized_invariants(measured_positions,stepsize, tolerance_singularity_vel = 5*1e-1, tolerance_singularity_curv = 1e-2)
     
     #Pdiff = np.diff(measured_positions, axis=0)
     #Pdiff = np.vstack((Pdiff, Pdiff[-1]))
@@ -224,11 +224,13 @@ def  initialize_VI_pos2(measured_positions,stepsize):
 
     #print(R_t_init)
     
-    p_obj_sol =  measured_positions.T 
+    p_obj_init =  measured_positions.T 
 
     #invars = np.vstack((1e0*np.ones((1,N-1)),1e-1*np.ones((1,N-1)), 1e-12*np.ones((1,N-1))))
     
-    return [invariants[:-1,:].T, p_obj_sol, R_t_init]
+    invariants_init = invariants[:-1,:].T+1e-10 # add small slack to prevent NaN
+    
+    return [invariants_init, p_obj_init, R_t_init]
 
 def initialize_VI_rot(input_trajectory):
 

@@ -206,6 +206,25 @@ def define_integrator_invariants_position(h):
     
     return integrator
 
+def define_integrator_invariants_position_seq(h):
+    """Define a CasADi function that integrates the vector invariants for rotation over a time interval h."""
+
+    # System states
+    R_t  = cas.MX.sym('R_t',3,3) # translational Frenet-Serret frame
+    p_obj = cas.MX.sym('p_obj',3,1) # object position
+    x = cas.vertcat(cas.vec(R_t), p_obj)
+    #np = length(R_obj(:)) + length(p_obj)
+
+    # System controls (invariants)
+    u = cas.MX.sym('i',3,1)
+
+    ## Integrate symbolically and create a casadi function with inputs/outputs
+    (R_t_plus1, p_obj_plus1) = integrate_vector_invariants_position_seq(R_t, p_obj, u, h)
+    out_plus1 = cas.vertcat(cas.vec(R_t_plus1),  p_obj_plus1)
+    integrator = cas.Function("phi", [x,u,h] , [out_plus1])
+    
+    return integrator
+
 def define_integrator_invariants_position_jerkmodel(h):
     
     # System states
