@@ -40,7 +40,7 @@ class OCP_calc_pos:
         opti.subject_to(ocp_helper.tril_vec(R_t[0].T @ R_t[0] - np.eye(3)) == 0)
 
         # Dynamics constraints (Multiple shooting)
-        integrator = dynamics.define_integrator_invariants_position_seq(h)
+        integrator = dynamics.define_integrator_invariants_position(h)
         for k in range(window_len-1):
             # Integrate current state to obtain next state (next rotation and position)
             Xk_end = integrator(X[k],U[:,k],h)

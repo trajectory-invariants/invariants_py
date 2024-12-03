@@ -66,7 +66,7 @@ class OCP_calc_pos:
         
         # System dynamics (integrate current states + controls to obtain next states)
         # this relates the states/controls over the whole window
-        (R_t_plus1, p_obj_plus1) = integrate_vector_invariants_position_seq(R_t, p_obj, invars, h)
+        (R_t_plus1, p_obj_plus1) = integrate_vector_invariants_position(R_t, p_obj, invars, h)
         ocp.set_next(p_obj,p_obj_plus1)
         ocp.set_next(R_t,R_t_plus1)
 
@@ -156,7 +156,7 @@ class OCP_calc_pos:
         """ Dummy values """
         # Solve already once with dummy values so that Fatrop can do code generation (Q: can this step be avoided somehow?)
         ocp.set_initial(R_t, np.eye(3))
-        ocp.set_initial(invars, np.array([1,0,0]))
+        ocp.set_initial(invars, np.array([1,10e-10,10e-10]))
         ocp.set_initial(p_obj, np.vstack((np.linspace(1, 2, N), np.ones((2, N)))))
         ocp.set_value(p_obj_m, np.vstack((np.linspace(1, 2, N), np.ones((2, N)))))
         ocp.set_value(h, 0.01)
