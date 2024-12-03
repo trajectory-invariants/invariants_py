@@ -66,7 +66,7 @@ class OCP_calc_pos:
         
         # System dynamics (integrate current states + controls to obtain next states)
         # this relates the states/controls over the whole window
-        (R_t_plus1, p_obj_plus1) = integrate_vector_invariants_position_seq(R_t, p_obj, invars, h)
+        (R_t_plus1, p_obj_plus1) = integrate_vector_invariants_position(R_t, p_obj, invars, h)
         ocp.set_next(p_obj,p_obj_plus1)
         ocp.set_next(R_t,R_t_plus1)
 
@@ -117,8 +117,8 @@ class OCP_calc_pos:
         #     #ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
         #     # total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
         
-        total_ek = ocp.sum(ek,grid='control',include_last=True)
-        ocp.add_objective(total_ek/N)
+        #total_ek = ocp.sum(ek,grid='control',include_last=True)
+        #ocp.add_objective(total_ek/N)
         
         #ocp.subject_to(total_ek/N < rms_error_traj**2)
         #total_ek_scaled = running_ek/N/rms_error_traj**2 # scaled total error

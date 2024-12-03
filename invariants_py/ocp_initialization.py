@@ -220,9 +220,12 @@ def  initialize_VI_pos2(measured_positions,stepsize):
 
     R_t_init = np.zeros((9,N))
     for i in range(N):
-        R_t_init[:,i] = np.hstack([mf[i,0],mf[i,1],mf[i,2]])   
+        R_t_init[:,i] = np.hstack([mf[i,:,0],mf[i,:,1],mf[i,:,2]])   
 
-    p_obj_sol =  meas_pos.T 
+    #print(R_t_init)
+    
+    p_obj_sol =  measured_positions.T 
+
     #invars = np.vstack((1e0*np.ones((1,N-1)),1e-1*np.ones((1,N-1)), 1e-12*np.ones((1,N-1))))
     
     return [invariants[:-1,:].T, p_obj_sol, R_t_init]
