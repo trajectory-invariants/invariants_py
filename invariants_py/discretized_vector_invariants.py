@@ -214,7 +214,7 @@ def calculate_vector_invariants(R_mf_traj,vector_traj,progress_step):
     
     return invariants
 
-def calculate_discretized_invariants(measured_positions, progress, tolerance_singularity = 1e0):
+def calculate_discretized_invariants(measured_positions, progress_step, tolerance_singularity = 1e0):
     """
     Calculate the vector invariants of a measured position trajectory 
     based on a discrete approximation of the moving frame.
@@ -228,7 +228,7 @@ def calculate_discretized_invariants(measured_positions, progress, tolerance_sin
         mf: moving frame (Nx3x3)
     """
     
-    progress_step = np.mean(np.diff(progress))#.reshape(-1,1)
+    #progress_step = np.mean(np.diff(progress))#.reshape(-1,1)
     
     # Calculate velocity vector in a discretized way
     pos_vector_differences = np.diff(measured_positions,axis=0)
