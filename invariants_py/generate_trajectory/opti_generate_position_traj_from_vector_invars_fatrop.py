@@ -201,7 +201,7 @@ class OCP_gen_pos:
             self.solution,initvals_dict = generate_initvals_from_constraints_opti(boundary_constraints, np.size(invariant_model,0), to_skip)
             self.first_window = False
         elif self.first_window:
-            self.solution = [initial_values["invariants"]["translational"][:N-1,:].T, initial_values["trajectory"]["position"][:N,:].T, initial_values["moving-frame"]["translational"][:N].T.transpose(1,2,0).reshape(3,3*N)]
+            self.solution = [*initial_values["invariants"]["translational"][:N-1,:], *initial_values["trajectory"]["position"][:N,:], *initial_values["moving-frame"]["translational"][:N]]
             self.first_window = False
 
         # Call solve function
