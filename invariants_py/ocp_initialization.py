@@ -144,13 +144,13 @@ def generate_initvals_from_constraints_opti(boundary_constraints,N, skip = {}, q
 
         _, R_r, initial_invariants = initial_trajectory_movingframe_rotation(R0, R1, N)
         
-        R_r_sol = np.zeros((3,3*N))
-        R_obj_sol = np.zeros((3,3*N))
+        R_r_sol = np.zeros((3,3,N))
+        R_obj_sol = np.zeros((3,3,N))
         for i in range(N):
-            R_r_sol[:,3*i:3*(i+1)] = np.array([R_r[i,0],R_r[i,1],R_r[i,2]]) 
-            R_obj_sol[:,3*i:3*(i+1)] = np.array([initial_trajectory[i,0],initial_trajectory[i,1],initial_trajectory[i,2]]) 
+            R_r_sol[:,:,i] = np.array([R_r[i,0],R_r[i,1],R_r[i,2]]) 
+            R_obj_sol[:,:,i] = np.array([initial_trajectory[i,0],initial_trajectory[i,1],initial_trajectory[i,2]]) 
 
-        solution_rot = [initial_invariants.T, R_r_sol, R_obj_sol]
+        solution_rot = [*initial_invariants, *R_obj_sol.T, *R_r_sol.T]
   
     if solution_pos is not None:
         if solution_rot is not None:

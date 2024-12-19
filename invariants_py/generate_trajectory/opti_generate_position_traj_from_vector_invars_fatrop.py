@@ -1,13 +1,16 @@
 import numpy as np
 import casadi as cas
 import invariants_py.dynamics_vector_invariants as dynamics
-from invariants_py import ocp_helper
+from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag
 from invariants_py.ocp_initialization import generate_initvals_from_constraints_opti
 from invariants_py import spline_handler as sh
 
 class OCP_gen_pos:
 
     def __init__(self, boundary_constraints, N = 40, bool_unsigned_invariants = False, solver = 'ipopt'):  
+
+        # fatrop_solver = check_solver(fatrop_solver)
+
         ''' Create decision variables and parameters for the optimization problem '''
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables 
 
@@ -22,13 +25,6 @@ class OCP_gen_pos:
             X.append(cas.vertcat(cas.vec(R_t[k]), cas.vec(p_obj[k])))
         for k in range(N-1):
             invars.append(opti.variable(3,1)) # invariants
-
-        # p_obj = [opti.variable(3,1) for _ in range(N)] # object position
-        # R_t = [opti.variable(3,3) for _ in range(N)] # translational Frenet-Serret frame
-        # X = [cas.vertcat(cas.vec(R_t[k]), cas.vec(p_obj[k])) for k in range(N)]
-
-        # Define system controls (invariants at every time step)
-        # invars = opti.variable(3,N-1) # invariants
 
         # Define system parameters P (known values in optimization that need to be set right before solving)
         h = opti.parameter(1,1) # step size for integration of dynamic model
@@ -51,7 +47,7 @@ class OCP_gen_pos:
         ''' Specifying the constraints '''
         
         # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
-        opti.subject_to(ocp_helper.tril_vec(R_t[0].T @ R_t[0] - np.eye(3)) == 0)
+        opti.subject_to(tril_vec(R_t[0].T @ R_t[0] - np.eye(3)) == 0)
         
         # Boundary constraints
         if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:    
@@ -59,9 +55,9 @@ class OCP_gen_pos:
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
             opti.subject_to(p_obj[-1] == p_obj_end)
         if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["translational"]:
-            opti.subject_to(R_t[0] == R_t_start)
+            opti.subject_to(tril_vec_no_diag(R_t[0].T @ R_t_start - np.eye(3)) == 0.)
         if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["translational"]:
-            opti.subject_to(R_t[-1] == R_t_end)
+            opti.subject_to(tril_vec_no_diag(R_t[-1].T @ R_t_end - np.eye(3)) == 0.)
             
         # Dynamic constraints
         integrator = dynamics.define_integrator_invariants_position(h)
