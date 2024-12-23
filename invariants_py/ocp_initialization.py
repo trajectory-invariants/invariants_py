@@ -154,7 +154,7 @@ def generate_initvals_from_constraints_opti(boundary_constraints,N, skip = {}, q
   
     if solution_pos is not None:
         if solution_rot is not None:
-            solution = [np.vstack((solution_rot[0],solution_pos[0]))] + solution_pos[1:] + solution_rot[1:] # concatenate invariants and combine lists
+            solution = [*np.hstack((solution_rot[:len(initial_invariants)],solution_pos[:len(initial_invariants)]))] + solution_pos[len(initial_invariants):] + solution_rot[len(initial_invariants):] # concatenate invariants and combine lists
         else:
             solution = [solution_pos,initial_values]
     else:
