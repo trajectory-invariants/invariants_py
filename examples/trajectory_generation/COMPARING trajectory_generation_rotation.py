@@ -139,8 +139,8 @@ weights['w_invars'] = np.array([5 * 10 ** 1, 1.0, 1.0])
 
 # specify optimization problem symbolically
 FS_online_generation_problem = OCP_gen_rot(window_len=number_samples,w_invars = weights['w_invars'])
-fatrop_FS_online_generation_problem = fatrop_OCP_gen_rot(boundary_constraints,number_samples,solver='ipopt')
-rockit_FS_online_generation_problem = rockit_OCP_gen_rot(boundary_constraints,number_samples,fatrop_solver=False)
+fatrop_FS_online_generation_problem = fatrop_OCP_gen_rot(boundary_constraints,number_samples,solver='fatrop')
+rockit_FS_online_generation_problem = rockit_OCP_gen_rot(boundary_constraints,number_samples,fatrop_solver=True)
 
 # Solve
 new_invars, new_trajectory, new_movingframes = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, R_obj_init = calculate_trajectory, R_r_init = movingframes, R_r_start = R_r_start, R_r_end = R_r_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)

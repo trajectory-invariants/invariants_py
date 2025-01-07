@@ -24,8 +24,8 @@ class OCP_gen_rot:
             R_obj.append(opti.variable(3,3)) # object orientation
             R_r.append(opti.variable(3,3)) # rotational Frenet-Serret frame
             X.append(cas.vertcat(cas.vec(R_r[k]), cas.vec(R_obj[k])))
-        for k in range(window_len-1):
-            invars.append(opti.variable(3,1))
+            if k < window_len-1:
+                invars.append(opti.variable(3,1)) # invariants
 
         # Define system parameters P (known values in optimization that need to be set right before solving)
         h = opti.parameter(1,1) # step size for integration of dynamic model
@@ -48,19 +48,7 @@ class OCP_gen_rot:
 
         ''' Specifying the constraints '''
         
-        # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
-        opti.subject_to(tril_vec(R_obj[0].T @ R_obj[0] - np.eye(3)) == 0)
-        opti.subject_to(tril_vec(R_r[0].T @ R_r[0] - np.eye(3)) == 0)
         
-        # Boundary constraints
-        if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
-            opti.subject_to(tril_vec_no_diag(R_obj[0].T @ R_obj_start - np.eye(3)) == 0.)
-        if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
-            opti.subject_to(tril_vec_no_diag(R_obj[-1].T @ R_obj_end - np.eye(3)) == 0.)
-        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["rotational"]:
-            opti.subject_to(tril_vec_no_diag(R_r[0].T @ R_r_start - np.eye(3)) == 0.)
-        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["rotational"]:
-            opti.subject_to(tril_vec_no_diag(R_r[-1].T @ R_r_end - np.eye(3)) == 0.)
             
         # Dynamic constraints
         integrator = dynamics.define_integrator_invariants_rotation(h)
@@ -69,8 +57,23 @@ class OCP_gen_rot:
             Xk_end = integrator(X[k],invars[k],h)
             
             # Gap closing constraint
-            opti.subject_to(Xk_end==X[k+1])
+            opti.subject_to(X[k+1]==Xk_end)
+
+            if k == 0:
+                # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
+                opti.subject_to(tril_vec(R_obj[0].T @ R_obj[0] - np.eye(3)) == 0)
+                opti.subject_to(tril_vec(R_r[0].T @ R_r[0] - np.eye(3)) == 0)
+        # Boundary constraints
+                if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
+                    opti.subject_to(tril_vec_no_diag(R_obj[0].T @ R_obj_start - np.eye(3)) == 0.)
+                if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["rotational"]:
+                    opti.subject_to(tril_vec_no_diag(R_r[0].T @ R_r_start - np.eye(3)) == 0.)
             
+        if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
+            opti.subject_to(tril_vec_no_diag(R_obj[-1].T @ R_obj_end - np.eye(3)) == 0.)
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["rotational"]:
+            opti.subject_to(tril_vec_no_diag(R_r[-1].T @ R_r_end - np.eye(3)) == 0.)
+
         ''' Specifying the objective '''
 
         # Fitting constraint to remain close to measurements
@@ -239,7 +242,7 @@ if __name__ == "__main__":
     step_size = 0.1
 
     # Create an instance of OCP_gen_pos
-    ocp = OCP_gen_rot(boundary_constraints,solver='ipopt', window_len=N)
+    ocp = OCP_gen_rot(boundary_constraints,solver='fatrop', window_len=N)
 
     # Call the generate_trajectory function
     invariants, calculated_trajectory, calculated_movingframe = ocp.generate_trajectory(invariant_model, boundary_constraints, step_size)
