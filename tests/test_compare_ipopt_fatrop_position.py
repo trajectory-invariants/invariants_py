@@ -7,7 +7,7 @@ class TestOCPcalcpos(unittest.TestCase):
     def setUp(self):
         # Example data for measured positions and stepsize
         N = 100
-        t = np.linspace(0, 4, N)
+        t = np.linspace(0, 1, N)
         self.measured_positions = np.column_stack((1 * np.cos(t), 1 * np.sin(t), 0.1 * t))
         self.stepsize = t[1] - t[0]
 

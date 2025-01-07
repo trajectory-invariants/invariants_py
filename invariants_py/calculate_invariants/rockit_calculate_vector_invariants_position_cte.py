@@ -3,21 +3,17 @@ import casadi as cas
 import rockit
 from invariants_py import ocp_helper, ocp_initialization
 from invariants_py.ocp_helper import check_solver
-from invariants_py.dynamics_vector_invariants import integrate_vector_invariants_position
+from invariants_py.dynamics_vector_invariants import integrate_vector_invariants_position, integrate_vector_invariants_position_seq
 
 class OCP_calc_pos:
     
     def __init__(self, 
                  window_len=100, 
-                 w_pos = 1, w_rot = 1, 
-                 w_deriv = (10**-6)*np.array([1.0, 1.0, 1.0]), 
-                 w_abs = (10**-10)*np.array([1.0, 1.0]), 
-                 fatrop_solver=False, 
-                 bool_unsigned_invariants=False, 
-                 planar_task=False, 
-                 geometric = False, 
+                 bool_unsigned_invariants = False, 
+                 planar_task = False, 
+                 fatrop_solver = True,
                  solver_options = {}):
-
+        
         # TODO change "planar_task" to "planar_trajectory"
         # TODO change bool_unsigned_invariants to positive_velocity
 
@@ -36,9 +32,9 @@ class OCP_calc_pos:
         p_obj = ocp.state(3) # position trajectory (xyz-coordinates)
         R_t_vec = ocp.state(9) # moving frame (Frenet-Serret frame) as a 9x1 vector
         R_t = cas.reshape(R_t_vec,(3,3)) # reshape vector to 3x3 rotation matrix
-        invars = ocp.state(3) # invariants (velocity, curvature rate, torsion rate)
+        invars = ocp.control(3) # invariants (velocity, curvature rate, torsion rate)
 
-        invars_deriv = ocp.control(3) # invariants derivatives
+        #invars_deriv = ocp.control(3) # invariants derivatives
 
         # Parameters
         p_obj_m = ocp.parameter(3,grid='control+') # measured position trajectory (xyz-coordinates)
@@ -50,7 +46,6 @@ class OCP_calc_pos:
         (R_t_plus1, p_obj_plus1) = integrate_vector_invariants_position(R_t, p_obj, invars, h)
         ocp.set_next(p_obj,p_obj_plus1)
         ocp.set_next(R_t,R_t_plus1)
-        ocp.set_next(invars,invars + h*invars_deriv)
 
         """ Constraints """
 
@@ -64,9 +59,34 @@ class OCP_calc_pos:
 
         # Measurement fitting constraint
         # TODO: what about specifying the tolerance per sample instead of the sum?
+        # Create the first half of the weight vector (from 0 to 1)
 
+        # create a weight vector that evolves linearly from 0 at 1, to 1 at N/2, and back to 0 at N
         
-        #total_ek = ocp.sum(ek,grid='control',include_last=True
+        
+        ek = cas.dot((p_obj - p_obj_m), (p_obj - p_obj_m)) # squared position error
+        #if not fatrop_solver:
+        #    # sum of squared position errors in the window should be less than the specified tolerance rms_error_traj
+        #    total_ek = ocp.sum(ek,grid='control',include_last=True)
+        #    ocp.subject_to(total_ek/N < rms_error_traj**2)
+        #else:
+            # # Fatrop does not support summing over grid points inside the constraint, so we implement it differently to achieve the same result
+            # running_ek = ocp.state() # running sum of squared error
+            # ocp.subject_to(ocp.at_t0(running_ek == 0))
+            # ocp.set_next(running_ek, running_ek + ek)
+            # ocp.subject_to(ocp.at_tf(1000*running_ek/N < 1000*rms_error_traj**2)) # scaling to avoid numerical issues in fatrop
+            
+            # # TODO this is still needed because last sample is not included in the sum now
+            # total_ek = ocp.state() # total sum of squared error
+            # ocp.set_next(total_ek, total_ek)
+            # ocp.subject_to(ocp.at_tf(total_ek == running_ek + ek))
+            # # total_ek_scaled = total_ek/N/rms_error_traj**2 # scaled total error
+            # ocp.subject_to(1000*total_ek/N < 1000*rms_error_traj**2)
+            # #total_ek_scaled = running_ek/N/rms_error_traj**2 # scaled total error
+            # #ocp.subject_to(ocp.at_tf(total_ek_scaled < 1))
+            
+            #ocp.subject_to(ek < rms_error_traj**2)
+
         # Boundary conditions (optional, but may help to avoid straight line fits)
         #ocp.subject_to(ocp.at_t0(p_obj == p_obj_m)) # fix first position to measurement
         #ocp.subject_to(ocp.at_tf(p_obj == p_obj_m)) # fix last position to measurement
@@ -78,25 +98,35 @@ class OCP_calc_pos:
             ocp.subject_to( cas.dot(R_t[:,2],np.array([0,0,1])) > 0)
 
         # Geometric invariants (optional), i.e. enforce constant speed
-        if geometric:
-            L = ocp.state()  # introduce extra state L for the speed
-            ocp.set_next(L, L)  # enforce constant speed
-            ocp.subject_to(invars[0] - L == 0, include_last=False)  # relate to first invariant
+        #if geometric:
+        #    L = ocp.state()  # introduce extra state L for the speed
+        #    ocp.set_next(L, L)  # enforce constant speed
+        #    ocp.subject_to(invars[0] - L == 0, include_last=False)  # relate to first invariant
+        
+        vel = ocp.state()
+        ocp.set_next(vel, vel)
+        kappa = ocp.state()
+        ocp.set_next(kappa, kappa)
+        tau = ocp.state()
+        ocp.set_next(tau, tau)
+        ocp.subject_to(invars[0] - vel ==0, include_last=False)
+        ocp.subject_to(invars[1] - kappa == 0, include_last=False)
+        ocp.subject_to(invars[2] - tau == 0, include_last=False)
+        
           
         """ Objective function """
 
         # Minimize moving frame invariants to deal with singularities and noise
-        deriv_invariants_weighted = w_deriv**(0.5)*invars_deriv
-        cost_deriv_invariants = ocp.sum(cas.dot(deriv_invariants_weighted,deriv_invariants_weighted))/(N-1)
-        ocp.add_objective(cost_deriv_invariants)
-        
-        abs_invariants_weighted = w_abs**(0.5)*invars[1:3]
-        cost_absolute_invariants = ocp.sum(cas.dot(abs_invariants_weighted,abs_invariants_weighted))/(N-1)
-        ocp.add_objective(cost_absolute_invariants)
+        # objective_reg = ocp.sum(cas.dot(invars[:3],invars[:3]))
+        # objective = 10e-10*objective_reg/(N-1)
+        # ocp.add_objective(objective)
 
-        pos_error_weighted = w_pos**(0.5)*(p_obj_m - p_obj)
-        cost_fitting = ocp.sum(cas.dot(pos_error_weighted, pos_error_weighted),grid='control',include_last=True)/N 
-        ocp.add_objective(cost_fitting)
+        # objective_reg2 = ocp.sum(cas.dot(invars_deriv,invars_deriv))
+        # objective_reg2_scaled = 0.000001*objective_reg2/(N-1)  
+        # ocp.add_objective(objective_reg2_scaled)
+
+        objective_fit = ocp.sum(ek, include_last=True)
+        ocp.add_objective(objective_fit)
 
         """ Solver definition """
 
@@ -148,7 +178,7 @@ class OCP_calc_pos:
         self.first_window = True
         self.h = h
 
-    def calculate_invariants(self, measured_positions, stepsize, use_previous_solution=False, init_values=None):
+    def calculate_invariants(self, measured_positions, stepsize, use_previous_solution=True, init_values=None):
         """
         Calculate the invariants for the given measurements.
 
@@ -228,7 +258,7 @@ class OCP_calc_pos:
         self.ocp.set_initial(self.p_obj, measured_positions.T)
 
         # Initialize controls
-        self.ocp.set_initial(self.U, [1, 1e-1, 1e-12])
+        self.ocp.set_initial(self.U, [0.01, 1e-12, 1e-12])
 
         # Set values parameters
         self.ocp.set_value(self.p_obj_m, measured_positions.T)
@@ -244,13 +274,68 @@ class OCP_calc_pos:
 
         return invariants, trajectory, moving_frames
 
+    def calculate_invariants_new(self, measured_positions, stepsize):
+        """
+        Calculate the invariants for the given measurements.
+
+        Note: This function is not recommended for repeated use due to overhead caused by sampling the solution.
+
+        Parameters:
+        - measured_positions (numpy.ndarray of shape (N, 3)): measured positions
+        - stepsize (float): the discrete time step or arclength step between measurements
+
+        Returns:
+        - invariants (numpy.ndarray of shape (N, 3)): calculated invariants
+        - calculated_trajectory (numpy.ndarray of shape (N, 3)): fitted trajectory corresponding to invariants
+        - calculated_movingframes (numpy.ndarray of shape (N, 3, 3)): moving frames corresponding to invariants
+        """
+
+        N = self.window_len
+
+        # Estimate moving frames from measurements TODO make this a function
+        Pdiff = np.diff(measured_positions, axis=0)
+        ex = Pdiff / np.linalg.norm(Pdiff, axis=1).reshape(N-1, 1)
+        ex = np.vstack((ex, [ex[-1, :]]))
+        ez = np.tile(np.array((0, 0, 1)), (N, 1))
+        ey = np.array([np.cross(ez[i, :], ex[i, :]) for i in range(N)])
+
+        ex = np.array([1,0,0])
+        ez = np.array([0,0,1])
+        ey = np.array([0,1,0])
+        
+        #R_obj_init = np.zeros((9, N))
+        #for i in range(N):
+        R_obj_init = np.eye(3)
+            
+        # Initialize states
+        self.ocp.set_initial(self.R_t, R_obj_init)
+        self.ocp.set_initial(self.p_obj, measured_positions.T)
+
+        # Initialize controls
+        self.ocp.set_initial(self.U, [1e-12, 1e-12, 1e-12])
+
+        # Set values parameters
+        self.ocp.set_value(self.p_obj_m, measured_positions.T)
+        self.ocp.set_value(self.h, stepsize)
+
+        # Solve the OCP
+        sol = self.ocp.solve_limited()
+
+        # Extract the solved variables
+        invariants = np.array([sol.sample(self.U[i], grid='control')[1] for i in range(3)]).T
+        trajectory = sol.sample(self.p_obj, grid='control')[1]
+        moving_frames = sol.sample(self.R_t, grid='control')[1]
+
+        return invariants, trajectory, moving_frames
+
+
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     # Example data for measured positions and stepsize
     N = 100
     t = np.linspace(0, 4, N)
-    measured_positions = np.column_stack((1 * np.cos(t), 1 * np.sin(t), 0.1 * t)) + np.random.normal(0, 0.001, (N, 3))
+    measured_positions = np.column_stack((1 * np.cos(t), 1 * np.sin(t), 0.1 * t)) + np.random.normal(scale=0.01, size=(N, 3))
     stepsize = t[1]-t[0]
 
     # Test the functionalities of the class

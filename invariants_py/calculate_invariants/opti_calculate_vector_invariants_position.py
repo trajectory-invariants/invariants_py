@@ -13,7 +13,7 @@ class OCP_calc_pos:
                  solver_options = {}):
        
         # Set solver options
-        tolerance = solver_options.get('tol',1e-4) # tolerance for the solver
+        tolerance = solver_options.get('tol',1e-10) # tolerance for the solver
         max_iter = solver_options.get('max_iter',500) # maximum number of iterations
         print_level = solver_options.get('print_level',5) # 5 prints info, 0 prints nothing
 
@@ -73,7 +73,7 @@ class OCP_calc_pos:
             trajectory_error = trajectory_error + cas.dot(err_pos,err_pos) 
         
         # r.24 in paper [Maxim 2023]   
-        opti.subject_to(trajectory_error  < window_len*rms_error_traj**2)
+        opti.subject_to(trajectory_error/(window_len*rms_error_traj**2)  < 1)
 
         # Boundary constraints
         #opti.subject_to(self.p_obj[0] == self.p_obj_m[0]) # Fix first measurement
@@ -95,7 +95,7 @@ class OCP_calc_pos:
         opti.minimize(objective)
         opti.solver('ipopt',{"print_time":False,"expand":True},{
             #'gamma_theta':1e-12,
-            'max_iter':max_iter,'tol':tolerance,'print_level':print_level,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'})
+            'max_iter':max_iter,'tol':tolerance,'print_level':print_level,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes','mu_init':1e5})
         
         # Save variables
         self.R_t = R_t

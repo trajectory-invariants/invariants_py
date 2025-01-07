@@ -48,9 +48,9 @@ plt.show()
 #/*********************************************************************************************************************/
 #/* Option 1: Calculate invariants using discretized analytical formulas 
 #/*********************************************************************************************************************/
-
+progress_step = np.mean(np.diff(timestamps))
 from invariants_py import discretized_vector_invariants as dvi
-invariants_init, trajectory_init, moving_frames_init = dvi.calculate_discretized_invariants(trajectory, timestamps)
+invariants_init, trajectory_init, moving_frames_init = dvi.calculate_discretized_invariants(trajectory, progress_step)
 
 print(invariants_init)
 plotters.plot_moving_frames(trajectory, moving_frames_init) # calculated moving frames along trajectory
