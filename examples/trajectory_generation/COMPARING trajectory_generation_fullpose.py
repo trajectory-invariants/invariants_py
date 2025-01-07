@@ -114,7 +114,7 @@ R_obj_start = orthonormalize(optim_calc_results.Obj_frames[current_index])
 FSt_start = orthonormalize(optim_calc_results.FSt_frames[current_index])
 FSr_start = orthonormalize(optim_calc_results.FSr_frames[current_index])
 p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([0.1,0.1,0.1])
-rotate = R.from_euler('z', 0, degrees=True)
+rotate = R.from_euler('z', 30, degrees=True)
 R_obj_end =  orthonormalize(rotate.apply(optim_calc_results.Obj_frames[-1]))
 FSt_end = orthonormalize(optim_calc_results.FSt_frames[-1])
 FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
@@ -162,8 +162,8 @@ weights_params = {
 # specify optimization problem symbolically
 FS_online_generation_problem_pos = OCP_gen_pos(N=number_samples,w_invars = weights_params['w_invars'][3:])
 FS_online_generation_problem_rot = OCP_gen_rot(window_len=number_samples,w_invars = weights_params['w_invars'][:3])
-fatrop_online_generation_problem = OCP_gen_pose_fatrop(boundary_constraints, number_samples, solver = 'ipopt')
-rockit_online_generation_problem = OCP_gen_pose_rockit(boundary_constraints, number_samples,False)
+fatrop_online_generation_problem = OCP_gen_pose_fatrop(boundary_constraints, number_samples, solver = 'fatrop')
+rockit_online_generation_problem = OCP_gen_pose_rockit(boundary_constraints, number_samples,True)
 
 initial_values = {
     "trajectory": {

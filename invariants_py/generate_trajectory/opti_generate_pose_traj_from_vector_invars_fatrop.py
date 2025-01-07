@@ -5,12 +5,26 @@ from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag
 from invariants_py.ocp_initialization import generate_initvals_from_constraints_opti
 from invariants_py.kinematics.orientation_kinematics import rotate_x
 from invariants_py import spline_handler as sh
+# import yourdfpy as urdf
+# import invariants_py.data_handler as dh
 
 class OCP_gen_pose:
 
-    def __init__(self, boundary_constraints, N = 40, bool_unsigned_invariants = False, solver = 'ipopt'):  
+    def __init__(self, boundary_constraints, N = 40, bool_unsigned_invariants = False, solver = 'ipopt', robot_params = {}):  
 
         # fatrop_solver = check_solver(fatrop_solver)
+
+        # # Robot urdf location
+        # urdf_file_name = robot_params.get('urdf_file_name', None)
+        # path_to_urdf = dh.find_robot_path(urdf_file_name) 
+        # include_robot_model = True if path_to_urdf is not None else False
+        # if include_robot_model:
+        #     robot = urdf.URDF.load(path_to_urdf)
+        #     nb_joints = robot_params.get('joint_number', robot.num_actuated_joints)
+        #     q_limits = robot_params.get('q_lim', np.array([robot._actuated_joints[i].limit.upper for i in range(robot.num_actuated_joints)]))
+        #     root = robot_params.get('root', robot.base_link)
+        #     tip = robot_params.get('tip', 'tool0')
+        #     q_init = robot_params.get('q_init', np.zeros(nb_joints))
 
         ''' Create decision variables and parameters for the optimization problem '''
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables 
@@ -22,14 +36,23 @@ class OCP_gen_pose:
         R_r = []
         X = []
         invars = []
+        # q = []
+        # qdot = []
         for k in range(N):
+            R_r.append(opti.variable(3,3)) # rotational Frenet-Serret frame
+            R_obj.append(opti.variable(3,3)) # object orientation
             R_t.append(opti.variable(3,3)) # translational Frenet-Serret frame
             p_obj.append(opti.variable(3,1)) # object position
-            R_obj.append(opti.variable(3,3)) # object orientation
-            R_r.append(opti.variable(3,3)) # rotational Frenet-Serret frame
+            # if include_robot_model:
+            #     q.append(opti.variable(nb_joints,1))
+            #     X.append(cas.vertcat(cas.vec(R_r[k]), cas.vec(R_obj[k]),cas.vec(R_t[k]), cas.vec(p_obj[k]), cas.vec(q[k])))
+            # else:
             X.append(cas.vertcat(cas.vec(R_r[k]), cas.vec(R_obj[k]),cas.vec(R_t[k]), cas.vec(p_obj[k])))
-        for k in range(N-1):
-            invars.append(opti.variable(6,1)) # invariants
+
+            if k < N-1:
+                invars.append(opti.variable(6,1)) # invariants
+            # if include_robot_model:
+            #     qdot.append(opti.variable(nb_joints,1))
 
         # Define system parameters P (known values in optimization that need to be set right before solving)
         h = opti.parameter(1,1) # step size for integration of dynamic model
@@ -38,6 +61,8 @@ class OCP_gen_pose:
         for k in range(N-1):
             invars_demo.append(opti.parameter(6,1)) # model invariants
             w_invars.append(opti.parameter(6,1)) # weights for invariants
+        # if include_robot_model:
+        #     q_lim = opti.parameter(nb_joints,1)
 
         # Boundary values
         if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:
@@ -59,37 +84,46 @@ class OCP_gen_pose:
 
         ''' Specifying the constraints '''
         
-        # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
-        opti.subject_to(tril_vec(R_t[0].T @ R_t[0] - np.eye(3)) == 0)
-        opti.subject_to(tril_vec(R_obj[0].T @ R_obj[0] - np.eye(3)) == 0)
-        opti.subject_to(tril_vec(R_r[0].T @ R_r[0] - np.eye(3)) == 0)
-        
-        # Boundary constraints
-        if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:    
-            opti.subject_to(p_obj[0] == p_obj_start)
-        if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
-            opti.subject_to(p_obj[-1] == p_obj_end)
-        if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
-            opti.subject_to(tril_vec_no_diag(R_obj[0].T @ R_obj_start - np.eye(3)) == 0.)
-        if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
-            opti.subject_to(tril_vec_no_diag(R_obj[-1].T @ R_obj_end - np.eye(3)) == 0.)
-        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["translational"]:
-            opti.subject_to(tril_vec_no_diag(R_t[0].T @ R_t_start - np.eye(3)) == 0.)
-        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["translational"]:
-            opti.subject_to(tril_vec_no_diag(R_t[-1].T @ R_t_end - np.eye(3)) == 0.)
-        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["rotational"]:
-            opti.subject_to(tril_vec_no_diag(R_r[0].T @ R_r_start - np.eye(3)) == 0.)
-        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["rotational"]:
-            opti.subject_to(tril_vec_no_diag(R_r[-1].T @ R_r_end - np.eye(3)) == 0.)
+
+        # if include_robot_model:
+        #     for i in range(nb_joints):
+        #         # ocp.subject_to(-q_lim[i] <= (q[i] <= q_lim[i])) # This constraint definition does not work with fatrop, yet
+        #         opti.subject_to(-q_lim[i] - q[i] <= 0 )
+        #         opti.subject_to(q[i] - q_lim[i] <= 0)
         
         # Dynamic constraints
         integrator = dynamics.define_integrator_invariants_pose(h)
+        # integrator = dynamics.define_integrator_invariants_pose(h,include_robot_model)
         for k in range(N-1):
             # Integrate current state to obtain next state (next rotation and position)
             Xk_end = integrator(X[k],invars[k],h)
             
             # Gap closing constraint
-            opti.subject_to(Xk_end==X[k+1])
+            opti.subject_to(X[k+1]==Xk_end)
+
+            if k == 0:
+                # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
+                opti.subject_to(tril_vec(R_t[0].T @ R_t[0] - np.eye(3)) == 0)
+                opti.subject_to(tril_vec(R_obj[0].T @ R_obj[0] - np.eye(3)) == 0)
+                opti.subject_to(tril_vec(R_r[0].T @ R_r[0] - np.eye(3)) == 0)
+        # Boundary constraints
+                if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:    
+                    opti.subject_to(p_obj[0] == p_obj_start)
+                if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
+                    opti.subject_to(tril_vec_no_diag(R_obj[0].T @ R_obj_start - np.eye(3)) == 0.)
+                if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["translational"]:
+                    opti.subject_to(tril_vec_no_diag(R_t[0].T @ R_t_start - np.eye(3)) == 0.)
+                if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["rotational"]:
+                    opti.subject_to(tril_vec_no_diag(R_r[0].T @ R_r_start - np.eye(3)) == 0.)
+       
+        if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
+            opti.subject_to(p_obj[-1] == p_obj_end)
+        if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
+            opti.subject_to(tril_vec_no_diag(R_obj[-1].T @ R_obj_end - np.eye(3)) == 0.)
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["translational"]:
+            opti.subject_to(tril_vec_no_diag(R_t[-1].T @ R_t_end - np.eye(3)) == 0.)
+        if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["rotational"]:
+            opti.subject_to(tril_vec_no_diag(R_r[-1].T @ R_r_end - np.eye(3)) == 0.)
 
         ''' Specifying the objective '''
 
@@ -298,7 +332,7 @@ if __name__ == "__main__":
     step_size = 0.1
 
     # Create an instance of OCP_gen_pos
-    ocp = OCP_gen_pose(boundary_constraints,solver='ipopt', N=N)
+    ocp = OCP_gen_pose(boundary_constraints,solver='fatrop', N=N)
 
     # Call the generate_trajectory function
     invariants, calculated_trajectory_pos, calculated_trajectory_rot, calculated_movingframe_pos, calculated_movingframe_rot = ocp.generate_trajectory(invariant_model, boundary_constraints, step_size)
