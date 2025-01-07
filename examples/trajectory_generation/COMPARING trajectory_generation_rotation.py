@@ -9,9 +9,7 @@ import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
 from invariants_py.calculate_invariants.opti_calculate_vector_invariants_rotation import OCP_calc_rot
 from invariants_py.generate_trajectory.opti_generate_orientation_traj_from_vector_invars import OCP_gen_rot
-from invariants_py.generate_trajectory.opti_generate_orientation_traj_from_vector_invars_fatrop import OCP_gen_rot as fatrop_OCP_gen_rot
 from invariants_py.generate_trajectory.rockit_generate_orientation_traj_from_vector_invars import OCP_gen_rot as rockit_OCP_gen_rot
-from IPython.display import clear_output
 from invariants_py.plotting_functions.plotters import plot_3d_frame, plot_orientation, plot_stl
 from stl import mesh
 from scipy.spatial.transform import Rotation as R
@@ -138,13 +136,11 @@ weights = {}
 weights['w_invars'] = np.array([5 * 10 ** 1, 1.0, 1.0])
 
 # specify optimization problem symbolically
-FS_online_generation_problem = OCP_gen_rot(window_len=number_samples,w_invars = weights['w_invars'])
-fatrop_FS_online_generation_problem = fatrop_OCP_gen_rot(boundary_constraints,number_samples,solver='fatrop')
+FS_online_generation_problem = OCP_gen_rot(boundary_constraints,number_samples,solver='fatrop')
 rockit_FS_online_generation_problem = rockit_OCP_gen_rot(boundary_constraints,number_samples,fatrop_solver=True)
 
 # Solve
-new_invars, new_trajectory, new_movingframes = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, R_obj_init = calculate_trajectory, R_r_init = movingframes, R_r_start = R_r_start, R_r_end = R_r_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
-fatrop_invars, fatrop_trajectory, fatrop_movingframes = fatrop_FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights,initial_values=initial_values)
+new_invars, new_trajectory, new_movingframes = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights,initial_values=initial_values)
 rockit_invars, rockit_trajectory, rockit_movingframes, time = rockit_FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights,initial_values=initial_values)
 
 # for i in range(len(new_trajectory)):
@@ -164,34 +160,29 @@ indx_online = indx_online.astype(int)
 for i in indx_online:
     plot_3d_frame(trajectory_position_online[i,:],new_trajectory[i,:,:],1,0.05,['red','green','blue'],ax)
     plot_stl(opener_location,trajectory_position_online[i,:],new_trajectory[i,:,:],colour="r",alpha=0.2,ax=ax)
-    plot_stl(opener_location,trajectory_position_online[i,:],fatrop_trajectory[i,:,:],colour="g",alpha=0.2,ax=ax)
-    plot_stl(opener_location,trajectory_position_online[i,:],rockit_trajectory[i,:,:],colour="m",alpha=0.2,ax=ax)
+    plot_stl(opener_location,trajectory_position_online[i,:],rockit_trajectory[i,:,:],colour="g",alpha=0.2,ax=ax)
 plot_orientation(calculate_trajectory, new_trajectory,current_index)
-plot_orientation(calculate_trajectory, fatrop_trajectory,current_index)
 plot_orientation(calculate_trajectory, rockit_trajectory,current_index)
 
 fig = plt.figure()
 plt.subplot(1,3,1)
 plt.plot(arclength_n,invariants[:,0],'b')
 plt.plot(progress_values,new_invars[:,0],'r')
-plt.plot(progress_values,fatrop_invars[:,0],'g')
-plt.plot(progress_values,rockit_invars[:,0],'m')
+plt.plot(progress_values,rockit_invars[:,0],'g')
 plt.plot(0,0)
 plt.title('Velocity [m/m]')
 
 plt.subplot(1,3,2)
 plt.plot(arclength_n,invariants[:,1],'b')
 plt.plot(progress_values,(new_invars[:,1]),'r')
-plt.plot(progress_values,(fatrop_invars[:,1]),'g')
-plt.plot(progress_values,(rockit_invars[:,1]),'m')
+plt.plot(progress_values,(rockit_invars[:,1]),'g')
 plt.plot(0,0)
 plt.title('Curvature [rad/m]')
 
 plt.subplot(1,3,3)
 plt.plot(arclength_n,invariants[:,2],'b')
 plt.plot(progress_values,(new_invars[:,2]),'r')
-plt.plot(progress_values,(fatrop_invars[:,2]),'g')
-plt.plot(progress_values,(rockit_invars[:,2]),'m')
+plt.plot(progress_values,(rockit_invars[:,2]),'g')
 plt.plot(0,0)
 plt.title('Torsion [rad/m]')
 

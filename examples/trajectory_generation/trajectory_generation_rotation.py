@@ -9,12 +9,16 @@ import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
 from invariants_py.calculate_invariants.opti_calculate_vector_invariants_rotation import OCP_calc_rot
 from invariants_py.generate_trajectory.opti_generate_orientation_traj_from_vector_invars import OCP_gen_rot
-from IPython.display import clear_output
 from invariants_py.plotting_functions.plotters import plot_3d_frame, plot_orientation, plot_stl
 from stl import mesh
 from scipy.spatial.transform import Rotation as R
 from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize
+from invariants_py.ocp_initialization import initial_trajectory_movingframe_rotation
+import random
 #%%
+show_plots = True
+solver = 'fatrop'
+
 data_location = dh.find_data_path('beer_1.txt')
 opener_location = dh.find_data_path('opener.stl')
 trajectory,time = dh.read_pose_trajectory_from_data(data_location, dtype = 'txt')
@@ -83,8 +87,8 @@ def interpolate_model_invariants(demo_invariants, progress_values):
     return resampled_invariants, new_stepsize
 
 #%% 
-current_progress = 0.3
-number_samples = 60
+current_progress = 0
+number_samples = 100
 
 progress_values = np.linspace(current_progress, arclength_n[-1], number_samples)
 model_invariants,new_stepsize = interpolate_model_invariants(spline_model_trajectory,progress_values)
@@ -108,14 +112,41 @@ R_obj_end =  orthonormalize(rotate.apply(calculate_trajectory[-1]))
 R_r_start = orthonormalize(movingframes[current_index])
 R_r_end = orthonormalize(movingframes[-1])
 
+boundary_constraints = {
+    "orientation": {
+        "initial": R_obj_start,
+        "final": R_obj_end
+    },
+    "moving-frame": {
+        "rotational": {
+            "initial": R_r_start,
+            "final": R_r_end
+        }
+    },
+}
+initial_values = {
+    "trajectory": {
+        "orientation": calculate_trajectory
+    },
+    "moving-frame": {
+        "rotational": movingframes,
+    },
+    "invariants": {
+        "rotational": model_invariants,
+    }
+}
+
+weights = {}
+weights['w_invars'] = np.array([5 * 10 ** 1, 1.0, 1.0])
 
 # specify optimization problem symbolically
-FS_online_generation_problem = OCP_gen_rot(window_len=number_samples,w_invars = 10**2*np.array([10**1, 1.0, 1.0]))
+FS_online_generation_problem = OCP_gen_rot(boundary_constraints,number_samples,solver=solver)
 
 # Solve
-new_invars, new_trajectory, new_movingframes = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, R_obj_init = calculate_trajectory, R_r_init = movingframes, R_r_start = R_r_start, R_r_end = R_r_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
-for i in range(len(new_trajectory)):
-    new_trajectory[i] = orthonormalize(new_trajectory[i])
+new_invars, new_trajectory, new_movingframes = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights,initial_values=initial_values)
+
+# for i in range(len(new_trajectory)):
+#     new_trajectory[i] = orthonormalize(new_trajectory[i])
 
 fig = plt.figure(figsize=(14,8))
 ax = fig.add_subplot(111, projection='3d')
@@ -135,99 +166,123 @@ plot_orientation(calculate_trajectory, new_trajectory,current_index)
 
 fig = plt.figure()
 plt.subplot(1,3,1)
-plt.plot(progress_values,new_invars[:,0],'r')
 plt.plot(arclength_n,invariants[:,0],'b')
+plt.plot(progress_values,new_invars[:,0],'r')
 plt.plot(0,0)
 plt.title('Velocity [m/m]')
 
 plt.subplot(1,3,2)
-plt.plot(progress_values,(new_invars[:,1]),'r')
 plt.plot(arclength_n,invariants[:,1],'b')
+plt.plot(progress_values,(new_invars[:,1]),'r')
 plt.plot(0,0)
 plt.title('Curvature [rad/m]')
 
 plt.subplot(1,3,3)
-plt.plot(progress_values,(new_invars[:,2]),'r')
 plt.plot(arclength_n,invariants[:,2],'b')
+plt.plot(progress_values,(new_invars[:,2]),'r')
 plt.plot(0,0)
 plt.title('Torsion [rad/m]')
 
 if plt.get_backend() != 'agg':
     plt.show()
 
-#%% Visualization
 
-window_len = 20
+#%% Generation of multiple trajectories to test FATROP calculation speed
+
+current_progress = 0
+number_samples = 100
+number_of_trajectories = 100
+
+progress_values = np.linspace(current_progress, arclength_n[-1], number_samples)
+model_invariants,new_stepsize = interpolate_model_invariants(spline_model_trajectory,progress_values)
+
+# pl.plot_interpolated_invariants(optim_calc_results.invariants, model_invariants, arclength_n, progress_values)
+
+# new constraints
+current_index = round(current_progress*len(trajectory))
+R_obj_start = orthonormalize(calculate_trajectory[current_index])
+FSr_start = orthonormalize(movingframes[current_index])
+FSr_end = orthonormalize(movingframes[-1])
+
+boundary_constraints = {
+    "orientation": {
+        "initial": R_obj_start,
+        "final": []
+    },
+    "moving-frame": {
+        "rotational": {
+            "initial": FSr_start,
+            "final": FSr_end
+        }
+    },
+}
+
+initial_values = {
+    "trajectory": {
+        "orientation": [],
+    },
+    "moving-frame": {
+        "rotational": []
+    },
+    "invariants": {
+        "rotational": model_invariants,
+    }
+}
 
 # specify optimization problem symbolically
-FS_online_generation_problem = OCP_gen_rot(window_len=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
+FS_online_generation_problem = OCP_gen_rot(boundary_constraints, number_samples, solver = solver)
 
-current_progress = 0.0
-old_progress = 0.0
-
-R_obj_end = calculate_trajectory[-1] # initialise R_obj_end with end point of reconstructed trajectory
-iterative_trajectory = calculate_trajectory.copy()
-iterative_movingframes = movingframes.copy()
-trajectory_position_iter = trajectory_position.copy()
-
-fig_traj = plt.figure(figsize=(14,8))
-ax = fig_traj.add_subplot(111, projection='3d')    
-
-fig_invars, axes = plt.subplots(1, 3, sharey=True, figsize=(10,3))
-    
-while current_progress <= 1.0:
-    
-    print(f"current progress = {current_progress}")
-
-    # Resample invariants for current progress
-    progress_values = np.linspace(current_progress, arclength_n[-1], window_len)
-    model_invariants,new_stepsize = interpolate_model_invariants(spline_model_trajectory,progress_values)
-    
-    # Boundary constraints
-    current_index = round( (current_progress - old_progress) * len(iterative_trajectory))
-    R_obj_start = iterative_trajectory[current_index]
-    rotate = R.from_euler('z', 30/window_len, degrees=True)
-    R_obj_end =  orthonormalize(rotate.apply(R_obj_end))
-    R_r_start = iterative_movingframes[current_index] 
-    R_r_end = iterative_movingframes[-1] 
-
-    # Calculate remaining trajectory
-    new_invars, iterative_trajectory, iterative_movingframes = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, R_obj_init = calculate_trajectory, R_r_init = movingframes, R_r_start = R_r_start, R_r_end = R_r_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
-    for i in range(len(iterative_trajectory)):
-        iterative_trajectory[i] = orthonormalize(iterative_trajectory[i])
-
-    # Visualization
-    clear_output(wait=True)
-    
+if show_plots:
+    fig = plt.figure(figsize=(14,8))
+    ax = fig.add_subplot(111, projection='3d')
     ax.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,2],'b')
-    for i in indx:
-        plot_stl(opener_location,trajectory_position[i,:],calculate_trajectory[i,:,:],colour="c",alpha=0.2,ax=ax)
-    cut_trajectory_position = trajectory_position_iter[current_index:,:]
-    interp = ip.interp1d(np.linspace(0,1,len(cut_trajectory_position)),cut_trajectory_position, axis = 0)
-    trajectory_position_iter = interp(np.linspace(0,1,len(iterative_trajectory)))
-    indx_iter = np.trunc(np.linspace(0,len(iterative_trajectory)-1,n_frames))
-    indx_iter = indx_iter.astype(int)
-    for i in indx_iter:
-        plot_3d_frame(trajectory_position_iter[i,:],iterative_trajectory[i,:,:],1,0.05,['red','green','blue'],ax)
-        plot_stl(opener_location,trajectory_position_iter[i,:],iterative_trajectory[i,:,:],colour="r",alpha=0.2,ax=ax)
-    if plt.get_backend() != 'agg':
-        plt.show()
 
-    axes[0].plot(progress_values,new_invars[:,0],'r')
-    axes[0].plot(arclength_n,invariants[:,0],'b')
-    axes[0].plot(0,0)
-    axes[0].set_title('velocity [m/m]')
+tot_time = 0
+counter = 0
+max_time = 0
+targets = np.zeros((number_of_trajectories,1))
+for k in range(len(targets)):
+    targets[k] = random.uniform(0,30)
+    p_obj_end = targets[k,:-1]
+    rotate = R.from_euler('z', targets[k,-1], degrees=True)
+    R_obj_end =  orthonormalize(rotate.apply(calculate_trajectory[-1]))
+
+    R_obj_init = reparam.interpR(np.linspace(0, 1, len(trajectory)), [0,1], np.array([R_obj_start, R_obj_end]))
+
+    R_r_init, R_r_init_array, invars_init = initial_trajectory_movingframe_rotation(R_obj_start, R_obj_end)
+
+    boundary_constraints["orientation"]["final"] = R_obj_end
+    boundary_constraints["moving-frame"]["rotational"]["initial"] = R_r_init
+    boundary_constraints["moving-frame"]["rotational"]["final"] = R_r_init
+
+    initial_values["trajectory"]["orientation"] = R_obj_init
+    initial_values["moving-frame"]["rotational"] = R_r_init_array
     
-    axes[1].plot(progress_values,(new_invars[:,1]),'r')
-    axes[1].plot(arclength_n,invariants[:,1],'b')
-    axes[1].plot(0,0)
-    axes[1].set_title('curvature [rad/m]')
+
+    # Solve
+    new_invars, new_trajectory, new_movingframes = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights,initial_values)
+
+    for i in range(len(new_trajectory)):
+        new_trajectory[i] = orthonormalize(new_trajectory[i])
+
+    # if solver == 'fatrop':
+    #     new_time = tot_time_pos + tot_time_rot
+    #     if new_time > max_time:
+    #         max_time = new_time
+    #     tot_time = tot_time + new_time
     
-    axes[2].plot(progress_values,(new_invars[:,2]),'r')
-    axes[2].plot(arclength_n,invariants[:,2],'b')
-    axes[2].plot(0,0)
-    axes[2].set_title('torsion [rad/m]')
+    # counter += 1
 
+# if solver == 'fatrop':
+#     print('')
+#     print("AVERAGE time to generate new trajectory: ")
+#     print(str(tot_time/counter) + "[s]")
+#     print('')
+#     print("MAXIMUM time to generate new trajectory: ")
+#     print(str(max_time) + "[s]")
 
-    old_progress = current_progress
-    current_progress = old_progress + 1/window_len
+# fig = plt.figure(figsize=(10,6))
+# ax1 = fig.add_subplot(111, projection='3d')
+# ax1 = plt.axes(projection='3d')
+# ax1.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,2],'b')
+# ax1.plot(targets[:,0],targets[:,1],targets[:,2],'r.')

@@ -8,12 +8,10 @@ import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
 from invariants_py.calculate_invariants.opti_calculate_vector_invariants_rotation import OCP_calc_rot
 from invariants_py.calculate_invariants.opti_calculate_vector_invariants_position import OCP_calc_pos as OCP_calc_pos
-from invariants_py.generate_trajectory.opti_generate_orientation_traj_from_vector_invars import OCP_gen_rot
-from invariants_py.generate_trajectory.opti_generate_position_traj_from_vector_invars import OCP_gen_pos as OCP_gen_pos
-from invariants_py.generate_trajectory.opti_generate_pose_traj_from_vector_invars_fatrop import OCP_gen_pose as OCP_gen_pose_fatrop
+from invariants_py.generate_trajectory.opti_generate_pose_traj_from_vector_invars import OCP_gen_pose
 from invariants_py.generate_trajectory.rockit_generate_pose_traj_from_vector_invars import OCP_gen_pose as OCP_gen_pose_rockit
-from IPython.display import clear_output
 from scipy.spatial.transform import Rotation as R
+from IPython.display import clear_output
 from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize
 from stl import mesh
 import invariants_py.plotting_functions.plotters as pl
@@ -121,7 +119,6 @@ FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
 
 # define new class for OCP results
 optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
-fatrop_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
 rockit_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
 
 # Linear initialization
@@ -160,9 +157,7 @@ weights_params = {
 }
 
 # specify optimization problem symbolically
-FS_online_generation_problem_pos = OCP_gen_pos(N=number_samples,w_invars = weights_params['w_invars'][3:])
-FS_online_generation_problem_rot = OCP_gen_rot(window_len=number_samples,w_invars = weights_params['w_invars'][:3])
-fatrop_online_generation_problem = OCP_gen_pose_fatrop(boundary_constraints, number_samples, solver = 'fatrop')
+FS_online_generation_problem = OCP_gen_pose(boundary_constraints, number_samples, solver = 'fatrop')
 rockit_online_generation_problem = OCP_gen_pose_rockit(boundary_constraints, number_samples,True)
 
 initial_values = {
@@ -179,33 +174,23 @@ initial_values = {
 }
 
 # Solve
-optim_gen_results.invariants[:,3:], optim_gen_results.Obj_pos, optim_gen_results.FSt_frames = FS_online_generation_problem_pos.generate_trajectory(U_demo = model_invariants[:,3:], p_obj_init = optim_calc_results.Obj_pos, R_t_init = optim_calc_results.FSt_frames, R_t_start = FSt_start, R_t_end = FSt_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize)
-optim_gen_results.invariants[:,:3], optim_gen_results.Obj_frames, optim_gen_results.FSr_frames = FS_online_generation_problem_rot.generate_trajectory(U_demo = model_invariants[:,:3], R_obj_init = optim_calc_results.Obj_frames, R_r_init = optim_calc_results.FSr_frames, R_r_start = FSr_start, R_r_end = FSr_end, R_obj_start = R_obj_start, R_obj_end = R_obj_end, step_size = new_stepsize)
-fatrop_gen_results.invariants, fatrop_gen_results.Obj_pos, fatrop_gen_results.Obj_frames, fatrop_gen_results.FSt_frames, fatrop_gen_results.FSr_frames = fatrop_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values)
+optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values)
 rockit_gen_results.invariants, rockit_gen_results.Obj_pos, rockit_gen_results.Obj_frames, rockit_gen_results.FSt_frames, rockit_gen_results.FSr_frames, tot_time, joint_values = rockit_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values)
-
-# for i in range(len(optim_gen_results.Obj_frames)):
-#     optim_gen_results.Obj_frames[i] = orthonormalize(optim_gen_results.Obj_frames[i])
 
 fig = plt.figure(figsize=(14,8))
 ax = fig.add_subplot(111, projection='3d')
 ax.plot(optim_calc_results.Obj_pos[:,0],optim_calc_results.Obj_pos[:,1],optim_calc_results.Obj_pos[:,2],'b')
 ax.plot(optim_gen_results.Obj_pos[:,0],optim_gen_results.Obj_pos[:,1],optim_gen_results.Obj_pos[:,2],'r')
-ax.plot(fatrop_gen_results.Obj_pos[:,0],fatrop_gen_results.Obj_pos[:,1],fatrop_gen_results.Obj_pos[:,2],'g')
-ax.plot(rockit_gen_results.Obj_pos[:,0],rockit_gen_results.Obj_pos[:,1],rockit_gen_results.Obj_pos[:,2],'m')
+ax.plot(rockit_gen_results.Obj_pos[:,0],rockit_gen_results.Obj_pos[:,1],rockit_gen_results.Obj_pos[:,2],'g')
 for i in indx:
     pl.plot_stl(opener_location,optim_calc_results.Obj_pos[i,:],optim_calc_results.Obj_frames[i,:,:],colour="c",alpha=0.2,ax=ax)
 
 indx_online = np.trunc(np.linspace(0,len(optim_gen_results.Obj_pos)-1,n_frames))
 indx_online = indx_online.astype(int)
 for i in indx_online:
-    # pl.plot_3d_frame(optim_calc_results.Obj_pos[i,:],optim_calc_results.Obj_frames[i,:,:],1,0.01,['red','green','blue'],ax)
-    # pl.plot_3d_frame(optim_gen_results.Obj_pos[i,:],optim_gen_results.Obj_frames[i,:,:],1,0.01,['red','green','blue'],ax)
     pl.plot_stl(opener_location,optim_gen_results.Obj_pos[i,:],optim_gen_results.Obj_frames[i,:,:],colour="r",alpha=0.2,ax=ax)
-    pl.plot_stl(opener_location,fatrop_gen_results.Obj_pos[i,:],fatrop_gen_results.Obj_frames[i,:,:],colour="g",alpha=0.2,ax=ax)
-    pl.plot_stl(opener_location,rockit_gen_results.Obj_pos[i,:],rockit_gen_results.Obj_frames[i,:,:],colour="m",alpha=0.2,ax=ax)
+    pl.plot_stl(opener_location,rockit_gen_results.Obj_pos[i,:],rockit_gen_results.Obj_frames[i,:,:],colour="g",alpha=0.2,ax=ax)
 pl.plot_orientation(optim_calc_results.Obj_frames,optim_gen_results.Obj_frames,current_index)
-pl.plot_orientation(optim_calc_results.Obj_frames,fatrop_gen_results.Obj_frames,current_index)
 pl.plot_orientation(optim_calc_results.Obj_frames,rockit_gen_results.Obj_frames,current_index)
 
 
@@ -213,48 +198,42 @@ fig = plt.figure()
 plt.subplot(2,3,1)
 plt.plot(arclength_n,optim_calc_results.invariants[:,0],'b')
 plt.plot(progress_values,optim_gen_results.invariants[:,0],'r')
-plt.plot(progress_values,fatrop_gen_results.invariants[:,0],'g')
-plt.plot(progress_values,rockit_gen_results.invariants[:,0],'m')
+plt.plot(progress_values,rockit_gen_results.invariants[:,0],'g')
 plt.plot(0,0)
 plt.title('i_r1')
 
 plt.subplot(2,3,2)
 plt.plot(arclength_n,optim_calc_results.invariants[:,1],'b')
 plt.plot(progress_values,(optim_gen_results.invariants[:,1]),'r')
-plt.plot(progress_values,(fatrop_gen_results.invariants[:,1]),'g')
-plt.plot(progress_values,(rockit_gen_results.invariants[:,1]),'m')
+plt.plot(progress_values,(rockit_gen_results.invariants[:,1]),'g')
 plt.plot(0,0)
 plt.title('i_r2')
 
 plt.subplot(2,3,3)
 plt.plot(arclength_n,optim_calc_results.invariants[:,2],'b')
 plt.plot(progress_values,(optim_gen_results.invariants[:,2]),'r')
-plt.plot(progress_values,(fatrop_gen_results.invariants[:,2]),'g')
-plt.plot(progress_values,(rockit_gen_results.invariants[:,2]),'m')
+plt.plot(progress_values,(rockit_gen_results.invariants[:,2]),'g')
 plt.plot(0,0)
 plt.title('i_r3')
 
 plt.subplot(2,3,4)
 plt.plot(arclength_n,optim_calc_results.invariants[:,0],'b')
 plt.plot(progress_values,optim_gen_results.invariants[:,0],'r')
-plt.plot(arclength_n,fatrop_gen_results.invariants[:,0],'g')
-plt.plot(arclength_n,rockit_gen_results.invariants[:,0],'m')
+plt.plot(arclength_n,rockit_gen_results.invariants[:,0],'g')
 plt.plot(0,0)
 plt.title('i_t1')
 
 plt.subplot(2,3,5)
 plt.plot(arclength_n,optim_calc_results.invariants[:,1],'b')
 plt.plot(progress_values,(optim_gen_results.invariants[:,1]),'r')
-plt.plot(arclength_n,fatrop_gen_results.invariants[:,1],'g')
-plt.plot(arclength_n,rockit_gen_results.invariants[:,1],'m')
+plt.plot(arclength_n,rockit_gen_results.invariants[:,1],'g')
 plt.plot(0,0)
 plt.title('i_t1')
 
 plt.subplot(2,3,6)
 plt.plot(arclength_n,optim_calc_results.invariants[:,2],'b')
 plt.plot(progress_values,(optim_gen_results.invariants[:,2]),'r')
-plt.plot(arclength_n,fatrop_gen_results.invariants[:,2],'g')
-plt.plot(arclength_n,rockit_gen_results.invariants[:,2],'m')
+plt.plot(arclength_n,rockit_gen_results.invariants[:,2],'g')
 plt.plot(0,0)
 plt.title('i_t3')
 

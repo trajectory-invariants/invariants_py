@@ -8,7 +8,6 @@ import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
 from invariants_py.calculate_invariants.opti_calculate_vector_invariants_position import OCP_calc_pos
 from invariants_py.generate_trajectory.opti_generate_position_traj_from_vector_invars import OCP_gen_pos
-from invariants_py.generate_trajectory.opti_generate_position_traj_from_vector_invars_fatrop import OCP_gen_pos as fatrop_OCP_gen_pos
 from invariants_py.generate_trajectory.rockit_generate_position_traj_from_vector_invars import OCP_gen_pos as rockit_OCP_gen_pos
 from IPython.display import clear_output
 
@@ -117,44 +116,38 @@ weights = {}
 weights['w_invars'] = np.array([5 * 10 ** 1, 1.0, 1.0])
 
 # specify optimization problem symbolically
-FS_online_generation_problem = OCP_gen_pos(N=number_samples,w_invars = weights['w_invars'])
-fatrop_FS_online_generation_problem = fatrop_OCP_gen_pos(boundary_constraints,number_samples,solver='fatrop')
+FS_online_generation_problem = OCP_gen_pos(boundary_constraints,number_samples,solver='fatrop')
 rockit_FS_online_generation_problem = rockit_OCP_gen_pos(boundary_constraints,number_samples,fatrop_solver=True)
 
 # Solve
-new_invars, new_trajectory, new_movingframes = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = calculate_trajectory, R_t_init = movingframes, R_t_start = R_FS_start, R_t_end = R_FS_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize)
-fatrop_invars, fatrop_trajectory, fatrop_movingframes = fatrop_FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights,initial_values=initial_values)
+new_invars, new_trajectory, new_movingframes = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights,initial_values=initial_values)
 rockit_invars, rockit_trajectory, rockit_movingframes, time = rockit_FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights,initial_values=initial_values)
 
 fig = plt.figure(figsize=(14,8))
 ax = fig.add_subplot(111, projection='3d')
 ax.plot(trajectory[:,0],trajectory[:,1],trajectory[:,2],'b')
 ax.plot(new_trajectory[:,0],new_trajectory[:,1],new_trajectory[:,2],'r')
-ax.plot(fatrop_trajectory[:,0],fatrop_trajectory[:,1],fatrop_trajectory[:,2],'g')
-ax.plot(rockit_trajectory[:,0],rockit_trajectory[:,1],rockit_trajectory[:,2],'m')
+ax.plot(rockit_trajectory[:,0],rockit_trajectory[:,1],rockit_trajectory[:,2],'g')
 
 fig = plt.figure()
 plt.subplot(1,3,1)
 plt.plot(progress_values,new_invars[:,0],'r')
 plt.plot(arclength_n,invariants[:,0],'b')
-plt.plot(arclength_n,fatrop_invars[:,0],'g')
-plt.plot(arclength_n,rockit_invars[:,0],'m')
+plt.plot(arclength_n,rockit_invars[:,0],'g')
 plt.plot(0,0)
 plt.title('Velocity [m/m]')
 
 plt.subplot(1,3,2)
 plt.plot(progress_values,(new_invars[:,1]),'r')
 plt.plot(arclength_n,invariants[:,1],'b')
-plt.plot(arclength_n,fatrop_invars[:,1],'g')
-plt.plot(arclength_n,rockit_invars[:,1],'m')
+plt.plot(arclength_n,rockit_invars[:,1],'g')
 plt.plot(0,0)
 plt.title('Curvature [rad/m]')
 
 plt.subplot(1,3,3)
 plt.plot(progress_values,(new_invars[:,2]),'r')
 plt.plot(arclength_n,invariants[:,2],'b')
-plt.plot(arclength_n,fatrop_invars[:,2],'g')
-plt.plot(arclength_n,rockit_invars[:,2],'m')
+plt.plot(arclength_n,rockit_invars[:,2],'g')
 plt.plot(0,0)
 plt.title('Torsion [rad/m]')
 
