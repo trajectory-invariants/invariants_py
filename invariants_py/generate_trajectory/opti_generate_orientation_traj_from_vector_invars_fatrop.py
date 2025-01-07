@@ -21,8 +21,8 @@ class OCP_gen_rot:
         X = []
         invars = []
         for k in range(window_len):
-            R_obj.append(opti.variable(3,3)) # object orientation
             R_r.append(opti.variable(3,3)) # rotational Frenet-Serret frame
+            R_obj.append(opti.variable(3,3)) # object orientation
             X.append(cas.vertcat(cas.vec(R_r[k]), cas.vec(R_obj[k])))
             if k < window_len-1:
                 invars.append(opti.variable(3,1)) # invariants
