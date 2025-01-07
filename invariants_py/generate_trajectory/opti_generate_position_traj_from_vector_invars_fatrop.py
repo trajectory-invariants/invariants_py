@@ -23,8 +23,8 @@ class OCP_gen_pos:
             R_t.append(opti.variable(3,3)) # translational Frenet-Serret frame
             p_obj.append(opti.variable(3,1)) # object position
             X.append(cas.vertcat(cas.vec(R_t[k]), cas.vec(p_obj[k])))
-        for k in range(N-1):
-            invars.append(opti.variable(3,1)) # invariants
+            if k < N-1:
+                invars.append(opti.variable(3,1)) # invariants
 
         # Define system parameters P (known values in optimization that need to be set right before solving)
         h = opti.parameter(1,1) # step size for integration of dynamic model
@@ -46,18 +46,6 @@ class OCP_gen_pos:
 
         ''' Specifying the constraints '''
         
-        # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
-        opti.subject_to(tril_vec(R_t[0].T @ R_t[0] - np.eye(3)) == 0)
-        
-        # Boundary constraints
-        if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:    
-            opti.subject_to(p_obj[0] == p_obj_start)
-        if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
-            opti.subject_to(p_obj[-1] == p_obj_end)
-        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["translational"]:
-            opti.subject_to(tril_vec_no_diag(R_t[0].T @ R_t_start - np.eye(3)) == 0.)
-        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["translational"]:
-            opti.subject_to(tril_vec_no_diag(R_t[-1].T @ R_t_end - np.eye(3)) == 0.)
             
         # Dynamic constraints
         integrator = dynamics.define_integrator_invariants_position(h)
@@ -66,12 +54,25 @@ class OCP_gen_pos:
             Xk_end = integrator(X[k],invars[k],h)
             
             # Gap closing constraint
-            opti.subject_to(Xk_end==X[k+1])
+            opti.subject_to(X[k+1]==Xk_end)
 
-            # Lower bounds on controls
-            if bool_unsigned_invariants:
-                opti.subject_to(invars[k][0]>=0) # lower bounds on control
-                opti.subject_to(invars[k][1]>=0) # lower bounds on control
+            # # Lower bounds on controls
+            # if bool_unsigned_invariants:
+            #     opti.subject_to(invars[k][0]>=0) # lower bounds on control
+            #     opti.subject_to(invars[k][1]>=0) # lower bounds on control
+
+            # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
+            if k == 0:
+                opti.subject_to(tril_vec(R_t[0].T @ R_t[0] - np.eye(3)) == 0)
+        # Boundary constraints
+                if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:    
+                    opti.subject_to(p_obj[0] == p_obj_start)
+                if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["translational"]:
+                    opti.subject_to(tril_vec_no_diag(R_t[0].T @ R_t_start - np.eye(3)) == 0.)
+        if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
+            opti.subject_to(p_obj[-1] == p_obj_end)
+        if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["translational"]:
+            opti.subject_to(tril_vec_no_diag(R_t[-1].T @ R_t_end - np.eye(3)) == 0.)
             
         ''' Specifying the objective '''
 
