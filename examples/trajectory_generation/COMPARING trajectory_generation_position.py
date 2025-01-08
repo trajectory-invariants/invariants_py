@@ -8,11 +8,8 @@ import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
 from invariants_py.calculate_invariants.opti_calculate_vector_invariants_position import OCP_calc_pos
 from invariants_py.generate_trajectory.opti_generate_position_traj_from_vector_invars import OCP_gen_pos
+from invariants_py.generate_trajectory.rockit_generate_position_traj_from_vector_invars import OCP_gen_pos as rockit_OCP_gen_pos
 from IPython.display import clear_output
-import random
-
-show_plots = True
-solver = 'fatrop'
 
 data_location = dh.find_data_path('beer_1.txt')
 trajectory,time = dh.read_pose_trajectory_from_data(data_location, dtype = 'txt')
@@ -119,131 +116,40 @@ weights = {}
 weights['w_invars'] = np.array([5 * 10 ** 1, 1.0, 1.0])
 
 # specify optimization problem symbolically
-FS_online_generation_problem = OCP_gen_pos(boundary_constraints,number_samples,solver=solver)
+FS_online_generation_problem = OCP_gen_pos(boundary_constraints,number_samples,solver='fatrop')
+rockit_FS_online_generation_problem = rockit_OCP_gen_pos(boundary_constraints,number_samples,fatrop_solver=True)
 
 # Solve
 new_invars, new_trajectory, new_movingframes = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights,initial_values=initial_values)
+rockit_invars, rockit_trajectory, rockit_movingframes, time = rockit_FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights,initial_values=initial_values)
 
 fig = plt.figure(figsize=(14,8))
 ax = fig.add_subplot(111, projection='3d')
 ax.plot(trajectory[:,0],trajectory[:,1],trajectory[:,2],'b')
 ax.plot(new_trajectory[:,0],new_trajectory[:,1],new_trajectory[:,2],'r')
+ax.plot(rockit_trajectory[:,0],rockit_trajectory[:,1],rockit_trajectory[:,2],'g')
 
 fig = plt.figure()
 plt.subplot(1,3,1)
 plt.plot(progress_values,new_invars[:,0],'r')
 plt.plot(arclength_n,invariants[:,0],'b')
+plt.plot(arclength_n,rockit_invars[:,0],'g')
 plt.plot(0,0)
 plt.title('Velocity [m/m]')
 
 plt.subplot(1,3,2)
 plt.plot(progress_values,(new_invars[:,1]),'r')
 plt.plot(arclength_n,invariants[:,1],'b')
+plt.plot(arclength_n,rockit_invars[:,1],'g')
 plt.plot(0,0)
 plt.title('Curvature [rad/m]')
 
 plt.subplot(1,3,3)
 plt.plot(progress_values,(new_invars[:,2]),'r')
 plt.plot(arclength_n,invariants[:,2],'b')
+plt.plot(arclength_n,rockit_invars[:,2],'g')
 plt.plot(0,0)
 plt.title('Torsion [rad/m]')
 
 if plt.get_backend() != 'agg':
     plt.show()
-
-#%% Generation of multiple trajectories to test FATROP calculation speed
-
-current_progress = 0
-number_samples = 100
-number_of_trajectories = 100
-
-progress_values = np.linspace(current_progress, arclength_n[-1], number_samples)
-model_invariants,new_stepsize = interpolate_model_invariants(spline_model_trajectory,progress_values)
-
-# pl.plot_interpolated_invariants(optim_calc_results.invariants, model_invariants, arclength_n, progress_values)
-
-# new constraints
-current_index = round(current_progress*len(trajectory))
-p_obj_start = calculate_trajectory[current_index]
-FSt_start = movingframes[current_index]
-FSt_end = movingframes[-1]
-
-boundary_constraints = {
-    "position": {
-        "initial": p_obj_start,
-        "final": p_obj_start # will be updated later
-    },
-    "moving-frame": {
-        "translational": {
-            "initial": FSt_start,
-            "final": FSt_end
-        },
-    },
-}
-
-initial_values = {
-    "trajectory": {
-        "position": calculate_trajectory,
-    },
-    "moving-frame": {
-        "translational": movingframes,
-    },
-    "invariants": {
-        "translational": model_invariants,
-    }
-}
-
-# specify optimization problem symbolically
-FS_online_generation_problem = OCP_gen_pos(boundary_constraints, number_samples, solver = solver)
-
-if show_plots:
-    fig = plt.figure(figsize=(14,8))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.plot(calculate_trajectory[:,0],calculate_trajectory[:,1],calculate_trajectory[:,2],'b')
-
-tot_time = 0
-counter = 0
-max_time = 0
-targets = np.zeros((number_of_trajectories,4))
-for k in range(len(targets)):
-    targets[k,:-1] = calculate_trajectory[-1] + np.array([random.uniform(-0.2,0.2),random.uniform(-0.2,0.2),random.uniform(-0.05,0.05)])
-    targets[k,-1] = random.uniform(0,30)
-    p_obj_end = targets[k,:-1]
-
-    boundary_constraints["position"]["final"] = p_obj_end 
-
-    # Solve
-    new_invars, new_trajectory, new_movingframes = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights,initial_values)
-
-    if show_plots:
-        ax.plot(new_trajectory[:,0],new_trajectory[:,1],new_trajectory[:,2],'r')
-
-    # if solver == 'fatrop':
-    #     new_time = tot_time_pos + tot_time_rot
-    #     if new_time > max_time:
-    #         max_time = new_time
-    #     tot_time = tot_time + new_time
-    
-    # counter += 1
-
-# if solver == 'fatrop':
-#     print('')
-#     print("AVERAGE time to generate new trajectory: ")
-#     print(str(tot_time/counter) + "[s]")
-#     print('')
-#     print("MAXIMUM time to generate new trajectory: ")
-#     print(str(max_time) + "[s]")
-
-# fig = plt.figure(figsize=(10,6))
-# ax1 = fig.add_subplot(111, projection='3d')
-# ax1 = plt.axes(projection='3d')
-# ax1.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,2],'b')
-# ax1.plot(targets[:,0],targets[:,1],targets[:,2],'r.')
-
-if show_plots:
-    fig = plt.figure(figsize=(5,5))
-    ax2 = fig.add_subplot()
-    ax2.plot(targets[:,-1],'r.')
-
-    if plt.get_backend() != 'agg':
-        plt.show()

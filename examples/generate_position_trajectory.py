@@ -17,12 +17,12 @@ invariant_model = dh.read_invariants_from_csv(path_to_data)
 boundary_constraints = {"position": {"initial": [0, 0, 0], "final": [2.5, 0.25, 0.5]}}
 
 # Calculate the translation trajectory given the invariants data
-invariants, trajectory, mf, progress_values = generate_trajectory_translation(invariant_model, boundary_constraints)
+invariants, trajectory, mf, progress_values = generate_trajectory_translation(invariant_model, boundary_constraints,len(invariant_model))
 
 # Plotting results
 plotters.plot_trajectory_and_bounds(boundary_constraints, trajectory) # generated trajectory and boundary constraints
-plotters.plot_moving_frames(trajectory, mf) # calculated moving frames along trajectory
-plotters.animate_moving_frames(trajectory, mf) # animated moving frames along trajectory
+plotters.plot_moving_frames(trajectory, mf.T) # calculated moving frames along trajectory
+plotters.animate_moving_frames(trajectory, mf.T) # animated moving frames along trajectory
 
 # Plot the invariant model and the calculated invariants
 plotters.compare_invariants(invariants, invariant_model[:,1:], progress_values, invariant_model[:,0])

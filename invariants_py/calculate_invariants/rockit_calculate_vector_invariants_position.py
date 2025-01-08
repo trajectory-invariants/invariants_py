@@ -170,10 +170,11 @@ class OCP_calc_pos:
             ocp._method.set_option("tol",tolerance)
             ocp._method.set_option("print_level",print_level)
             ocp._method.set_option("max_iter",max_iter)
+
+
             #ocp._method.set_option("linsol_lu_fact_tol",1e-12)
             #ocp._method.set_option("linsol_perturbed_mode","no")
             ocp._method.set_option("mu_init",1e5)
-
         else:
             ocp.method(rockit.MultipleShooting(N=N-1))
             ocp.solver('ipopt', {'expand':True, 'print_time':False, 'ipopt.tol':tolerance, 'ipopt.print_info_string':'yes', 'ipopt.max_iter':max_iter, 'ipopt.print_level':print_level, 'ipopt.ma57_automatic_scaling':'no', 'ipopt.linear_solver':'mumps', 'ipopt.mu_init':1e5})
