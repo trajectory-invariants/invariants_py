@@ -9,6 +9,8 @@ from invariants_py.generate_trajectory.opti_generate_position_traj_from_vector_i
 import invariants_py.spline_handler as spline_handler
 import invariants_py.plotting_functions.plotters as plotters
 
+solver = 'fatrop'
+
 """Input data"""
 
 data_location = dh.find_data_path("sine_wave.txt")
@@ -74,12 +76,38 @@ p_obj_end = calculate_trajectory[-1] - np.array([-0.2, 0.0, 0.0])
 R_FS_start = movingframes[current_index]
 R_FS_end = movingframes[-1]
 
+boundary_constraints = {
+    "position": {
+        "initial": p_obj_start,
+        "final": p_obj_end
+    },
+    "moving-frame": {
+        "translational": {
+            "initial": R_FS_start,
+            "final": R_FS_end
+        }
+    },
+}
+initial_values = {
+    "trajectory": {
+        "position": calculate_trajectory
+    },
+    "moving-frame": {
+        "translational": movingframes,
+    },
+    "invariants": {
+        "translational": model_invariants,
+    }
+}
+
+weights = {}
+weights['w_invars'] = np.array([5 * 10 ** 1, 1.0, 1.0])
 
 # specify optimization problem symbolically
-FS_online_generation_problem = OCP_gen_pos(N=number_samples,w_invars = 10**2*np.array([10**1, 1.0, 1.0]))
+FS_online_generation_problem = OCP_gen_pos(boundary_constraints,number_samples,solver=solver)
 
 # Solve
-new_invars, new_trajectory, new_movingframes = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = calculate_trajectory, R_t_init = movingframes, R_t_start = R_FS_start, R_t_end = R_FS_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize)
+new_invars, new_trajectory, new_movingframes = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights,initial_values=initial_values)
 
 
 fig = plt.figure(figsize=(14,8))
@@ -112,10 +140,35 @@ if plt.get_backend() != 'agg':
 
 #%% Visualization
 
-window_len = 20
+window_len = 40
+
+boundary_constraints = {
+    "position": {
+        "initial": calculate_trajectory[current_index],
+        "final": calculate_trajectory[current_index] # will be updated later
+    },
+    "moving-frame": {
+        "translational": {
+            "initial": movingframes[current_index],
+            "final": movingframes[-1]
+        },
+    },
+}
+
+initial_values = {
+    "trajectory": {
+        "position": calculate_trajectory,
+    },
+    "moving-frame": {
+        "translational": movingframes,
+    },
+    "invariants": {
+        "translational": model_invariants,
+    }
+}
 
 # specify optimization problem symbolically
-FS_online_generation_problem = OCP_gen_pos(N=window_len,w_invars = 10**1*np.array([10**1, 1.0, 1.0]))
+FS_online_generation_problem = OCP_gen_pos(boundary_constraints, number_samples, solver = solver)
 
 
 
@@ -139,14 +192,14 @@ while current_progress <= 1.0:
     # Boundary constraints
     current_index = round( (current_progress - old_progress) * len(calculate_trajectory))
     #print(current_index)
-    p_obj_start = calculate_trajectory[current_index]
-    p_obj_end = trajectory[-1] - current_progress*np.array([-0.2, 0.0, 0.0])
-    R_FS_start = movingframes[current_index] 
-    R_FS_end = movingframes[-1] 
+    boundary_constraints["position"]["initial"] = calculate_trajectory[current_index]
+    boundary_constraints["position"]["final"] = trajectory[-1] - current_progress*np.array([-0.2, 0.0, 0.0])
+    boundary_constraints["moving-frame"]["translational"]["initial"] = movingframes[current_index] 
+    boundary_constraints["moving-frame"]["translational"]["final"] = movingframes[-1] 
 
     # Calculate remaining trajectory
-    new_invars, calculate_trajectory, movingframes = FS_online_generation_problem.generate_trajectory(U_demo = model_invariants, p_obj_init = calculate_trajectory, R_t_init = movingframes, R_t_start = R_FS_start, R_t_end = R_FS_end, p_obj_start = p_obj_start, p_obj_end = p_obj_end, step_size = new_stepsize)
-
+    new_invars, calculate_trajectory, movingframes = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights,initial_values)
+    movingframes = movingframes.T
     # Visualization
     #clear_output(wait=True)
     

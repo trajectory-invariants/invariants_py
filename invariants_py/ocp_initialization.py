@@ -126,7 +126,7 @@ def generate_initvals_from_constraints_opti(boundary_constraints,N, skip = {}, q
                 "translational": initial_movingframes
             },
             "invariants": {
-                "translational": initial_invariants
+                "translational": initial_invariants.T
             }
         }
 

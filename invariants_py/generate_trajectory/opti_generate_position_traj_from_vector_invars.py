@@ -212,7 +212,7 @@ class OCP_gen_pos:
             if i!= N-1:
                 invars[i,:] = self.solution[i].T
             p_obj_sol[i,:] = self.solution[N-1+i].T
-            R_t_sol  = self.solution[2*N-1+i]
+            R_t_sol[:,:,i]  = self.solution[2*N-1+i]
 
         # Extract the solved variables
         invariants = np.array(invars)
@@ -268,46 +268,46 @@ class OCP_gen_pos:
         
     #     return invariants, calculated_trajectory, calculated_movingframe
     
-    def generate_trajectory_global(self,invars_demo,initial_values,boundary_constraints,step_size):
+    # def generate_trajectory_global(self,invars_demo,initial_values,boundary_constraints,step_size):
         
-        N = self.N
+    #     N = self.N
         
-        # Initialize states
-        for k in range(N):
-            self.opti.set_initial(self.R_t[k], initial_values["moving-frame"]["translational"][k])
-            self.opti.set_initial(self.p_obj[k], initial_values["trajectory"]["position"][k])
+    #     # Initialize states
+    #     for k in range(N):
+    #         self.opti.set_initial(self.R_t[k], initial_values["moving-frame"]["translational"][k])
+    #         self.opti.set_initial(self.p_obj[k], initial_values["trajectory"]["position"][k])
             
-        # Initialize controls
-        for k in range(N-1):    
-            self.opti.set_initial(self.invars[:,k], invars_demo[k,:])
+    #     # Initialize controls
+    #     for k in range(N-1):    
+    #         self.opti.set_initial(self.invars[:,k], invars_demo[k,:])
 
-        # Set values boundary constraints
-        #self.opti.set_value(self.R_t_start,boundary_constraints["moving-frame"]["translational"]["initial"])
-        #self.opti.set_value(self.R_t_end,boundary_constraints["moving-frame"]["translational"]["final"])
-        self.opti.set_value(self.p_obj_start,boundary_constraints["position"]["initial"])
-        self.opti.set_value(self.p_obj_end,boundary_constraints["position"]["final"])
+    #     # Set values boundary constraints
+    #     #self.opti.set_value(self.R_t_start,boundary_constraints["moving-frame"]["translational"]["initial"])
+    #     #self.opti.set_value(self.R_t_end,boundary_constraints["moving-frame"]["translational"]["final"])
+    #     self.opti.set_value(self.p_obj_start,boundary_constraints["position"]["initial"])
+    #     self.opti.set_value(self.p_obj_end,boundary_constraints["position"]["final"])
                 
-        # Set values parameters
-        self.opti.set_value(self.h,step_size)
-        for k in range(N-1):
-            self.opti.set_value(self.invars_demo[:,k], invars_demo[k,:])     
+    #     # Set values parameters
+    #     self.opti.set_value(self.h,step_size)
+    #     for k in range(N-1):
+    #         self.opti.set_value(self.invars_demo[:,k], invars_demo[k,:])     
         
-        # Solve the NLP
-        sol = self.opti.solve_limited()
-        self.sol = sol
+    #     # Solve the NLP
+    #     sol = self.opti.solve_limited()
+    #     self.sol = sol
         
-        # Extract the solved variables
-        invariants = sol.value(self.invars).T
-        invariants =  np.vstack((invariants,[invariants[-1,:]]))
-        calculated_trajectory = np.array([sol.value(i) for i in self.p_obj])
-        calculated_movingframe = np.array([sol.value(i) for i in self.R_t])
+    #     # Extract the solved variables
+    #     invariants = sol.value(self.invars).T
+    #     invariants =  np.vstack((invariants,[invariants[-1,:]]))
+    #     calculated_trajectory = np.array([sol.value(i) for i in self.p_obj])
+    #     calculated_movingframe = np.array([sol.value(i) for i in self.R_t])
         
-        return invariants, calculated_trajectory, calculated_movingframe
+    #     return invariants, calculated_trajectory, calculated_movingframe
 
 def generate_trajectory_translation(invariant_model, boundary_constraints, N=100):
     
     # Specify optimization problem symbolically
-    OCP = OCP_gen_pos(N = N)
+    OCP = OCP_gen_pos(boundary_constraints,N = N)
 
     # Initial values
     initial_values, initial_values_dict = generate_initvals_from_constraints_opti(boundary_constraints, N)
@@ -318,7 +318,7 @@ def generate_trajectory_translation(invariant_model, boundary_constraints, N=100
     model_invariants,progress_step = sh.interpolate_invariants(spline_invariant_model, progress_values)
     
     # Calculate remaining trajectory
-    invariants, trajectory, mf = OCP.generate_trajectory_global(model_invariants,initial_values_dict,boundary_constraints,progress_step)
+    invariants, trajectory, mf = OCP.generate_trajectory(model_invariants,boundary_constraints,progress_step,initial_values=initial_values_dict)
 
     return invariants, trajectory, mf, progress_values
 
