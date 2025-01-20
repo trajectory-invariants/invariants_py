@@ -5,8 +5,9 @@ from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag
 from invariants_py.ocp_initialization import generate_initvals_from_constraints_opti
 from invariants_py.kinematics.orientation_kinematics import rotate_x
 from invariants_py import spline_handler as sh
-# import yourdfpy as urdf
-# import invariants_py.data_handler as dh
+import yourdfpy as urdf
+import invariants_py.data_handler as dh
+from invariants_py.kinematics.robot_forward_kinematics import robot_forward_kinematics
 
 class OCP_gen_pose:
 
@@ -14,17 +15,17 @@ class OCP_gen_pose:
 
         # fatrop_solver = check_solver(fatrop_solver)
 
-        # # Robot urdf location
-        # urdf_file_name = robot_params.get('urdf_file_name', None)
-        # path_to_urdf = dh.find_robot_path(urdf_file_name) 
-        # include_robot_model = True if path_to_urdf is not None else False
-        # if include_robot_model:
-        #     robot = urdf.URDF.load(path_to_urdf)
-        #     nb_joints = robot_params.get('joint_number', robot.num_actuated_joints)
-        #     q_limits = robot_params.get('q_lim', np.array([robot._actuated_joints[i].limit.upper for i in range(robot.num_actuated_joints)]))
-        #     root = robot_params.get('root', robot.base_link)
-        #     tip = robot_params.get('tip', 'tool0')
-        #     q_init = robot_params.get('q_init', np.zeros(nb_joints))
+        # Robot urdf location
+        urdf_file_name = robot_params.get('urdf_file_name', None)
+        path_to_urdf = dh.find_robot_path(urdf_file_name) 
+        include_robot_model = True if path_to_urdf is not None else False
+        if include_robot_model:
+            robot = urdf.URDF.load(path_to_urdf)
+            nb_joints = robot_params.get('joint_number', robot.num_actuated_joints)
+            q_limits = robot_params.get('q_lim', np.array([robot._actuated_joints[i].limit.upper for i in range(robot.num_actuated_joints)]))
+            root = robot_params.get('root', robot.base_link)
+            tip = robot_params.get('tip', 'tool0')
+            q_init = robot_params.get('q_init', np.zeros(nb_joints))
 
         ''' Create decision variables and parameters for the optimization problem '''
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables 
@@ -36,23 +37,21 @@ class OCP_gen_pose:
         R_r = []
         X = []
         invars = []
-        # q = []
-        # qdot = []
+        q = []
+        qdot = []
         for k in range(N):
             R_r.append(opti.variable(3,3)) # rotational Frenet-Serret frame
             R_obj.append(opti.variable(3,3)) # object orientation
             R_t.append(opti.variable(3,3)) # translational Frenet-Serret frame
             p_obj.append(opti.variable(3,1)) # object position
-            # if include_robot_model:
-            #     q.append(opti.variable(nb_joints,1))
-            #     X.append(cas.vertcat(cas.vec(R_r[k]), cas.vec(R_obj[k]),cas.vec(R_t[k]), cas.vec(p_obj[k]), cas.vec(q[k])))
-            # else:
+            if include_robot_model:
+                q.append(opti.variable(nb_joints,1))
             X.append(cas.vertcat(cas.vec(R_r[k]), cas.vec(R_obj[k]),cas.vec(R_t[k]), cas.vec(p_obj[k])))
 
             if k < N-1:
                 invars.append(opti.variable(6,1)) # invariants
-            # if include_robot_model:
-            #     qdot.append(opti.variable(nb_joints,1))
+                if include_robot_model:
+                    qdot.append(opti.variable(nb_joints,1))
 
         # Define system parameters P (known values in optimization that need to be set right before solving)
         h = opti.parameter(1,1) # step size for integration of dynamic model
@@ -61,8 +60,8 @@ class OCP_gen_pose:
         for k in range(N-1):
             invars_demo.append(opti.parameter(6,1)) # model invariants
             w_invars.append(opti.parameter(6,1)) # weights for invariants
-        # if include_robot_model:
-        #     q_lim = opti.parameter(nb_joints,1)
+        if include_robot_model:
+            q_lim = opti.parameter(nb_joints,1)
 
         # Boundary values
         if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:
@@ -84,22 +83,16 @@ class OCP_gen_pose:
 
         ''' Specifying the constraints '''
         
-
-        # if include_robot_model:
-        #     for i in range(nb_joints):
-        #         # ocp.subject_to(-q_lim[i] <= (q[i] <= q_lim[i])) # This constraint definition does not work with fatrop, yet
-        #         opti.subject_to(-q_lim[i] - q[i] <= 0 )
-        #         opti.subject_to(q[i] - q_lim[i] <= 0)
-        
         # Dynamic constraints
         integrator = dynamics.define_integrator_invariants_pose(h)
         # integrator = dynamics.define_integrator_invariants_pose(h,include_robot_model)
         for k in range(N-1):
             # Integrate current state to obtain next state (next rotation and position)
             Xk_end = integrator(X[k],invars[k],h)
-            
             # Gap closing constraint
             opti.subject_to(X[k+1]==Xk_end)
+            if include_robot_model:
+                opti.subject_to(q[k+1]==qdot[k]*h+q[k])
 
             if k == 0:
                 # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
@@ -115,6 +108,27 @@ class OCP_gen_pose:
                     opti.subject_to(tril_vec_no_diag(R_t[0].T @ R_t_start - np.eye(3)) == 0.)
                 if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["rotational"]:
                     opti.subject_to(tril_vec_no_diag(R_r[0].T @ R_r_start - np.eye(3)) == 0.)
+            
+            if include_robot_model:
+                for i in range(nb_joints):
+                    # ocp.subject_to(-q_lim[i] <= (q[k][i] <= q_lim[i])) # This constraint definition does not work with fatrop, yet
+                    opti.subject_to(q[k][i] >= -q_lim[i])
+                    opti.subject_to(q[k][i] <= q_lim[i])
+                
+                # Forward kinematics
+                p_obj_fwkin, R_obj_fwkin = robot_forward_kinematics(q[k],path_to_urdf,root,tip)
+                opti.subject_to(p_obj[k] == p_obj_fwkin)
+                opti.subject_to(tril_vec_no_diag(R_obj[k].T @ R_obj_fwkin - np.eye(3)) == 0.)
+            
+        if include_robot_model:
+            for i in range(nb_joints):
+                # ocp.subject_to(-q_lim[i] <= (q[k][i] <= q_lim[i])) # This constraint definition does not work with fatrop, yet
+                opti.subject_to(q[-1][i] >= -q_lim[i])
+                opti.subject_to(q[-1][i] <= q_lim[i])
+            # Forward kinematics
+                p_obj_fwkin, R_obj_fwkin = robot_forward_kinematics(q[-1],path_to_urdf,root,tip)
+                opti.subject_to(p_obj[-1] == p_obj_fwkin)
+                opti.subject_to(tril_vec_no_diag(R_obj[-1].T @ R_obj_fwkin - np.eye(3)) == 0.)
        
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
             opti.subject_to(p_obj[-1] == p_obj_end)
@@ -131,7 +145,9 @@ class OCP_gen_pose:
         objective_fit = 0
         for k in range(N-1):
             err_invars = w_invars[k]*(invars[k] - invars_demo[k])
-            objective_fit = objective_fit + 1/N*cas.dot(err_invars,err_invars)
+            objective_fit += 1/N*cas.dot(err_invars,err_invars)
+            if include_robot_model:
+                objective_fit += 0.001*cas.dot(qdot[k],qdot[k])
         objective = objective_fit
 
         ''' Define solver and save variables '''
@@ -146,19 +162,27 @@ class OCP_gen_pose:
         # Solve already once with dummy measurements
         for k in range(N):
             opti.set_initial(R_t[k], np.eye(3))
-            opti.set_initial(p_obj[k], np.zeros(3))
             opti.set_initial(R_r[k], np.eye(3))
             opti.set_initial(R_obj[k], np.eye(3))
+            if include_robot_model:
+                p_obj_dummy, _ = robot_forward_kinematics(q_init,path_to_urdf,root,tip)
+                opti.set_initial(q[k],q_init)
+                opti.set_value(q_lim,q_limits)
+            else:
+                p_obj_dummy = np.zeros(3)
+            opti.set_initial(p_obj[k], p_obj_dummy)
         for k in range(N-1):
             opti.set_initial(invars[k], 0.001+np.zeros(6))
             opti.set_value(invars_demo[k], 0.001+np.zeros(6))
             opti.set_value(w_invars[k], 0.001+np.zeros(6))
+            if include_robot_model:
+                opti.set_initial(qdot[k], 0.001*np.ones((nb_joints)))
         opti.set_value(h,0.1)
         # Boundary constraints
         if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:
-            opti.set_value(p_obj_start, np.array([0,0,0]))
+            opti.set_value(p_obj_start, p_obj_dummy)
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
-            opti.set_value(p_obj_end, np.array([1,0,0]))
+            opti.set_value(p_obj_end, p_obj_dummy + np.array([1,0,0]))
         if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
             opti.set_value(R_obj_start, np.eye(3))
         if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
@@ -172,6 +196,13 @@ class OCP_gen_pose:
         if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["rotational"]:
             opti.set_value(R_r_end, np.eye(3))
         sol = opti.solve_limited()
+
+        input_params = [h, # value of stepsize
+                        *invars_demo, # sampled demonstration invariants
+                        *w_invars] # sampled invariants weights 
+                        
+        if include_robot_model:
+            input_params.append(q_lim) # value of joint limits
 
         bounds = []
         bounds_labels = []
@@ -203,8 +234,11 @@ class OCP_gen_pose:
 
         # Construct a CasADi function out of the opti object. This function can be called with the initial guess to solve the NLP. Faster than doing opti.set_initial + opti.solve + opti.value
         solution = [*invars, *p_obj, *R_t, *R_obj, *R_r]
+        if include_robot_model:
+            for k in range(N):
+                solution.append(q[k])
         self.opti_function = opti.to_function('opti_function', 
-            [h,*invars_demo,*w_invars,*bounds,*solution], # inputs
+            [*input_params,*bounds,*solution], # inputs
             [*solution]) #outputs
             # ["h_value","invars_model","weights",*bounds_labels,"invars1","p_obj1","R_t1","R_obj1","R_r1"], # input labels for debugging
             # ["invars2","p_obj2","R_t2","R_obj2","R_r2"]) # output labels for debugging
@@ -240,6 +274,15 @@ class OCP_gen_pose:
         self.first_window = True
         self.sol = sol
         self.solver = solver
+        self.include_robot_model = include_robot_model
+        self.input_params = input_params
+        if include_robot_model:
+            self.nb_joints = nb_joints
+            self.q = q
+            self.qdot = qdot
+            self.q_init = q_init
+            self.q_lim = q_lim
+            self.q_limits = q_limits
 
 
     def generate_trajectory(self, invariant_model, boundary_constraints, step_size, weights_params = {}, initial_values = {}):
@@ -258,6 +301,11 @@ class OCP_gen_pose:
         if w_high_active:
             w_invars[:, w_high_start:w_high_end+1] = w_high_invars.reshape(-1, 1)
 
+        if self.include_robot_model:
+            input_params = [invariant_model.T,w_invars,step_size,self.q_limits]
+        else:
+            input_params = [invariant_model.T,w_invars,step_size]
+
         boundary_values_list = []
         for sublist in boundary_constraints.values(): 
             try:
@@ -269,28 +317,38 @@ class OCP_gen_pose:
                         boundary_values_list.append(value)
 
         if self.first_window and not initial_values:
-            self.solution = generate_initvals_from_constraints_opti(boundary_constraints, np.size(invariant_model,0))
+            self.solution = generate_initvals_from_constraints_opti(boundary_constraints, np.size(invariant_model,0), q_init = self.q_init if self.include_robot_model else None)
             self.first_window = False
         elif self.first_window:
             self.solution = [*initial_values["invariants"][:N-1,:], *initial_values["trajectory"]["position"][:N,:], *initial_values["moving-frame"]["translational"][:N],*initial_values["trajectory"]["orientation"][:N], *initial_values["moving-frame"]["rotational"][:N]]
+            if self.include_robot_model:
+                for k in range(N):
+                    self.solution.append(initial_values["joint-values"].T)
             self.first_window = False
 
         # Call solve function
-        self.solution = self.opti_function(step_size,*invariant_model[:-1],*w_invars[:,:-1].T,*boundary_values_list,*self.solution)
+        if self.include_robot_model:
+            self.solution = self.opti_function(step_size,*invariant_model[:-1],*w_invars[:,:-1].T,self.q_limits,*boundary_values_list,*self.solution)
+        else:
+            self.solution = self.opti_function(step_size,*invariant_model[:-1],*w_invars[:,:-1].T,*boundary_values_list,*self.solution)
 
         # Return the results    
         invars = np.zeros((N-1,6))
         p_obj_sol = np.zeros((N,3))
-        R_t_sol = np.zeros((3,3,N))
+        R_t_sol = np.zeros((N,3,3))
         R_obj_sol = np.zeros((N,3,3))
         R_r_sol = np.zeros((N,3,3))
+        if self.include_robot_model:
+            q_sol = np.zeros((N,self.nb_joints))
         for i in range(N): # unpack the results
             if i!= N-1:
                 invars[i,:] = self.solution[i].T
             p_obj_sol[i,:] = self.solution[N-1+i].T
-            R_t_sol  = self.solution[2*N-1+i]
+            R_t_sol[i,:,:]  = self.solution[2*N-1+i]
             R_obj_sol[i,:,:] = self.solution[3*N-1+i]
             R_r_sol[i,:,:] = self.solution[4*N-1+i]
+            if self.include_robot_model:
+                q_sol[i,:] = self.solution[5*N-1+i].T
 
         # Extract the solved variables
         invariants = np.array(invars)
@@ -299,8 +357,12 @@ class OCP_gen_pose:
         calculated_movingframe_pos = np.array(R_t_sol)
         calculated_trajectory_rot = np.array(R_obj_sol)
         calculated_movingframe_rot = np.array(R_r_sol)
+        if self.include_robot_model:
+            joint_val = np.array(q_sol).T
+        else:
+            joint_val = []
 
-        return invariants, calculated_trajectory_pos, calculated_trajectory_rot, calculated_movingframe_pos, calculated_movingframe_rot
+        return invariants, calculated_trajectory_pos, calculated_trajectory_rot, calculated_movingframe_pos, calculated_movingframe_rot, joint_val
     
 if __name__ == "__main__":
 
@@ -335,7 +397,7 @@ if __name__ == "__main__":
     ocp = OCP_gen_pose(boundary_constraints,solver='fatrop', N=N)
 
     # Call the generate_trajectory function
-    invariants, calculated_trajectory_pos, calculated_trajectory_rot, calculated_movingframe_pos, calculated_movingframe_rot = ocp.generate_trajectory(invariant_model, boundary_constraints, step_size)
+    invariants, calculated_trajectory_pos, calculated_trajectory_rot, calculated_movingframe_pos, calculated_movingframe_rot, joint_val = ocp.generate_trajectory(invariant_model, boundary_constraints, step_size)
 
     # Print the results
     # print("Invariants:", invariants)
@@ -345,7 +407,7 @@ if __name__ == "__main__":
     # Second call to generate_trajectory
     boundary_constraints["position"]["initial"] = np.array([1, 0, 0])
     boundary_constraints["position"]["final"] = np.array([1, 2, 2])
-    invariants, calculated_trajectory_pos, calculated_trajectory_rot, calculated_movingframe_pos, calculated_movingframe_rot = ocp.generate_trajectory(invariant_model, boundary_constraints, step_size)
+    invariants, calculated_trajectory_pos, calculated_trajectory_rot, calculated_movingframe_pos, calculated_movingframe_rot, joint_val = ocp.generate_trajectory(invariant_model, boundary_constraints, step_size)
 
     # Print the results
     #print("Invariants:", invariants)

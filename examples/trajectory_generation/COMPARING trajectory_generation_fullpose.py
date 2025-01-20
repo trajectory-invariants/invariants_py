@@ -17,6 +17,9 @@ from stl import mesh
 import invariants_py.plotting_functions.plotters as pl
 from invariants_py.ocp_initialization import initial_trajectory_movingframe_rotation
 #%%
+
+solver = "ipopt"
+
 data_location = dh.find_data_path('beer_1.txt')
 opener_location =  dh.find_data_path('opener.stl')
 bottle_location = dh.find_data_path('bottle.stl')
@@ -24,8 +27,8 @@ bottle_location = dh.find_data_path('bottle.stl')
 trajectory,time = dh.read_pose_trajectory_from_data(data_location,dtype = 'txt')
 pose,time_profile,arclength,nb_samples,stepsize = reparam.reparameterize_trajectory_arclength(trajectory)
 arclength_n = arclength/arclength[-1]
-home_pos = [0,0,0] # Use this if not considering the robot
-# home_pos = [0.3056, 0.0635, 0.441] # Define home position of the robot
+# home_pos = [0,0,0] # Use this if not considering the robot
+home_pos = [0.3056, 0.0635, 0.441] # Define home position of the robot
 trajectory_position = pose[:,:3,3] + home_pos
 trajectory_orientation = pose[:,:3,:3]
 
@@ -156,9 +159,25 @@ weights_params = {
     "w_high_active": 0
 }
 
+
+# Define robot parameters
+robot_params = {
+    "urdf_file_name": 'ur10.urdf', # use None if do not want to include robot model
+    "q_init": np.array([-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4]), # Initial joint values
+    "tip": 'TCP_frame' # Name of the robot tip (if empty standard 'tool0' is used)
+    # "joint_number": 6, # Number of joints (if empty it is automatically taken from urdf file)
+    # "q_lim": [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi], # Join limits (if empty it is automatically taken from urdf file)
+    # "root": 'world', # Name of the robot root (if empty it is automatically taken from urdf file)
+}
+
+if solver == "fatrop":
+    use_fatrop_solver = True
+else:
+    use_fatrop_solver = False
+
 # specify optimization problem symbolically
-FS_online_generation_problem = OCP_gen_pose(boundary_constraints, number_samples, solver = 'fatrop')
-rockit_online_generation_problem = OCP_gen_pose_rockit(boundary_constraints, number_samples,True)
+FS_online_generation_problem = OCP_gen_pose(boundary_constraints, number_samples, solver = solver, robot_params = robot_params)
+rockit_online_generation_problem = OCP_gen_pose_rockit(boundary_constraints, number_samples,use_fatrop_solver,robot_params)
 
 initial_values = {
     "trajectory": {
@@ -170,12 +189,12 @@ initial_values = {
         "rotational": R_r_init_array,
     },
     "invariants": model_invariants,
-    # "joint-values": robot_params["q_init"] if robot_params["urdf_file_name"] is not None else {}
+    "joint-values": robot_params["q_init"] if robot_params["urdf_file_name"] is not None else {}
 }
 
 # Solve
-optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values)
-rockit_gen_results.invariants, rockit_gen_results.Obj_pos, rockit_gen_results.Obj_frames, rockit_gen_results.FSt_frames, rockit_gen_results.FSr_frames, tot_time, joint_values = rockit_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values)
+optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, joint_values = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values)
+rockit_gen_results.invariants, rockit_gen_results.Obj_pos, rockit_gen_results.Obj_frames, rockit_gen_results.FSt_frames, rockit_gen_results.FSr_frames, tot_time, rockit_joint_values = rockit_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values)
 
 fig = plt.figure(figsize=(14,8))
 ax = fig.add_subplot(111, projection='3d')
@@ -236,6 +255,13 @@ plt.plot(progress_values,(optim_gen_results.invariants[:,2]),'r')
 plt.plot(arclength_n,rockit_gen_results.invariants[:,2],'g')
 plt.plot(0,0)
 plt.title('i_t3')
+
+
+fig = plt.figure()
+for k in range(6):
+    plt.subplot(1,6,k+1)
+    plt.plot(arclength_n,joint_values[k,:],'r')
+    plt.plot(arclength_n,rockit_joint_values[:,k].T,'g')
 
 if plt.get_backend() != 'agg':
     plt.show()
