@@ -91,7 +91,8 @@ def generate_initvals_from_constraints(boundary_constraints,N, skip = {}, q_init
         solution = solution_rot
     
     if q_init is not None:
-        solution.append(q_init.T)
+        for i in range(N):
+            solution.append(q_init.T)
     
     return solution
 
@@ -161,7 +162,8 @@ def generate_initvals_from_constraints_opti(boundary_constraints,N, skip = {}, q
         solution = solution_rot
     
     if q_init is not None:
-        solution.append(q_init.T)
+        for i in range(N):
+            solution.append(q_init.T)
     
     return solution
 

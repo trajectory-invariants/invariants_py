@@ -116,6 +116,36 @@ def rot2quat(R_all):
         
     return q_all
 
+def quat2rot(q_all):
+    """
+    Transform a unit quaternion into the corresponding 3x3 rotational matrix
+
+    Parameters 
+    ----------
+    q_all : a (4,1) numpy array describing a unit quaternion  of the form [qx,qy,qz,qw] (or a series of unit quaternions)
+
+    Returns
+    ----------
+    The corresposing 3x3 rotational matrix 
+    """
+
+    N = np.size(q_all,0)
+    R_all = np.zeros((N,3,3))
+
+    for i in range(N):
+        q = q_all[i,:]
+        w = q[3]
+        x = q[0]
+        y = q[1]
+        z = q[2]
+
+        R_all[i,:,:] = np.array([[1-2*(y**2+z**2),2*(x*y-w*z),2*(x*z+w*y)],[2*(x*y+w*z),1-2*(x**2+z**2),2*(y*z-w*x)],[2*(x*z-w*y),2*(y*z+w*x),1-2*(x**2+y**2)]]) 
+
+    return R_all
+
+A = np.array([[1,0,0,0],[1,0,0,0]])
+quat2rot(A)
+
 def crossmat(v):
     """
     Returns a 3x3 skew symmetric matrix corresponding the the 3D vector v.
