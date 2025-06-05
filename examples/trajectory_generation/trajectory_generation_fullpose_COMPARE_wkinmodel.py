@@ -40,7 +40,7 @@ ax = fig.add_subplot(111, projection='3d')
 ax = plt.axes(projection='3d')
 
 ax.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,2],'.-')
-n_frames = 10
+n_frames = 5
 indx = np.trunc(np.linspace(0,len(trajectory_orientation)-1,n_frames))
 indx = indx.astype(int)
 
@@ -114,13 +114,13 @@ model_invariants,new_stepsize = interpolate_model_invariants(spline_model_trajec
 
 # new constraints
 current_index = round(current_progress*len(trajectory))
-p_obj_start = optim_calc_results.Obj_pos[current_index]
+p_obj_start = optim_calc_results.Obj_pos[current_index]# + np.array([0,0,0.5])
 R_obj_start = orthonormalize(optim_calc_results.Obj_frames[current_index])
 FSt_start = orthonormalize(optim_calc_results.FSt_frames[current_index])
 FSr_start = orthonormalize(optim_calc_results.FSr_frames[current_index])
 p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([0.1,0.1,0]) # to show effect of kin model when target is inside the limits
 # p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([0.6,0,0]) # to show effect of kin model when target is outside the limits
-# p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([0.1,0.1,0.4]) # to show effect of kin model when target is inside limits but robot should go outside
+# p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([-0.05,0.1,0.55]) # to show effect of kin model when target is inside limits but robot should go outside
 rotate = R.from_euler('z', 0, degrees=True)
 R_obj_end =  orthonormalize(rotate.apply(optim_calc_results.Obj_frames[-1]))
 FSt_end = orthonormalize(optim_calc_results.FSt_frames[-1])
@@ -159,7 +159,7 @@ boundary_constraints = {
 # Define OCP weights
 weights_params = {
     "w_invars": 0.1*np.array([1, 1, 1, 5, 1.0, 1.0]),
-    "w_high_start": 60,
+    "w_high_start": 70,
     "w_high_end": number_samples,
     "w_high_invars": 0.5*np.array([1, 1, 1, 5, 1, 1]),
     "w_high_active": 1
@@ -230,12 +230,12 @@ for i in range(nb_samples):
 
 # check_target = fw_kin(check_joint_target,dh.find_robot_path(robot_params['urdf_file_name']),tip=robot_params['tip'])
 # if np.linalg.norm(check_pos - no_kin_model.Obj_pos[i,:]) > 0.01:
-ax.plot(p_obj_end[0],p_obj_end[1],p_obj_end[2],'mo')
+ax.plot(p_obj_end[0],p_obj_end[1],p_obj_end[2],'ko')
 # else:
 #     ax.plot(p_obj_end[0],p_obj_end[1],p_obj_end[2],'go')
 
 for i in indx:
-    pl.plot_stl(opener_location,optim_calc_results.Obj_pos[i,:],optim_calc_results.Obj_frames[i,:,:],colour="c",alpha=0.2,ax=ax)
+    pl.plot_stl(opener_location,optim_calc_results.Obj_pos[i,:],optim_calc_results.Obj_frames[i,:,:],colour="b",alpha=0.2,ax=ax)
 plt.axis('scaled')
 
 indx_online = np.trunc(np.linspace(0,len(optim_gen_results.Obj_pos)-1,n_frames))
@@ -251,50 +251,71 @@ for k in indx_online:
         pl.plot_stl(opener_location,no_kin_model.Obj_pos[k,:],no_kin_model.Obj_frames[k,:,:],colour="y",alpha=0.2,ax=ax)
 pl.plot_orientation(optim_calc_results.Obj_frames,optim_gen_results.Obj_frames,current_index)
 
+print("Final joint values with kin model:", joint_val[:,-1])
+print("Check final joint values with kin model:", check_joint_values[-1,:])
 
 fig = plt.figure()
 plt.subplot(2,3,1)
 plt.plot(arclength_n,optim_calc_results.invariants[:,0],'b')
-plt.plot(progress_values,optim_gen_results.invariants[:,0],'r')
-plt.plot(progress_values,no_kin_model.invariants[:,0],'g')
+plt.plot(progress_values,optim_gen_results.invariants[:,0],'g')
+plt.plot(progress_values,no_kin_model.invariants[:,0],'y')
 plt.plot(0,0)
 plt.title('i_r1')
 
 plt.subplot(2,3,2)
 plt.plot(arclength_n,optim_calc_results.invariants[:,1],'b')
-plt.plot(progress_values,optim_gen_results.invariants[:,1],'r')
-plt.plot(progress_values,no_kin_model.invariants[:,1],'g')
+plt.plot(progress_values,optim_gen_results.invariants[:,1],'g')
+plt.plot(progress_values,no_kin_model.invariants[:,1],'y')
 plt.plot(0,0)
 plt.title('i_r2')
 
 plt.subplot(2,3,3)
 plt.plot(arclength_n,optim_calc_results.invariants[:,2],'b')
-plt.plot(progress_values,optim_gen_results.invariants[:,2],'r')
-plt.plot(progress_values,no_kin_model.invariants[:,2],'g')
+plt.plot(progress_values,optim_gen_results.invariants[:,2],'g')
+plt.plot(progress_values,no_kin_model.invariants[:,2],'y')
 plt.plot(0,0)
 plt.title('i_r3')
 
 plt.subplot(2,3,4)
 plt.plot(arclength_n,optim_calc_results.invariants[:,3],'b')
-plt.plot(progress_values,optim_gen_results.invariants[:,3],'r')
-plt.plot(progress_values,no_kin_model.invariants[:,3],'g')
+plt.plot(progress_values,optim_gen_results.invariants[:,3],'g')
+plt.plot(progress_values,no_kin_model.invariants[:,3],'y')
 plt.plot(0,0)
 plt.title('i_t1')
 
 plt.subplot(2,3,5)
 plt.plot(arclength_n,optim_calc_results.invariants[:,4],'b')
-plt.plot(progress_values,optim_gen_results.invariants[:,4],'r')
-plt.plot(progress_values,no_kin_model.invariants[:,4],'g')
+plt.plot(progress_values,optim_gen_results.invariants[:,4],'g')
+plt.plot(progress_values,no_kin_model.invariants[:,4],'y')
 plt.plot(0,0)
 plt.title('i_t2')
 
 plt.subplot(2,3,6)
 plt.plot(arclength_n,optim_calc_results.invariants[:,5],'b')
-plt.plot(progress_values,optim_gen_results.invariants[:,5],'r')
-plt.plot(progress_values,no_kin_model.invariants[:,5],'g')
+plt.plot(progress_values,optim_gen_results.invariants[:,5],'g')
+plt.plot(progress_values,no_kin_model.invariants[:,5],'y')
 plt.plot(0,0)
 plt.title('i_t3')
 
 if plt.get_backend() != 'agg':
     plt.show()
 
+
+# np.savetxt("1arclength_n.csv", arclength_n, delimiter=",")
+# np.savetxt("1check_joint_values_no_kin.csv", check_joint_values_no_kin, delimiter=",")
+# np.savetxt("1indx.csv", indx, delimiter=",")
+# np.savetxt("1calc_inv.csv", optim_calc_results.invariants, delimiter=",")
+# np.savetxt("1calc_pos.csv", optim_calc_results.Obj_pos, delimiter=",")
+# np.savetxt("1calc_R.csv", np.array(optim_calc_results.Obj_frames).reshape(100*3,3), delimiter=",")
+# np.savetxt("1calc_R_t.csv", np.array(optim_calc_results.FSt_frames).reshape(100*3,3), delimiter=",")
+# np.savetxt("1calc_R_r.csv", np.array(optim_calc_results.FSr_frames).reshape(100*3,3), delimiter=",")
+# np.savetxt("1gen_inv.csv", optim_gen_results.invariants, delimiter=",")
+# np.savetxt("1gen_pos.csv", optim_gen_results.Obj_pos, delimiter=",")
+# np.savetxt("1gen_R.csv", np.array(optim_gen_results.Obj_frames).reshape(100*3,3), delimiter=",")
+# np.savetxt("1gen_R_t.csv", np.array(optim_gen_results.FSt_frames).reshape(100*3,3), delimiter=",")
+# np.savetxt("1gen_R_r.csv", np.array(optim_gen_results.FSr_frames).reshape(100*3,3), delimiter=",")
+# np.savetxt("1nokin_inv.csv", no_kin_model.invariants, delimiter=",")
+# np.savetxt("1nokin_pos.csv", no_kin_model.Obj_pos, delimiter=",")
+# np.savetxt("1nokin_R.csv", np.array(no_kin_model.Obj_frames).reshape(100*3,3), delimiter=",")
+# np.savetxt("1nokin_R_t.csv", np.array(no_kin_model.FSt_frames).reshape(100*3,3), delimiter=",")
+# np.savetxt("1nokin_R_r.csv", np.array(no_kin_model.FSr_frames).reshape(100*3,3), delimiter=",")

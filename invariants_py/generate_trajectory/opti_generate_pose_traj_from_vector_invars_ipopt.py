@@ -178,7 +178,7 @@ class OCP_gen_pose:
         # objective_fit+= e_pos + e_rot + 0.001*cas.dot(qdot,qdot)
         # objective_fit += cas.fabs(epsilon[0]) + cas.fabs(epsilon[1]) + cas.fabs(epsilon[2])
         if include_robot_model:
-            objective_fit += 100*cas.dot(epsilon,epsilon)
+            objective_fit += 250*cas.dot(epsilon,epsilon)
         objective = objective_fit
 
         ''' Define solver and save variables '''
