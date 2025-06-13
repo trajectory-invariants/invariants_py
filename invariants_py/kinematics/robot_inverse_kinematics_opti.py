@@ -70,7 +70,7 @@ def inv_kin(q_init, q_joint_lim, des_p_obj, des_R_obj, window_len = 100, fatrop_
         e_rot = cas.dot(R_obj_m[k].T @ R_obj - np.eye(3),R_obj_m[k].T @ R_obj - np.eye(3))
         # objective = ocp.sum(e_pos + e_rot)
         if k == 0:
-            objective = objective + e_pos + e_rot
+            objective = objective + 10*e_pos + e_rot
         else:
             qdot = q[:,k] - q[:,k-1]
             objective = objective + e_pos + e_rot + 0.001*cas.dot(qdot,qdot)
@@ -83,7 +83,7 @@ def inv_kin(q_init, q_joint_lim, des_p_obj, des_R_obj, window_len = 100, fatrop_
     else:
         # ocp.method(rockit.MultipleShooting(N=window_len-1))
         # ocp.solver('ipopt', {'expand':True})
-        opti.solver('ipopt',{"print_time":True,"expand":True},{'gamma_theta':1e-12,'tol':1e-4,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','max_iter':100})
+        opti.solver('ipopt',{"print_time":False,"expand":True},{'gamma_theta':1e-12,'tol':1e-4,'print_level':0,'ma57_automatic_scaling':'no','linear_solver':'mumps','max_iter':100})
 
     # ocp.set_initial(q,q_init)
     # ocp.set_initial(p_obj,p_obj_init)
@@ -103,8 +103,12 @@ def inv_kin(q_init, q_joint_lim, des_p_obj, des_R_obj, window_len = 100, fatrop_
     # ocp.set_value(R_obj_m_y,des_R_obj[:,1])
     # ocp.set_value(R_obj_m_z,des_R_obj[:,2])
     for k in range(window_len):
-        opti.set_value(p_obj_m[:,k],des_p_obj[k].T)
-        opti.set_value(R_obj_m[k],des_R_obj[k])
+        if window_len == 1:
+            opti.set_value(p_obj_m[:,k],des_p_obj.T)
+            opti.set_value(R_obj_m[k],des_R_obj)
+        else:
+            opti.set_value(p_obj_m[:,k],des_p_obj[k].T)
+            opti.set_value(R_obj_m[k],des_R_obj[k])
 
     # Solve the NLP
     # sol = ocp.solve()

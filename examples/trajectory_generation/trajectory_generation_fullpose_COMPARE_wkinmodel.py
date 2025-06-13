@@ -114,13 +114,13 @@ model_invariants,new_stepsize = interpolate_model_invariants(spline_model_trajec
 
 # new constraints
 current_index = round(current_progress*len(trajectory))
-p_obj_start = optim_calc_results.Obj_pos[current_index]# + np.array([0,0,0.5])
+p_obj_start = optim_calc_results.Obj_pos[current_index] + np.array([0,0,0.5])
 R_obj_start = orthonormalize(optim_calc_results.Obj_frames[current_index])
 FSt_start = orthonormalize(optim_calc_results.FSt_frames[current_index])
 FSr_start = orthonormalize(optim_calc_results.FSr_frames[current_index])
-p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([0.1,0.1,0]) # to show effect of kin model when target is inside the limits
+# p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([0.1,0.1,0]) # to show effect of kin model when target is inside the limits
 # p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([0.6,0,0]) # to show effect of kin model when target is outside the limits
-# p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([-0.05,0.1,0.55]) # to show effect of kin model when target is inside limits but robot should go outside
+p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([-0.05,0.1,0.57]) # to show effect of kin model when target is inside limits but robot should go outside
 rotate = R.from_euler('z', 0, degrees=True)
 R_obj_end =  orthonormalize(rotate.apply(optim_calc_results.Obj_frames[-1]))
 FSt_end = orthonormalize(optim_calc_results.FSt_frames[-1])
@@ -129,6 +129,7 @@ FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
 # define new class for OCP results
 optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
 no_kin_model = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
+no_kin_model_corrected = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((100,6)))
 
 # Linear initialization
 R_obj_init = reparam.interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end]))
@@ -161,7 +162,7 @@ weights_params = {
     "w_invars": 0.1*np.array([1, 1, 1, 5, 1.0, 1.0]),
     "w_high_start": 70,
     "w_high_end": number_samples,
-    "w_high_invars": 0.5*np.array([1, 1, 1, 5, 1, 1]),
+    "w_high_invars": 1*np.array([1, 1, 1, 5, 1, 1]),
     "w_high_active": 1
 }
 
@@ -201,21 +202,27 @@ initial_values = {
 optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, joint_val = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values)
 no_kin_model.invariants, no_kin_model.Obj_pos, no_kin_model.Obj_frames, no_kin_model.FSt_frames, no_kin_model.FSr_frames, no_kin_modeljoint_val = FS_online_generation_problem_no_kin.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values)
 
+no_kin_model_corrected.Obj_pos = no_kin_model.Obj_pos.copy()
+no_kin_model_corrected.Obj_frames = no_kin_model.Obj_frames.copy()
+
 robot_params['q_init'] = np.array([-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4]) * np.ones((100,6))
 # Inverse kin calculation
-check_joint_values = inv_kin(robot_params['q_init'],robot_params['q_lim'],optim_gen_results.Obj_pos,optim_gen_results.Obj_frames,number_samples)
-check_joint_values_no_kin = inv_kin(robot_params['q_init'],robot_params['q_lim'],no_kin_model.Obj_pos,no_kin_model.Obj_frames,number_samples)
+# check_joint_values = inv_kin(robot_params['q_init'],robot_params['q_lim'],optim_gen_results.Obj_pos,optim_gen_results.Obj_frames,number_samples)
+# check_joint_values_no_kin = inv_kin(robot_params['q_init'],robot_params['q_lim'],no_kin_model.Obj_pos,no_kin_model.Obj_frames,number_samples)
 # check_joint_target = inv_kin(robot_params['q_init'],robot_params['q_lim'],np.array([p_obj_end],[p_obj_end]),R_obj_end,2)
 
 
 fig = plt.figure(figsize=(14,8))
 ax = fig.add_subplot(111, projection='3d')
-ax.plot(optim_calc_results.Obj_pos[:,0],optim_calc_results.Obj_pos[:,1],optim_calc_results.Obj_pos[:,2],'b')
+# ax.plot(optim_calc_results.Obj_pos[:,0],optim_calc_results.Obj_pos[:,1],optim_calc_results.Obj_pos[:,2],'b')
 ax.plot(optim_gen_results.Obj_pos[:,0],optim_gen_results.Obj_pos[:,1],optim_gen_results.Obj_pos[:,2],'g')
 # ax.plot(no_kin_model.Obj_pos[:,0],no_kin_model.Obj_pos[:,1],no_kin_model.Obj_pos[:,2],'g')
 out_limit = []
+check_joint_values_no_kin = np.zeros((100,6))
+robot_path = dh.find_robot_path(robot_params['urdf_file_name'])
 for i in range(nb_samples):
-    check_pos, check_Rot = fw_kin(check_joint_values_no_kin[i,:],dh.find_robot_path(robot_params['urdf_file_name']),tip=robot_params['tip'])
+    check_joint_values_no_kin[i,:] = inv_kin(robot_params['q_init'],robot_params['q_lim'],no_kin_model.Obj_pos[i,:],no_kin_model.Obj_frames[i,:,:],1)
+    check_pos, check_Rot = fw_kin(check_joint_values_no_kin[i,:],robot_path,tip=robot_params['tip'])
     print(i)
     if np.linalg.norm(check_pos - no_kin_model.Obj_pos[i,:]) > 0.01:
         print(f"Warning: Position mismatch at index {i}. Expected {no_kin_model.Obj_pos[i,:]}, got {check_pos}")
@@ -227,6 +234,10 @@ for i in range(nb_samples):
         out_limit.append(i)
     else:
         ax.plot(no_kin_model.Obj_pos[i,0],no_kin_model.Obj_pos[i,1],no_kin_model.Obj_pos[i,2],'yo')
+    no_kin_model_corrected.Obj_pos[i,:] = np.array(check_pos).flatten()
+    no_kin_model_corrected.Obj_frames[i,:,:] = check_Rot
+
+ax.plot(no_kin_model_corrected.Obj_pos[:,0],no_kin_model_corrected.Obj_pos[:,1],no_kin_model_corrected.Obj_pos[:,2],'tab:orange', label='No kin model corrected')
 
 # check_target = fw_kin(check_joint_target,dh.find_robot_path(robot_params['urdf_file_name']),tip=robot_params['tip'])
 # if np.linalg.norm(check_pos - no_kin_model.Obj_pos[i,:]) > 0.01:
@@ -234,14 +245,16 @@ ax.plot(p_obj_end[0],p_obj_end[1],p_obj_end[2],'ko')
 # else:
 #     ax.plot(p_obj_end[0],p_obj_end[1],p_obj_end[2],'go')
 
-for i in indx:
-    pl.plot_stl(opener_location,optim_calc_results.Obj_pos[i,:],optim_calc_results.Obj_frames[i,:,:],colour="b",alpha=0.2,ax=ax)
+plt.legend()
+
+# for i in indx:
+#     pl.plot_stl(opener_location,optim_calc_results.Obj_pos[i,:],optim_calc_results.Obj_frames[i,:,:],colour="b",alpha=0.2,ax=ax)
 plt.axis('scaled')
 
 indx_online = np.trunc(np.linspace(0,len(optim_gen_results.Obj_pos)-1,n_frames))
 indx_online = indx_online.astype(int)
 for k in indx_online:
-    pl.plot_3d_frame(optim_calc_results.Obj_pos[k,:],optim_calc_results.Obj_frames[k,:,:],1,0.01,['red','green','blue'],ax)
+    # pl.plot_3d_frame(optim_calc_results.Obj_pos[k,:],optim_calc_results.Obj_frames[k,:,:],1,0.01,['red','green','blue'],ax)
     pl.plot_3d_frame(optim_gen_results.Obj_pos[k,:],optim_gen_results.Obj_frames[k,:,:],1,0.01,['red','green','blue'],ax)
     pl.plot_3d_frame(no_kin_model.Obj_pos[k,:],no_kin_model.Obj_frames[k,:,:],1,0.01,['red','green','blue'],ax)
     pl.plot_stl(opener_location,optim_gen_results.Obj_pos[k,:],optim_gen_results.Obj_frames[k,:,:],colour="g",alpha=0.2,ax=ax)
@@ -249,16 +262,18 @@ for k in indx_online:
         pl.plot_stl(opener_location,no_kin_model.Obj_pos[k,:],no_kin_model.Obj_frames[k,:,:],colour="r",alpha=0.2,ax=ax)
     else:
         pl.plot_stl(opener_location,no_kin_model.Obj_pos[k,:],no_kin_model.Obj_frames[k,:,:],colour="y",alpha=0.2,ax=ax)
-pl.plot_orientation(optim_calc_results.Obj_frames,optim_gen_results.Obj_frames,current_index)
+    pl.plot_stl(opener_location,no_kin_model_corrected.Obj_pos[k,:],no_kin_model_corrected.Obj_frames[k,:,:],colour="tab:orange",alpha=0.2,ax=ax)
+# pl.plot_orientation(optim_calc_results.Obj_frames,optim_gen_results.Obj_frames,current_index)
 
-print("Final joint values with kin model:", joint_val[:,-1])
-print("Check final joint values with kin model:", check_joint_values[-1,:])
+# print("Final joint values with kin model:", joint_val[:,-1])
+# print("Check final joint values with kin model:", check_joint_values[-1,:])
 
 fig = plt.figure()
 plt.subplot(2,3,1)
 plt.plot(arclength_n,optim_calc_results.invariants[:,0],'b')
 plt.plot(progress_values,optim_gen_results.invariants[:,0],'g')
 plt.plot(progress_values,no_kin_model.invariants[:,0],'y')
+plt.legend(['Real demo','With kin model','No kin model'])
 plt.plot(0,0)
 plt.title('i_r1')
 
@@ -266,6 +281,7 @@ plt.subplot(2,3,2)
 plt.plot(arclength_n,optim_calc_results.invariants[:,1],'b')
 plt.plot(progress_values,optim_gen_results.invariants[:,1],'g')
 plt.plot(progress_values,no_kin_model.invariants[:,1],'y')
+plt.legend(['Real demo','With kin model','No kin model'])
 plt.plot(0,0)
 plt.title('i_r2')
 
@@ -273,6 +289,7 @@ plt.subplot(2,3,3)
 plt.plot(arclength_n,optim_calc_results.invariants[:,2],'b')
 plt.plot(progress_values,optim_gen_results.invariants[:,2],'g')
 plt.plot(progress_values,no_kin_model.invariants[:,2],'y')
+plt.legend(['Real demo','With kin model','No kin model'])
 plt.plot(0,0)
 plt.title('i_r3')
 
@@ -280,6 +297,7 @@ plt.subplot(2,3,4)
 plt.plot(arclength_n,optim_calc_results.invariants[:,3],'b')
 plt.plot(progress_values,optim_gen_results.invariants[:,3],'g')
 plt.plot(progress_values,no_kin_model.invariants[:,3],'y')
+plt.legend(['Real demo','With kin model','No kin model'])
 plt.plot(0,0)
 plt.title('i_t1')
 
@@ -287,6 +305,7 @@ plt.subplot(2,3,5)
 plt.plot(arclength_n,optim_calc_results.invariants[:,4],'b')
 plt.plot(progress_values,optim_gen_results.invariants[:,4],'g')
 plt.plot(progress_values,no_kin_model.invariants[:,4],'y')
+plt.legend(['Real demo','With kin model','No kin model'])
 plt.plot(0,0)
 plt.title('i_t2')
 
@@ -294,6 +313,7 @@ plt.subplot(2,3,6)
 plt.plot(arclength_n,optim_calc_results.invariants[:,5],'b')
 plt.plot(progress_values,optim_gen_results.invariants[:,5],'g')
 plt.plot(progress_values,no_kin_model.invariants[:,5],'y')
+plt.legend(['Real demo','With kin model','No kin model'])
 plt.plot(0,0)
 plt.title('i_t3')
 

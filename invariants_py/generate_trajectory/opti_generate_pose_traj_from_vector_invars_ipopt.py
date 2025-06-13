@@ -178,14 +178,14 @@ class OCP_gen_pose:
         # objective_fit+= e_pos + e_rot + 0.001*cas.dot(qdot,qdot)
         # objective_fit += cas.fabs(epsilon[0]) + cas.fabs(epsilon[1]) + cas.fabs(epsilon[2])
         if include_robot_model:
-            objective_fit += 250*cas.dot(epsilon,epsilon)
+            objective_fit += 1500*cas.dot(epsilon,epsilon)
         objective = objective_fit
 
         ''' Define solver and save variables '''
         opti.minimize(objective)
 
         if solver == 'ipopt':
-            opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':300,'tol':1e-6,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'})
+            opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':100,'tol':1e-6,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'})
         elif solver == 'fatrop':
             opti.solver('fatrop',{"expand":True,'fatrop.max_iter':300,'fatrop.tol':1e-6,'fatrop.print_level':5, "structure_detection":"auto","debug":True,"fatrop.mu_init":0.1})
             # ocp._method.set_name("/codegen/generation_position")
