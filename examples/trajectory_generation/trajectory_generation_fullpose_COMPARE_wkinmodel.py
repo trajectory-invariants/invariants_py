@@ -172,7 +172,7 @@ robot_params = {
     "q_init": np.array([-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4]), # Initial joint values
     "tip": 'TCP_frame', # Name of the robot tip (if empty standard 'tool0' is used)
     # "joint_number": 6, # Number of joints (if empty it is automatically taken from urdf file)
-    "q_lim": [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi], # Join limits (if empty it is automatically taken from urdf file)
+    # "q_lim": [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi], # Join limits (if empty it is automatically taken from urdf file)
     # "root": 'world', # Name of the robot root (if empty it is automatically taken from urdf file)
 }
 
@@ -205,7 +205,12 @@ no_kin_model.invariants, no_kin_model.Obj_pos, no_kin_model.Obj_frames, no_kin_m
 no_kin_model_corrected.Obj_pos = no_kin_model.Obj_pos.copy()
 no_kin_model_corrected.Obj_frames = no_kin_model.Obj_frames.copy()
 
-robot_params['q_init'] = np.array([-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4]) * np.ones((100,6))
+robot_params = {
+    "urdf_file_name": 'ur10.urdf', # use None if do not want to include robot model
+    "q_init": np.array([-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4]) * np.ones((100,6)), # Initial joint values
+    "tip": 'TCP_frame', # Name of the robot tip (if empty standard 'tool0' is used)
+    "q_lim": [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi], # Join limits (if empty it is automatically taken from urdf file)
+}
 # Inverse kin calculation
 # check_joint_values = inv_kin(robot_params['q_init'],robot_params['q_lim'],optim_gen_results.Obj_pos,optim_gen_results.Obj_frames,number_samples)
 # check_joint_values_no_kin = inv_kin(robot_params['q_init'],robot_params['q_lim'],no_kin_model.Obj_pos,no_kin_model.Obj_frames,number_samples)
