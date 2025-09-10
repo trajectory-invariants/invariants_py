@@ -22,8 +22,11 @@ class OCP_gen_pose:
         include_robot_model = True if path_to_urdf is not None else False
         if include_robot_model:
             robot = urdf.URDF.load(path_to_urdf)
-            nb_joints = robot_params.get('joint_number', robot.num_actuated_joints)
-            q_limits = robot_params.get('q_lim', np.array([robot._actuated_joints[i].limit.upper for i in range(robot.num_actuated_joints)]))
+            if urdf_file_name == "franka_panda.urdf":
+                nb_joints = robot_params.get('joint_number', robot.num_actuated_joints-1)
+            else:
+                nb_joints = robot_params.get('joint_number', robot.num_actuated_joints)
+            q_limits = robot_params.get('q_lim', np.hstack([np.array([robot._actuated_joints[i].limit.lower for i in range(nb_joints)]),np.array([robot._actuated_joints[i].limit.upper for i in range(nb_joints)])]))
             root = robot_params.get('root', robot.base_link)
             tip = robot_params.get('tip', 'tool0')
             q_init = robot_params.get('q_init', np.zeros(nb_joints))
@@ -88,7 +91,7 @@ class OCP_gen_pose:
             invars_demo.append(opti.parameter(6,1)) # model invariants
             w_invars.append(opti.parameter(6,1)) # weights for invariants
         if include_robot_model:
-            q_lim = opti.parameter(nb_joints,1)
+            q_lim = opti.parameter(nb_joints*2,1)
 
 
         ''' Specifying the constraints '''
@@ -123,8 +126,8 @@ class OCP_gen_pose:
             for k in range(N):
                 for i in range(nb_joints):
                     # ocp.subject_to(-q_lim[i] <= (q[k][i] <= q_lim[i])) # This constraint definition does not work with fatrop, yet
-                    opti.subject_to(q[k][i] >= -q_lim[i])
-                    opti.subject_to(q[k][i] <= q_lim[i])
+                    opti.subject_to(q[k][i] >= q_lim[i])
+                    opti.subject_to(q[k][i] <= q_lim[nb_joints+i])
 
         # Dynamic constraints
         integrator = dynamics.define_integrator_invariants_pose(h)
@@ -146,7 +149,7 @@ class OCP_gen_pose:
             ur10.from_file(path_to_urdf)
             fk_dict = ur10.get_forward_kinematics(root, tip)
             robot_forward_kinematics = fk_dict["T_fk"]
-            q_sim = cas.MX.sym('q',6,1)
+            q_sim = cas.MX.sym('q',nb_joints,1)
             # pos_sim = cas.MX.sym('pos',3,1)
             # R_sim = cas.MX.sym('R',3,3)
 
@@ -160,6 +163,7 @@ class OCP_gen_pose:
                 p_obj_fwkin, R_obj_fwkin =  fw_kin(q[k])
                 opti.subject_to(p_obj[k] ==  p_obj_fwkin)
                 opti.subject_to(tril_vec_no_diag(R_obj[k].T @ R_obj_fwkin - np.eye(3)) == 0.)       
+                # opti.subject_to(tril_vec_no_diag(np.eye(3).T @ R_obj_fwkin - np.eye(3)) == 0.) # used for crate filling       
 
         ''' Specifying the objective '''
 
@@ -167,7 +171,9 @@ class OCP_gen_pose:
         objective_fit = 0
         for k in range(N-1):
             err_invars = w_invars[k]*(invars[k] - invars_demo[k])
+            # err_invars = w_invars[k][3:]*(invars[k][3:] - invars_demo[k][3:]) # used for crate filling
             objective_fit += 1/N*cas.dot(err_invars,err_invars)
+            # objective_fit += 1*cas.dot(err_invars,err_invars) # used for crate filling
             if include_robot_model:
                 objective_fit += 0.001*cas.dot(qdot[k],qdot[k])
         #         e_pos = cas.dot(p_obj_fwkin[k] - p_obj[k],p_obj_fwkin[k] - p_obj[k])
@@ -179,6 +185,7 @@ class OCP_gen_pose:
         # objective_fit += cas.fabs(epsilon[0]) + cas.fabs(epsilon[1]) + cas.fabs(epsilon[2])
         if include_robot_model:
             objective_fit += 1500*cas.dot(epsilon,epsilon)
+            # objective_fit += 3000*cas.dot(epsilon,epsilon) # used for crate filling
         objective = objective_fit
 
         ''' Define solver and save variables '''
@@ -216,10 +223,12 @@ class OCP_gen_pose:
             opti.set_value(p_obj_start, p_obj_dummy)
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
             opti.set_value(p_obj_end, p_obj_dummy + np.array([0.3,0.1,0]))
+            # opti.set_value(p_obj_end, p_obj_dummy + np.array([0.05,0.05,0])) # used for crate filling
         if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
             opti.set_value(R_obj_start, R_obj_dummy)
         if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
             opti.set_value(R_obj_end, rotate_x(np.pi/6) @ R_obj_dummy)
+            # opti.set_value(R_obj_end, rotate_x(np.pi/60) @ R_obj_dummy) # used for crate filling
         if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["translational"]:
             opti.set_value(R_t_start, dummy_R_t[0])
         if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["translational"]:

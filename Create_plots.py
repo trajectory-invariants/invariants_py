@@ -89,10 +89,10 @@ for i in range(nb_samples):
         print(f"Expected rotation at index {i}:\n{no_kin_model.Obj_frames[i,:,:]}")
         ax.plot(no_kin_model.Obj_pos[i,0],no_kin_model.Obj_pos[i,1],no_kin_model.Obj_pos[i,2],'ro', label='No kin model - out of limits' if out_limit == [] else "")
         out_limit.append(i)
-        no_kin_model_corrected.Obj_pos[i,:] = np.array(check_pos).flatten()
-        no_kin_model_corrected.Obj_frames[i,:,:] = check_Rot
     else:
         ax.plot(no_kin_model.Obj_pos[i,0],no_kin_model.Obj_pos[i,1],no_kin_model.Obj_pos[i,2],'yo', label='No kin model' if i == 0 else "")
+    no_kin_model_corrected.Obj_pos[i,:] = np.array(check_pos).flatten()
+    no_kin_model_corrected.Obj_frames[i,:,:] = check_Rot
 
 ax.plot(no_kin_model_corrected.Obj_pos[:,0],no_kin_model_corrected.Obj_pos[:,1],no_kin_model_corrected.Obj_pos[:,2],'tab:orange', label='No kin model corrected')
 

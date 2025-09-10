@@ -2,6 +2,7 @@ import numpy as np
 import invariants_py.kinematics.orientation_kinematics as SO3
 from invariants_py.reparameterization import interpR
 from invariants_py.discretized_vector_invariants import calculate_discretized_invariants, calculate_velocity_from_discrete_rotations
+from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation
 
 
 def initial_trajectory_movingframe_rotation(R_obj_start,R_obj_end,N=100):
@@ -11,12 +12,13 @@ def initial_trajectory_movingframe_rotation(R_obj_start,R_obj_end,N=100):
     angle_vec_in_world = R_obj_start@angle_vec_in_body
     angle_norm = np.linalg.norm(angle_vec_in_world)
     U_init = np.tile(np.array([angle_norm,0.001,0.001]),(N-1,1))
-    e_x_fs_init = angle_vec_in_world/angle_norm
+    e_x_fs_init = angle_vec_in_world/(angle_norm+0.000001)
     e_y_fs_init = [0,1,0]
     e_y_fs_init = e_y_fs_init - np.dot(e_y_fs_init,e_x_fs_init)*e_x_fs_init
     e_y_fs_init = e_y_fs_init/np.linalg.norm(e_y_fs_init)
     e_z_fs_init = np.cross(e_x_fs_init,e_y_fs_init)
     R_r_init = np.array([e_x_fs_init,e_y_fs_init,e_z_fs_init]).T
+    R_r_init = orthonormalize_rotation(R_r_init)
 
     R_r_init_array = []
     for k in range(N):

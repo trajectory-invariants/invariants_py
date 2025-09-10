@@ -63,7 +63,7 @@ class OCP_results:
 optim_calc_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((len(trajectory),6)))
 
 # specify optimization problem symbolically
-FS_calculation_problem_pos = OCP_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.004)
+FS_calculation_problem_pos = OCP_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.001)
 FS_calculation_problem_rot = OCP_calc_rot(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180) 
 
 # calculate invariants given measurements
@@ -158,10 +158,10 @@ boundary_constraints = {
 # Define OCP weights
 weights_params = {
     "w_invars": 0.1*np.array([1, 1, 1, 5, 1.0, 1.0]),
-    "w_high_start": 60,
+    "w_high_start": 70,
     "w_high_end": number_samples,
-    "w_high_invars": 10*np.array([1, 1, 1, 5*10**1, 1.0, 1.0]),
-    "w_high_active": 0
+    "w_high_invars": 0.5*np.array([1, 1, 1, 5, 1, 1]),
+    "w_high_active": 1
 }
 
 # Define robot parameters
