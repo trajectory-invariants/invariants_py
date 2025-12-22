@@ -1,7 +1,7 @@
 import numpy as np
 import casadi as cas
 import invariants_py.dynamics_vector_invariants as dynamics
-from invariants_py import ocp_helper
+from invariants_py import ocp_helper, ocp_initialization
 
 class OCP_calc_pos:
 
@@ -116,22 +116,15 @@ class OCP_calc_pos:
         N = self.window_len
         
         # Initialize states
-        #TODO  this is not correct yet, ex not perpendicular to ey
-        Pdiff = np.diff(measured_positions,axis=0)
-        ex = Pdiff / np.linalg.norm(Pdiff,axis=1).reshape(N-1,1)
-        ex = np.vstack((ex,[ex[-1,:]]))
-        ez = np.tile( np.array((0,0,1)), (N,1) )
-        ey = np.array([np.cross(ez[i,:],ex[i,:]) for i in range(N)])
-        #Pdiff_cross = np.cross(Pdiff[0:-1],Pdiff[1:])
-        #ey = Pdiff_cross / np.linalg.norm(Pdiff_cross,axis=1).reshape(N-2,1)
+        init_inv,init_pos,init_R = ocp_initialization.initialize_VI_pos2(measured_positions,stepsize)
         
         for k in range(N):
-            self.opti.set_initial(self.R_t[k], np.array([ex[k,:], ey[k,:], ez[k,:]]).T ) #construct_init_FS_from_traj(meas_traj.Obj_location)
+            self.opti.set_initial(self.R_t[k], init_R[:,k].reshape(3,3).T ) #construct_init_FS_from_traj(meas_traj.Obj_location)
             self.opti.set_initial(self.p_obj[k], measured_positions[k])
         
         # Initialize controls
         for k in range(N-1):    
-            self.opti.set_initial(self.U[:,k], np.array([1,1e-1,1e-12]))
+            self.opti.set_initial(self.U[:,k], init_inv[:,k])
             
         # Set values parameters
         #self.opti.set_value(self.R_t_0, np.eye(3,3))
