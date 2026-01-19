@@ -58,7 +58,7 @@ robot_params = {
     "q_init": np.array([-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4]), # Initial joint values
     "tip": 'TCP_frame', # Name of the robot tip (if empty standard 'tool0' is used)
     # "joint_number": 6, # Number of joints (if empty it is automatically taken from urdf file)
-    "q_lim": [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi], # Join limits (if empty it is automatically taken from urdf file)
+    # "q_lim": [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi], # Join limits (if empty it is automatically taken from urdf file)
     # "root": 'world', # Name of the robot root (if empty it is automatically taken from urdf file)
 }
 
@@ -78,7 +78,7 @@ check_joint_values_no_kin = np.zeros((100,6))
 robot_path = dh.find_robot_path(robot_params['urdf_file_name'])
 for i in range(nb_samples):
     # Inverse kin calculation
-    check_joint_values_no_kin[i,:] = inv_kin(robot_params['q_init'],robot_params['q_lim'],no_kin_model.Obj_pos[i,:],no_kin_model.Obj_frames[i,:,:],1)
+    check_joint_values_no_kin[i,:] = inv_kin(no_kin_model.Obj_pos[i,:],no_kin_model.Obj_frames[i,:,:],1,robot_params=robot_params)
     check_pos, check_Rot = fw_kin(check_joint_values_no_kin[i,:],robot_path,tip=robot_params['tip'])
     print(i)
     if np.linalg.norm(check_pos - no_kin_model.Obj_pos[i,:]) > 0.01:
