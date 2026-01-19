@@ -12,6 +12,8 @@ from invariants_py.generate_trajectory.opti_generate_pose_traj_from_vector_invar
 from scipy.spatial.transform import Rotation as R
 from IPython.display import clear_output
 from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize
+from invariants_py.kinematics.robot_inverse_kinematics_opti import inv_kin
+from invariants_py.kinematics.robot_forward_kinematics import robot_forward_kinematics as fw_kin
 from stl import mesh
 import invariants_py.plotting_functions.plotters as pl
 from invariants_py.ocp_initialization import initial_trajectory_movingframe_rotation
@@ -36,12 +38,9 @@ trajectory_orientation = pose[:,:3,:3]
 fig = plt.figure(figsize=(8,8))
 ax = fig.add_subplot(111, projection='3d')
 ax = plt.axes(projection='3d')
-# pl.plot_stl(opener_location,trajectory_position[0,:],trajectory_orientation[0,:,:],colour="c",alpha=0.2,ax=ax)    
-# pl.plot_stl(opener_location,trajectory_position[-1,:],trajectory_orientation[-1,:,:],colour="c",alpha=0.2,ax=ax)    
-
 
 ax.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,2],'.-')
-n_frames = 10
+n_frames = 5
 indx = np.trunc(np.linspace(0,len(trajectory_orientation)-1,n_frames))
 indx = indx.astype(int)
 
@@ -70,7 +69,6 @@ FS_calculation_problem_rot = OCP_calc_rot(window_len=nb_samples, bool_unsigned_i
 optim_calc_results.invariants[:,3:], optim_calc_results.Obj_pos, optim_calc_results.FSt_frames = FS_calculation_problem_pos.calculate_invariants(trajectory,stepsize)
 optim_calc_results.invariants[:,:3], optim_calc_results.Obj_frames, optim_calc_results.FSr_frames = FS_calculation_problem_rot.calculate_invariants(trajectory,stepsize)
 optim_calc_results.Obj_pos += home_pos
-# np.savetxt("dummy_inv.csv", optim_calc_results.invariants, delimiter=",")
 
 fig = plt.figure(figsize=(8,8))
 ax = fig.add_subplot(111, projection='3d')
@@ -112,15 +110,17 @@ number_samples = 100
 progress_values = np.linspace(current_progress, arclength_n[-1], number_samples)
 model_invariants,new_stepsize = interpolate_model_invariants(spline_model_trajectory,progress_values)
 
-pl.plot_interpolated_invariants(optim_calc_results.invariants, model_invariants, arclength_n, progress_values)
+# pl.plot_interpolated_invariants(optim_calc_results.invariants, model_invariants, arclength_n, progress_values)
 
 # new constraints
 current_index = round(current_progress*len(trajectory))
-p_obj_start = optim_calc_results.Obj_pos[current_index]
+p_obj_start = optim_calc_results.Obj_pos[current_index] + np.array([0,0,0.5])
 R_obj_start = orthonormalize(optim_calc_results.Obj_frames[current_index])
 FSt_start = orthonormalize(optim_calc_results.FSt_frames[current_index])
 FSr_start = orthonormalize(optim_calc_results.FSr_frames[current_index])
-p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([0.15,-0.1,0])
+# p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([0.1,0.1,0]) # to show effect of kin model when target is inside the limits
+# p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([0.6,0,0]) # to show effect of kin model when target is outside the limits
+p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([-0.05,0.1,0.57]) # to show effect of kin model when target is inside limits but robot should go outside
 rotate = R.from_euler('z', 0, degrees=True)
 R_obj_end =  orthonormalize(rotate.apply(optim_calc_results.Obj_frames[-1]))
 FSt_end = orthonormalize(optim_calc_results.FSt_frames[-1])
@@ -128,6 +128,8 @@ FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
 
 # define new class for OCP results
 optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
+no_kin_model = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
+no_kin_model_corrected = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((100,6)))
 
 # Linear initialization
 R_obj_init = reparam.interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end]))
@@ -160,7 +162,7 @@ weights_params = {
     "w_invars": 0.1*np.array([1, 1, 1, 5, 1.0, 1.0]),
     "w_high_start": 70,
     "w_high_end": number_samples,
-    "w_high_invars": 0.5*np.array([1, 1, 1, 5, 1, 1]),
+    "w_high_invars": 1*np.array([1, 1, 1, 5, 1, 1]),
     "w_high_active": 1
 }
 
@@ -168,7 +170,7 @@ weights_params = {
 robot_params = {
     "urdf_file_name": 'ur10.urdf', # use None if do not want to include robot model
     "q_init": np.array([-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4]), # Initial joint values
-    "tip": 'TCP_frame' # Name of the robot tip (if empty standard 'tool0' is used)
+    "tip": 'TCP_frame', # Name of the robot tip (if empty standard 'tool0' is used)
     # "joint_number": 6, # Number of joints (if empty it is automatically taken from urdf file)
     # "q_lim": [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi], # Join limits (if empty it is automatically taken from urdf file)
     # "root": 'world', # Name of the robot root (if empty it is automatically taken from urdf file)
@@ -181,6 +183,7 @@ dummy = { "inv_sol": np.loadtxt(dh.find_data_path("dummy_sol.csv"),delimiter=","
 
 # specify optimization problem symbolically
 FS_online_generation_problem = OCP_gen_pose(boundary_constraints, number_samples, solver = solver, robot_params = robot_params, dummy=dummy)
+FS_online_generation_problem_no_kin = OCP_gen_pose(boundary_constraints, number_samples, solver = solver, dummy=dummy)
 
 initial_values = {
     "trajectory": {
@@ -197,67 +200,125 @@ initial_values = {
 
 # Solve
 optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, joint_val = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values)
-# A = np.array(optim_calc_results.FSt_frames)
-# B = np.array(optim_calc_results.FSr_frames)
-# np.savetxt("dummy_R_t.csv", A.reshape(100*3,3), delimiter=",")
-# np.savetxt("dummy_R_r.csv", B.reshape(100*3,3), delimiter=",")
-# np.savetxt("dummy_sol.csv", optim_gen_results.invariants, delimiter=",")
+no_kin_model.invariants, no_kin_model.Obj_pos, no_kin_model.Obj_frames, no_kin_model.FSt_frames, no_kin_model.FSr_frames, no_kin_modeljoint_val = FS_online_generation_problem_no_kin.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values)
 
-# for i in range(len(optim_gen_results.Obj_frames)):
-#     optim_gen_results.Obj_frames[i] = orthonormalize(optim_gen_results.Obj_frames[i])
+no_kin_model_corrected.Obj_pos = no_kin_model.Obj_pos.copy()
+no_kin_model_corrected.Obj_frames = no_kin_model.Obj_frames.copy()
+
+robot_params = {
+    "urdf_file_name": 'ur10.urdf', # use None if do not want to include robot model
+    "q_init": np.array([-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4]) * np.ones((100,6)), # Initial joint values
+    "tip": 'TCP_frame', # Name of the robot tip (if empty standard 'tool0' is used)
+    "q_lim": [2*pi, 2*pi, pi, 2*pi, 2*pi, 2*pi], # Join limits (if empty it is automatically taken from urdf file)
+}
+# Inverse kin calculation
+# check_joint_values = inv_kin(robot_params['q_init'],robot_params['q_lim'],optim_gen_results.Obj_pos,optim_gen_results.Obj_frames,number_samples)
+# check_joint_values_no_kin = inv_kin(robot_params['q_init'],robot_params['q_lim'],no_kin_model.Obj_pos,no_kin_model.Obj_frames,number_samples)
+# check_joint_target = inv_kin(robot_params['q_init'],robot_params['q_lim'],np.array([p_obj_end],[p_obj_end]),R_obj_end,2)
+
 
 fig = plt.figure(figsize=(14,8))
 ax = fig.add_subplot(111, projection='3d')
-ax.plot(optim_calc_results.Obj_pos[:,0],optim_calc_results.Obj_pos[:,1],optim_calc_results.Obj_pos[:,2],'b')
-ax.plot(optim_gen_results.Obj_pos[:,0],optim_gen_results.Obj_pos[:,1],optim_gen_results.Obj_pos[:,2],'r')
-ax.plot(p_obj_end[0],p_obj_end[1],p_obj_end[2],'ro')
-for i in indx:
-    pl.plot_stl(opener_location,optim_calc_results.Obj_pos[i,:],optim_calc_results.Obj_frames[i,:,:],colour="c",alpha=0.2,ax=ax)
+# ax.plot(optim_calc_results.Obj_pos[:,0],optim_calc_results.Obj_pos[:,1],optim_calc_results.Obj_pos[:,2],'b')
+ax.plot(optim_gen_results.Obj_pos[:,0],optim_gen_results.Obj_pos[:,1],optim_gen_results.Obj_pos[:,2],'g')
+# ax.plot(no_kin_model.Obj_pos[:,0],no_kin_model.Obj_pos[:,1],no_kin_model.Obj_pos[:,2],'g')
+out_limit = []
+check_joint_values_no_kin = np.zeros((100,6))
+robot_path = dh.find_robot_path(robot_params['urdf_file_name'])
+for i in range(nb_samples):
+    check_joint_values_no_kin[i,:] = inv_kin(robot_params['q_init'],robot_params['q_lim'],no_kin_model.Obj_pos[i,:],no_kin_model.Obj_frames[i,:,:],1)
+    check_pos, check_Rot = fw_kin(check_joint_values_no_kin[i,:],robot_path,tip=robot_params['tip'])
+    print(i)
+    if np.linalg.norm(check_pos - no_kin_model.Obj_pos[i,:]) > 0.01:
+        print(f"Warning: Position mismatch at index {i}. Expected {no_kin_model.Obj_pos[i,:]}, got {check_pos}")
+        # print(f"Check position at index {i}: {check_pos}")
+        # print(f"Expected position at index {i}: {no_kin_model.Obj_pos[i,:]}")
+        print(f"Check rotation at index {i}:\n{check_Rot}")
+        print(f"Expected rotation at index {i}:\n{no_kin_model.Obj_frames[i,:,:]}")
+        ax.plot(no_kin_model.Obj_pos[i,0],no_kin_model.Obj_pos[i,1],no_kin_model.Obj_pos[i,2],'ro')
+        out_limit.append(i)
+    else:
+        ax.plot(no_kin_model.Obj_pos[i,0],no_kin_model.Obj_pos[i,1],no_kin_model.Obj_pos[i,2],'yo')
+    no_kin_model_corrected.Obj_pos[i,:] = np.array(check_pos).flatten()
+    no_kin_model_corrected.Obj_frames[i,:,:] = check_Rot
+
+ax.plot(no_kin_model_corrected.Obj_pos[:,0],no_kin_model_corrected.Obj_pos[:,1],no_kin_model_corrected.Obj_pos[:,2],'tab:orange', label='No kin model corrected')
+
+# check_target = fw_kin(check_joint_target,dh.find_robot_path(robot_params['urdf_file_name']),tip=robot_params['tip'])
+# if np.linalg.norm(check_pos - no_kin_model.Obj_pos[i,:]) > 0.01:
+ax.plot(p_obj_end[0],p_obj_end[1],p_obj_end[2],'ko')
+# else:
+#     ax.plot(p_obj_end[0],p_obj_end[1],p_obj_end[2],'go')
+
+plt.legend()
+
+# for i in indx:
+#     pl.plot_stl(opener_location,optim_calc_results.Obj_pos[i,:],optim_calc_results.Obj_frames[i,:,:],colour="b",alpha=0.2,ax=ax)
 plt.axis('scaled')
 
 indx_online = np.trunc(np.linspace(0,len(optim_gen_results.Obj_pos)-1,n_frames))
 indx_online = indx_online.astype(int)
-for i in indx_online:
-    pl.plot_3d_frame(optim_calc_results.Obj_pos[i,:],optim_calc_results.Obj_frames[i,:,:],1,0.01,['red','green','blue'],ax)
-    pl.plot_3d_frame(optim_gen_results.Obj_pos[i,:],optim_gen_results.Obj_frames[i,:,:],1,0.01,['red','green','blue'],ax)
-    pl.plot_stl(opener_location,optim_gen_results.Obj_pos[i,:],optim_gen_results.Obj_frames[i,:,:],colour="r",alpha=0.2,ax=ax)
-pl.plot_orientation(optim_calc_results.Obj_frames,optim_gen_results.Obj_frames,current_index)
+for k in indx_online:
+    # pl.plot_3d_frame(optim_calc_results.Obj_pos[k,:],optim_calc_results.Obj_frames[k,:,:],1,0.01,['red','green','blue'],ax)
+    pl.plot_3d_frame(optim_gen_results.Obj_pos[k,:],optim_gen_results.Obj_frames[k,:,:],1,0.01,['red','green','blue'],ax)
+    pl.plot_3d_frame(no_kin_model.Obj_pos[k,:],no_kin_model.Obj_frames[k,:,:],1,0.01,['red','green','blue'],ax)
+    pl.plot_stl(opener_location,optim_gen_results.Obj_pos[k,:],optim_gen_results.Obj_frames[k,:,:],colour="g",alpha=0.2,ax=ax)
+    if k in out_limit:
+        pl.plot_stl(opener_location,no_kin_model.Obj_pos[k,:],no_kin_model.Obj_frames[k,:,:],colour="r",alpha=0.2,ax=ax)
+    else:
+        pl.plot_stl(opener_location,no_kin_model.Obj_pos[k,:],no_kin_model.Obj_frames[k,:,:],colour="y",alpha=0.2,ax=ax)
+    pl.plot_stl(opener_location,no_kin_model_corrected.Obj_pos[k,:],no_kin_model_corrected.Obj_frames[k,:,:],colour="tab:orange",alpha=0.2,ax=ax)
+# pl.plot_orientation(optim_calc_results.Obj_frames,optim_gen_results.Obj_frames,current_index)
 
+# print("Final joint values with kin model:", joint_val[:,-1])
+# print("Check final joint values with kin model:", check_joint_values[-1,:])
 
 fig = plt.figure()
 plt.subplot(2,3,1)
 plt.plot(arclength_n,optim_calc_results.invariants[:,0],'b')
-plt.plot(progress_values,optim_gen_results.invariants[:,0],'r')
+plt.plot(progress_values,optim_gen_results.invariants[:,0],'g')
+plt.plot(progress_values,no_kin_model.invariants[:,0],'y')
+plt.legend(['Real demo','With kin model','No kin model'])
 plt.plot(0,0)
 plt.title('i_r1')
 
 plt.subplot(2,3,2)
 plt.plot(arclength_n,optim_calc_results.invariants[:,1],'b')
-plt.plot(progress_values,optim_gen_results.invariants[:,1],'r')
+plt.plot(progress_values,optim_gen_results.invariants[:,1],'g')
+plt.plot(progress_values,no_kin_model.invariants[:,1],'y')
+plt.legend(['Real demo','With kin model','No kin model'])
 plt.plot(0,0)
 plt.title('i_r2')
 
 plt.subplot(2,3,3)
 plt.plot(arclength_n,optim_calc_results.invariants[:,2],'b')
-plt.plot(progress_values,optim_gen_results.invariants[:,2],'r')
+plt.plot(progress_values,optim_gen_results.invariants[:,2],'g')
+plt.plot(progress_values,no_kin_model.invariants[:,2],'y')
+plt.legend(['Real demo','With kin model','No kin model'])
 plt.plot(0,0)
 plt.title('i_r3')
 
 plt.subplot(2,3,4)
 plt.plot(arclength_n,optim_calc_results.invariants[:,3],'b')
-plt.plot(progress_values,optim_gen_results.invariants[:,3],'r')
+plt.plot(progress_values,optim_gen_results.invariants[:,3],'g')
+plt.plot(progress_values,no_kin_model.invariants[:,3],'y')
+plt.legend(['Real demo','With kin model','No kin model'])
 plt.plot(0,0)
 plt.title('i_t1')
 
 plt.subplot(2,3,5)
 plt.plot(arclength_n,optim_calc_results.invariants[:,4],'b')
-plt.plot(progress_values,optim_gen_results.invariants[:,4],'r')
+plt.plot(progress_values,optim_gen_results.invariants[:,4],'g')
+plt.plot(progress_values,no_kin_model.invariants[:,4],'y')
+plt.legend(['Real demo','With kin model','No kin model'])
 plt.plot(0,0)
 plt.title('i_t2')
 
 plt.subplot(2,3,6)
 plt.plot(arclength_n,optim_calc_results.invariants[:,5],'b')
-plt.plot(progress_values,optim_gen_results.invariants[:,5],'r')
+plt.plot(progress_values,optim_gen_results.invariants[:,5],'g')
+plt.plot(progress_values,no_kin_model.invariants[:,5],'y')
+plt.legend(['Real demo','With kin model','No kin model'])
 plt.plot(0,0)
 plt.title('i_t3')
 
@@ -265,132 +326,21 @@ if plt.get_backend() != 'agg':
     plt.show()
 
 
-#%% Generation of multiple trajectories to test FATROP calculation speed
-
-current_progress = 0
-number_samples = 100
-number_of_trajectories = 100
-
-progress_values = np.linspace(current_progress, arclength_n[-1], number_samples)
-model_invariants,new_stepsize = interpolate_model_invariants(spline_model_trajectory,progress_values)
-
-# pl.plot_interpolated_invariants(optim_calc_results.invariants, model_invariants, arclength_n, progress_values)
-
-# new constraints
-current_index = round(current_progress*len(trajectory))
-p_obj_start = optim_calc_results.Obj_pos[current_index]
-R_obj_start = orthonormalize(optim_calc_results.Obj_frames[current_index])
-FSt_start = orthonormalize(optim_calc_results.FSt_frames[current_index])
-FSr_start = orthonormalize(optim_calc_results.FSr_frames[current_index])
-FSt_end = orthonormalize(optim_calc_results.FSt_frames[-1])
-FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
-
-boundary_constraints = {
-    "position": {
-        "initial": p_obj_start,
-        "final": p_obj_start # will be updated later
-    },
-    "orientation": {
-        "initial": R_obj_start,
-        "final": []
-    },
-    "moving-frame": {
-        "translational": {
-            "initial": FSt_start,
-            "final": FSt_end
-        },
-        "rotational": {
-            "initial": FSr_start,
-            "final": FSr_end
-        }
-    },
-}
-
-initial_values = {
-    "trajectory": {
-        "position": optim_calc_results.Obj_pos,
-        "orientation": [],
-    },
-    "moving-frame": {
-        "translational": optim_calc_results.FSt_frames,
-        "rotational": []
-    },
-    "invariants": model_invariants,
-}
-
-# define new class for OCP results
-optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
-
-# specify optimization problem symbolically
-FS_online_generation_problem = OCP_gen_pose(boundary_constraints, number_samples, solver = solver)
-
-if show_plots:
-    fig = plt.figure(figsize=(14,8))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.plot(optim_calc_results.Obj_pos[:,0],optim_calc_results.Obj_pos[:,1],optim_calc_results.Obj_pos[:,2],'b')
-
-tot_time = 0
-counter = 0
-max_time = 0
-targets = np.zeros((number_of_trajectories,4))
-for k in range(len(targets)):
-# for x in range(-2,3):
-    # for y in range(-2,3):
-        # p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([0.05*x,0.05*y,0])
-    targets[k,:-1] = optim_calc_results.Obj_pos[-1] + np.array([random.uniform(-0.2,0.2),random.uniform(-0.2,0.2),random.uniform(-0.05,0.05)])
-    targets[k,-1] = random.uniform(0,30)
-    p_obj_end = targets[k,:-1]
-    rotate = R.from_euler('z', targets[k,-1], degrees=True)
-    R_obj_end =  orthonormalize(rotate.apply(optim_calc_results.Obj_frames[-1]))
-
-    R_obj_init = reparam.interpR(np.linspace(0, 1, len(trajectory)), [0,1], np.array([R_obj_start, R_obj_end]))
-
-    R_r_init, R_r_init_array, invars_init = initial_trajectory_movingframe_rotation(R_obj_start, R_obj_end)
-
-    boundary_constraints["position"]["final"] = p_obj_end 
-    boundary_constraints["orientation"]["final"] = R_obj_end
-    boundary_constraints["moving-frame"]["rotational"]["initial"] = R_r_init
-    boundary_constraints["moving-frame"]["rotational"]["final"] = R_r_init
-
-    initial_values["trajectory"]["orientation"] = R_obj_init
-    initial_values["moving-frame"]["rotational"] = R_r_init_array
-    
-
-    # Solve
-    optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, joint_val = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values)
-
-    for i in range(len(optim_gen_results.Obj_frames)):
-        optim_gen_results.Obj_frames[i] = orthonormalize(optim_gen_results.Obj_frames[i])
-
-    if show_plots:
-        ax.plot(optim_gen_results.Obj_pos[:,0],optim_gen_results.Obj_pos[:,1],optim_gen_results.Obj_pos[:,2],'r')
-
-    # if solver == 'fatrop':
-    #     new_time = tot_time_pos + tot_time_rot
-    #     if new_time > max_time:
-    #         max_time = new_time
-    #     tot_time = tot_time + new_time
-    
-    # counter += 1
-
-# if solver == 'fatrop':
-#     print('')
-#     print("AVERAGE time to generate new trajectory: ")
-#     print(str(tot_time/counter) + "[s]")
-#     print('')
-#     print("MAXIMUM time to generate new trajectory: ")
-#     print(str(max_time) + "[s]")
-
-# fig = plt.figure(figsize=(10,6))
-# ax1 = fig.add_subplot(111, projection='3d')
-# ax1 = plt.axes(projection='3d')
-# ax1.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,2],'b')
-# ax1.plot(targets[:,0],targets[:,1],targets[:,2],'r.')
-
-if show_plots:
-    fig = plt.figure(figsize=(5,5))
-    ax2 = fig.add_subplot()
-    ax2.plot(targets[:,-1],'r.')
-
-    if plt.get_backend() != 'agg':
-        plt.show()
+# np.savetxt("1arclength_n.csv", arclength_n, delimiter=",")
+# np.savetxt("1check_joint_values_no_kin.csv", check_joint_values_no_kin, delimiter=",")
+# np.savetxt("1indx.csv", indx, delimiter=",")
+# np.savetxt("1calc_inv.csv", optim_calc_results.invariants, delimiter=",")
+# np.savetxt("1calc_pos.csv", optim_calc_results.Obj_pos, delimiter=",")
+# np.savetxt("1calc_R.csv", np.array(optim_calc_results.Obj_frames).reshape(100*3,3), delimiter=",")
+# np.savetxt("1calc_R_t.csv", np.array(optim_calc_results.FSt_frames).reshape(100*3,3), delimiter=",")
+# np.savetxt("1calc_R_r.csv", np.array(optim_calc_results.FSr_frames).reshape(100*3,3), delimiter=",")
+# np.savetxt("1gen_inv.csv", optim_gen_results.invariants, delimiter=",")
+# np.savetxt("1gen_pos.csv", optim_gen_results.Obj_pos, delimiter=",")
+# np.savetxt("1gen_R.csv", np.array(optim_gen_results.Obj_frames).reshape(100*3,3), delimiter=",")
+# np.savetxt("1gen_R_t.csv", np.array(optim_gen_results.FSt_frames).reshape(100*3,3), delimiter=",")
+# np.savetxt("1gen_R_r.csv", np.array(optim_gen_results.FSr_frames).reshape(100*3,3), delimiter=",")
+# np.savetxt("1nokin_inv.csv", no_kin_model.invariants, delimiter=",")
+# np.savetxt("1nokin_pos.csv", no_kin_model.Obj_pos, delimiter=",")
+# np.savetxt("1nokin_R.csv", np.array(no_kin_model.Obj_frames).reshape(100*3,3), delimiter=",")
+# np.savetxt("1nokin_R_t.csv", np.array(no_kin_model.FSt_frames).reshape(100*3,3), delimiter=",")
+# np.savetxt("1nokin_R_r.csv", np.array(no_kin_model.FSr_frames).reshape(100*3,3), delimiter=",")
