@@ -20,14 +20,13 @@ run_examples:
     - pip install .
 
     # install fatrop
-    - git clone https://github.com/meco-group/fatrop.git --recursive
+    - git clone https://github.com/meco-group/fatrop.git
     - cd fatrop
-    - apt-get update && apt-get install -y cmake
-    - export CMAKE_ARGS="-DBLASFEO_TARGET=X64_AUTOMATIC -DENABLE_MULTITHREADING=OFF"
-    - cd fatropy
-    - pip install --upgrade pip setuptools
-    - pip install .
-    - cd ../..
+    - git checkout fatropv1
+    - cmake .. -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF
+    - make -j$(nproc)
+    - make install 
+    - cd ..
 
     # install rockit and rockit-fatrop plugin
     # - git clone -b acados_codegen https://gitlab.kuleuven.be/meco-software/rockit.git
