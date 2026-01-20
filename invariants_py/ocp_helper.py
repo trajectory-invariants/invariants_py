@@ -2,6 +2,7 @@
 import numpy as np
 import casadi as cas
 import warnings
+import yourdfpy as urdf
 
 def jerk_invariant(i1,i1dot,i1ddot,i2,i2dot,i3):
     ''' Calculate the jerk of a vector trajectory expressed in terms of the invariants and their derivatives '''
@@ -66,3 +67,16 @@ def solution_check_rot(R_obj_m,R_obj,rms = 4*np.pi/180):
         print("")
         print("Value of error is" , np.sqrt(tot_ek/N), "and should be less than", rms)
         raise Exception("The constraint is not satisfied! Something is wrong in the calculation")
+    
+def extract_robot_params(robot_params,path_to_urdf,urdf_file_name):
+    robot = urdf.URDF.load(path_to_urdf)
+    if urdf_file_name == "franka_panda.urdf":
+        nb_joints = robot_params.get('joint_number', robot.num_actuated_joints-1)
+    else:
+        nb_joints = robot_params.get('joint_number', robot.num_actuated_joints)
+    q_limits = robot_params.get('q_lim', np.hstack([np.array([robot._actuated_joints[i].limit.lower for i in range(nb_joints)]),np.array([robot._actuated_joints[i].limit.upper for i in range(nb_joints)])]))
+    root = robot_params.get('root', robot.base_link)
+    tip = robot_params.get('tip', 'tool0')
+    q_init = robot_params.get('q_init', np.zeros(nb_joints))
+
+    return nb_joints,q_limits,root,tip,q_init

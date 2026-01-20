@@ -8,7 +8,7 @@ import invariants_py.reparameterization as reparam
 import scipy.interpolate as ip
 from invariants_py.calculate_invariants.opti_calculate_vector_invariants_rotation import OCP_calc_rot
 from invariants_py.calculate_invariants.opti_calculate_vector_invariants_position import OCP_calc_pos as OCP_calc_pos
-from invariants_py.generate_trajectory.opti_generate_pose_traj_from_vector_invars_ipopt import OCP_gen_pose
+from invariants_py.generate_trajectory.opti_generate_pose_traj_from_vector_invars import OCP_gen_pose
 from scipy.spatial.transform import Rotation as R
 from IPython.display import clear_output
 from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize
@@ -19,7 +19,7 @@ import random
 
 #%%
 show_plots = True
-solver = 'ipopt'
+solver = 'fatrop'
 
 data_location = dh.find_data_path('beer_1.txt')
 opener_location =  dh.find_data_path('opener.stl')

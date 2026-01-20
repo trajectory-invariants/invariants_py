@@ -1,7 +1,7 @@
 import numpy as np
 import casadi as cas
 import invariants_py.dynamics_vector_invariants as dynamics
-from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag
+from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag, extract_robot_params
 from invariants_py.ocp_initialization import generate_initvals_from_constraints_opti
 from invariants_py.kinematics.orientation_kinematics import rotate_x
 from invariants_py import spline_handler as sh
@@ -20,12 +20,7 @@ class OCP_gen_pose:
         path_to_urdf = dh.find_robot_path(urdf_file_name) 
         include_robot_model = True if path_to_urdf is not None else False
         if include_robot_model:
-            robot = urdf.URDF.load(path_to_urdf)
-            nb_joints = robot_params.get('joint_number', robot.num_actuated_joints)
-            q_limits = robot_params.get('q_lim', np.array([robot._actuated_joints[i].limit.upper for i in range(robot.num_actuated_joints)]))
-            root = robot_params.get('root', robot.base_link)
-            tip = robot_params.get('tip', 'tool0')
-            q_init = robot_params.get('q_init', np.zeros(nb_joints))
+            nb_joints,q_limits,root,tip,q_init = extract_robot_params(robot_params,path_to_urdf,urdf_file_name)
 
         dummy_inv_sol = dummy.get('inv_sol', 0.001+np.zeros((N,6)))
         dummy_inv_demo = dummy.get('inv_demo', 0.001+np.zeros((N,6)))
@@ -65,7 +60,7 @@ class OCP_gen_pose:
             invars_demo.append(opti.parameter(6,1)) # model invariants
             w_invars.append(opti.parameter(6,1)) # weights for invariants
         if include_robot_model:
-            q_lim = opti.parameter(nb_joints,1)
+            q_lim = opti.parameter(2*nb_joints,1)
 
         # Boundary values
         if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:
@@ -117,7 +112,7 @@ class OCP_gen_pose:
                 for i in range(nb_joints):
                     # ocp.subject_to(-q_lim[i] <= (q[k][i] <= q_lim[i])) # This constraint definition does not work with fatrop, yet
                     opti.subject_to(q[k][i] >= -q_lim[i])
-                    opti.subject_to(q[k][i] <= q_lim[i])
+                    opti.subject_to(q[k][i] <= q_lim[nb_joints+i])
                 
                 # Forward kinematics
                 p_obj_fwkin, R_obj_fwkin = robot_forward_kinematics(q[k],path_to_urdf,root,tip)
@@ -128,7 +123,7 @@ class OCP_gen_pose:
             for i in range(nb_joints):
                 # ocp.subject_to(-q_lim[i] <= (q[k][i] <= q_lim[i])) # This constraint definition does not work with fatrop, yet
                 opti.subject_to(q[-1][i] >= -q_lim[i])
-                opti.subject_to(q[-1][i] <= q_lim[i])
+                opti.subject_to(q[-1][i] <= q_lim[nb_joints+i])
             # Forward kinematics
                 p_obj_fwkin, R_obj_fwkin = robot_forward_kinematics(q[-1],path_to_urdf,root,tip)
                 opti.subject_to(p_obj[-1] == p_obj_fwkin)

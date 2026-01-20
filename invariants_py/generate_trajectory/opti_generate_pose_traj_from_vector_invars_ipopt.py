@@ -1,11 +1,10 @@
 import numpy as np
 import casadi as cas
 import invariants_py.dynamics_vector_invariants as dynamics
-from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag
+from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag, extract_robot_params
 from invariants_py.ocp_initialization import generate_initvals_from_constraints_opti
 from invariants_py.kinematics.orientation_kinematics import rotate_x
 from invariants_py import spline_handler as sh
-import yourdfpy as urdf
 import invariants_py.data_handler as dh
 from invariants_py.kinematics.robot_forward_kinematics import robot_forward_kinematics
 import urdf2casadi.urdfparser as u2c
@@ -21,15 +20,7 @@ class OCP_gen_pose:
         path_to_urdf = dh.find_robot_path(urdf_file_name) 
         include_robot_model = True if path_to_urdf is not None else False
         if include_robot_model:
-            robot = urdf.URDF.load(path_to_urdf)
-            if urdf_file_name == "franka_panda.urdf":
-                nb_joints = robot_params.get('joint_number', robot.num_actuated_joints-1)
-            else:
-                nb_joints = robot_params.get('joint_number', robot.num_actuated_joints)
-            q_limits = robot_params.get('q_lim', np.hstack([np.array([robot._actuated_joints[i].limit.lower for i in range(nb_joints)]),np.array([robot._actuated_joints[i].limit.upper for i in range(nb_joints)])]))
-            root = robot_params.get('root', robot.base_link)
-            tip = robot_params.get('tip', 'tool0')
-            q_init = robot_params.get('q_init', np.zeros(nb_joints))
+            nb_joints,q_limits,root,tip,q_init = extract_robot_params(robot_params,path_to_urdf,urdf_file_name)
 
         dummy_inv_sol = dummy.get('inv_sol', 0.001+np.zeros((N,6)))
         dummy_inv_demo = dummy.get('inv_demo', 0.001+np.zeros((N,6)))
