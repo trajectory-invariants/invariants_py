@@ -6,10 +6,9 @@ stages:
 build_job:
     stage: build
     image: gcc
-    before_script:
-      - apt-get update --yes
-      - apt-get install --yes cmake
     script:
+      - apt-get update
+      - apt-get install --yes cmake
       # install fatrop
       - git clone https://github.com/meco-group/fatrop.git
       - cd fatrop
