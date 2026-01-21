@@ -43,7 +43,7 @@ def inv_kin(des_p_obj, des_R_obj, window_len = 100, fatrop_solver = False, robot
         opti.subject_to(q[i] >= q_lim[i])
         opti.subject_to(q[i] <= q_lim[nb_joints+i])
 
-    root = "base_link" # This is necessary because u2c uses a frame rotated by 180 deg around z axis compare to 'world'
+    root = "panda_link0" # This is necessary because u2c uses a frame rotated by 180 deg around z axis compare to 'world'
     robot = u2c.URDFparser()
     robot.from_file(path_to_urdf)
     fk_dict = robot.get_forward_kinematics(root, tip)

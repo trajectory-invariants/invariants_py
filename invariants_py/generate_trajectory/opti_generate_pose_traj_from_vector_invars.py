@@ -13,7 +13,9 @@ class OCP_gen_pose:
 
     def __init__(self, boundary_constraints, N = 40, bool_unsigned_invariants = False, solver = 'ipopt', robot_params = {}, dummy = {}):  
 
-        # fatrop_solver = check_solver(fatrop_solver)
+        # if solver == "fatrop":
+        #     fatrop_solver = True
+        #     fatrop_solver = check_solver(fatrop_solver)
 
         # Robot urdf location
         urdf_file_name = robot_params.get('urdf_file_name', None)
@@ -39,18 +41,19 @@ class OCP_gen_pose:
         q = []
         qdot = []
         for k in range(N):
-            p_obj.append(opti.variable(3,1)) # object position
+            R_r.append(opti.variable(3,3)) # rotational Frenet-Serret frame
             R_obj.append(opti.variable(3,3)) # object orientation
             R_t.append(opti.variable(3,3)) # translational Frenet-Serret frame
-            R_r.append(opti.variable(3,3)) # rotational Frenet-Serret frame
+            p_obj.append(opti.variable(3,1)) # object position
             if include_robot_model:
                 q.append(opti.variable(nb_joints,1))
-            X.append(cas.vertcat(cas.vec(p_obj[k]), cas.vec(R_obj[k]), cas.vec(R_t[k]), cas.vec(R_r[k])))
-
+            X.append(cas.vertcat(cas.vec(R_r[k]), cas.vec(R_obj[k]),cas.vec(R_t[k]), cas.vec(p_obj[k])))
             if k < N-1:
                 invars.append(opti.variable(6,1)) # invariants
                 if include_robot_model:
                     qdot.append(opti.variable(nb_joints,1))
+        # if include_robot_model:
+        #     epsilon = opti.variable(3,1) # slack variable for gap closing constraint
 
         # Define system parameters P (known values in optimization that need to be set right before solving)
         h = opti.parameter(1,1) # step size for integration of dynamic model
@@ -81,7 +84,10 @@ class OCP_gen_pose:
             R_r_end = opti.parameter(3,3)
 
         ''' Specifying the constraints '''
-        
+        # Forward kinematics
+        if include_robot_model:
+            fw_kin = robot_forward_kinematics(path_to_urdf,nb_joints,root,tip)
+
         # Dynamic constraints
         integrator = dynamics.define_integrator_invariants_pose(h)
         # integrator = dynamics.define_integrator_invariants_pose(h,include_robot_model)
@@ -115,11 +121,14 @@ class OCP_gen_pose:
                     opti.subject_to(q[k][i] <= q_lim[nb_joints+i])
                 
                 # Forward kinematics
-                p_obj_fwkin, R_obj_fwkin = robot_forward_kinematics(q[k],path_to_urdf,root,tip)
+                p_obj_fwkin, R_obj_fwkin = fw_kin(q[k])
                 opti.subject_to(p_obj[k] == p_obj_fwkin)
                 opti.subject_to(tril_vec_no_diag(R_obj[k].T @ R_obj_fwkin - np.eye(3)) == 0.)
             
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
+            # if include_robot_model:
+            #     opti.subject_to(p_obj[-1] - p_obj_end == epsilon)
+            # else:
             opti.subject_to(p_obj[-1] == p_obj_end)
         if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
             opti.subject_to(tril_vec_no_diag(R_obj[-1].T @ R_obj_end - np.eye(3)) == 0.)
@@ -134,9 +143,9 @@ class OCP_gen_pose:
                 opti.subject_to(q[-1][i] >= q_lim[i])
                 opti.subject_to(q[-1][i] <= q_lim[nb_joints+i])
             # Forward kinematics
-                p_obj_fwkin, R_obj_fwkin = robot_forward_kinematics(q[-1],path_to_urdf,root,tip)
-                opti.subject_to(p_obj[-1] == p_obj_fwkin)
-                opti.subject_to(tril_vec_no_diag(R_obj[-1].T @ R_obj_fwkin - np.eye(3)) == 0.)
+            p_obj_fwkin, R_obj_fwkin = fw_kin(q[-1])
+            opti.subject_to(p_obj[-1] == p_obj_fwkin)
+            opti.subject_to(tril_vec_no_diag(R_obj[-1].T @ R_obj_fwkin - np.eye(3)) == 0.)
        
 
         ''' Specifying the objective '''
@@ -148,13 +157,15 @@ class OCP_gen_pose:
             objective_fit += 1/N*cas.dot(err_invars,err_invars)
             if include_robot_model:
                 objective_fit += 0.001*cas.dot(qdot[k],qdot[k])
+        # if include_robot_model:
+        #     objective_fit += 1500*cas.dot(epsilon,epsilon)
         objective = objective_fit
 
         ''' Define solver and save variables '''
         opti.minimize(objective)
 
         if solver == 'ipopt':
-            opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':300,'tol':1e-6,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'})
+            opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':100,'tol':1e-6,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'})
         elif solver == 'fatrop':
             opti.solver('fatrop',{"expand":True,'fatrop.max_iter':300,'fatrop.tol':1e-6,'fatrop.print_level':5, "structure_detection":"auto","debug":True,"fatrop.mu_init":0.1})
             # ocp._method.set_name("/codegen/generation_position")
@@ -164,7 +175,7 @@ class OCP_gen_pose:
             opti.set_initial(R_t[k], dummy_R_t[k])
             opti.set_initial(R_r[k], dummy_R_r[k])
             if include_robot_model:
-                p_obj_dummy, R_obj_dummy = robot_forward_kinematics(q_init,path_to_urdf,root,tip)
+                p_obj_dummy, R_obj_dummy = fw_kin(q_init)
                 opti.set_initial(q[k],q_init)
                 opti.set_value(q_lim,q_limits)
             else:
@@ -183,11 +194,11 @@ class OCP_gen_pose:
         if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:
             opti.set_value(p_obj_start, p_obj_dummy)
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
-            opti.set_value(p_obj_end, p_obj_dummy + np.array([0.1,0.1,0]))
+            opti.set_value(p_obj_end, p_obj_dummy + np.array([0.3,0.1,0]))
         if "orientation" in boundary_constraints and "initial" in boundary_constraints["orientation"]:
             opti.set_value(R_obj_start, R_obj_dummy)
         if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
-            opti.set_value(R_obj_end, rotate_x(np.pi/8) @ R_obj_dummy)
+            opti.set_value(R_obj_end, rotate_x(np.pi/6) @ R_obj_dummy)
         if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "initial" in boundary_constraints["moving-frame"]["translational"]:
             opti.set_value(R_t_start, dummy_R_t[0])
         if "moving-frame" in boundary_constraints and "translational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["translational"]:

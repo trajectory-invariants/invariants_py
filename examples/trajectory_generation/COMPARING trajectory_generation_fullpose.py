@@ -152,17 +152,17 @@ boundary_constraints = {
 
 # Define OCP weights
 weights_params = {
-    "w_invars": np.array([1, 1, 1, 5*10**1, 1.0, 1.0]),
-    "w_high_start": 60,
+    "w_invars": 0.1*np.array([1, 1, 1, 5, 1.0, 1.0]),
+    "w_high_start": 70,
     "w_high_end": number_samples,
-    "w_high_invars": 10*np.array([1, 1, 1, 5*10**1, 1.0, 1.0]),
-    "w_high_active": 0
+    "w_high_invars": 0.5*np.array([1, 1, 1, 5, 1, 1]),
+    "w_high_active": 1
 }
 
 
 # Define robot parameters
 robot_params = {
-    "urdf_file_name": None, # use None if do not want to include robot model
+    "urdf_file_name": "ur10.urdf", # use None if do not want to include robot model
     "q_init": np.array([-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4]), # Initial joint values
     "tip": 'TCP_frame' # Name of the robot tip (if empty standard 'tool0' is used)
     # "joint_number": 6, # Number of joints (if empty it is automatically taken from urdf file)
@@ -175,8 +175,13 @@ if solver == "fatrop":
 else:
     use_fatrop_solver = False
 
+dummy = { "inv_sol": np.loadtxt(dh.find_data_path("dummy_sol.csv"),delimiter=","), 
+          "inv_demo": np.loadtxt(dh.find_data_path("dummy_inv.csv"),delimiter=","), 
+          "R_t": np.loadtxt(dh.find_data_path("dummy_R_t.csv"),delimiter=",").reshape(100,3,3), 
+          "R_r": np.loadtxt(dh.find_data_path("dummy_R_r.csv"),delimiter=",").reshape(100,3,3)}
+
 # specify optimization problem symbolically
-FS_online_generation_problem = OCP_gen_pose(boundary_constraints, number_samples, solver = solver, robot_params = robot_params)
+FS_online_generation_problem = OCP_gen_pose(boundary_constraints, number_samples, solver = solver, robot_params = robot_params, dummy=dummy)
 ipopt_online_generation_problem = OCP_gen_pose_ipopt(boundary_constraints, number_samples,robot_params=robot_params)
 
 initial_values = {

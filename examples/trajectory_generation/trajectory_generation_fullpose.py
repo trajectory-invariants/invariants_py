@@ -19,7 +19,7 @@ import random
 
 #%%
 show_plots = True
-solver = 'ipopt'
+solver = 'fatrop'
 
 data_location = dh.find_data_path('beer_1.txt')
 opener_location =  dh.find_data_path('opener.stl')
@@ -265,132 +265,132 @@ if plt.get_backend() != 'agg':
     plt.show()
 
 
-#%% Generation of multiple trajectories to test FATROP calculation speed
+# #%% Generation of multiple trajectories to test FATROP calculation speed
 
-current_progress = 0
-number_samples = 100
-number_of_trajectories = 100
+# current_progress = 0
+# number_samples = 100
+# number_of_trajectories = 100
 
-progress_values = np.linspace(current_progress, arclength_n[-1], number_samples)
-model_invariants,new_stepsize = interpolate_model_invariants(spline_model_trajectory,progress_values)
+# progress_values = np.linspace(current_progress, arclength_n[-1], number_samples)
+# model_invariants,new_stepsize = interpolate_model_invariants(spline_model_trajectory,progress_values)
 
-# pl.plot_interpolated_invariants(optim_calc_results.invariants, model_invariants, arclength_n, progress_values)
+# # pl.plot_interpolated_invariants(optim_calc_results.invariants, model_invariants, arclength_n, progress_values)
 
-# new constraints
-current_index = round(current_progress*len(trajectory))
-p_obj_start = optim_calc_results.Obj_pos[current_index]
-R_obj_start = orthonormalize(optim_calc_results.Obj_frames[current_index])
-FSt_start = orthonormalize(optim_calc_results.FSt_frames[current_index])
-FSr_start = orthonormalize(optim_calc_results.FSr_frames[current_index])
-FSt_end = orthonormalize(optim_calc_results.FSt_frames[-1])
-FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
+# # new constraints
+# current_index = round(current_progress*len(trajectory))
+# p_obj_start = optim_calc_results.Obj_pos[current_index]
+# R_obj_start = orthonormalize(optim_calc_results.Obj_frames[current_index])
+# FSt_start = orthonormalize(optim_calc_results.FSt_frames[current_index])
+# FSr_start = orthonormalize(optim_calc_results.FSr_frames[current_index])
+# FSt_end = orthonormalize(optim_calc_results.FSt_frames[-1])
+# FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
 
-boundary_constraints = {
-    "position": {
-        "initial": p_obj_start,
-        "final": p_obj_start # will be updated later
-    },
-    "orientation": {
-        "initial": R_obj_start,
-        "final": []
-    },
-    "moving-frame": {
-        "translational": {
-            "initial": FSt_start,
-            "final": FSt_end
-        },
-        "rotational": {
-            "initial": FSr_start,
-            "final": FSr_end
-        }
-    },
-}
+# boundary_constraints = {
+#     "position": {
+#         "initial": p_obj_start,
+#         "final": p_obj_start # will be updated later
+#     },
+#     "orientation": {
+#         "initial": R_obj_start,
+#         "final": []
+#     },
+#     "moving-frame": {
+#         "translational": {
+#             "initial": FSt_start,
+#             "final": FSt_end
+#         },
+#         "rotational": {
+#             "initial": FSr_start,
+#             "final": FSr_end
+#         }
+#     },
+# }
 
-initial_values = {
-    "trajectory": {
-        "position": optim_calc_results.Obj_pos,
-        "orientation": [],
-    },
-    "moving-frame": {
-        "translational": optim_calc_results.FSt_frames,
-        "rotational": []
-    },
-    "invariants": model_invariants,
-}
+# initial_values = {
+#     "trajectory": {
+#         "position": optim_calc_results.Obj_pos,
+#         "orientation": [],
+#     },
+#     "moving-frame": {
+#         "translational": optim_calc_results.FSt_frames,
+#         "rotational": []
+#     },
+#     "invariants": model_invariants,
+# }
 
-# define new class for OCP results
-optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
+# # define new class for OCP results
+# optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
 
-# specify optimization problem symbolically
-FS_online_generation_problem = OCP_gen_pose(boundary_constraints, number_samples, solver = solver)
+# # specify optimization problem symbolically
+# FS_online_generation_problem = OCP_gen_pose(boundary_constraints, number_samples, solver = solver)
 
-if show_plots:
-    fig = plt.figure(figsize=(14,8))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.plot(optim_calc_results.Obj_pos[:,0],optim_calc_results.Obj_pos[:,1],optim_calc_results.Obj_pos[:,2],'b')
+# if show_plots:
+#     fig = plt.figure(figsize=(14,8))
+#     ax = fig.add_subplot(111, projection='3d')
+#     ax.plot(optim_calc_results.Obj_pos[:,0],optim_calc_results.Obj_pos[:,1],optim_calc_results.Obj_pos[:,2],'b')
 
-tot_time = 0
-counter = 0
-max_time = 0
-targets = np.zeros((number_of_trajectories,4))
-for k in range(len(targets)):
-# for x in range(-2,3):
-    # for y in range(-2,3):
-        # p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([0.05*x,0.05*y,0])
-    targets[k,:-1] = optim_calc_results.Obj_pos[-1] + np.array([random.uniform(-0.2,0.2),random.uniform(-0.2,0.2),random.uniform(-0.05,0.05)])
-    targets[k,-1] = random.uniform(0,30)
-    p_obj_end = targets[k,:-1]
-    rotate = R.from_euler('z', targets[k,-1], degrees=True)
-    R_obj_end =  orthonormalize(rotate.apply(optim_calc_results.Obj_frames[-1]))
+# tot_time = 0
+# counter = 0
+# max_time = 0
+# targets = np.zeros((number_of_trajectories,4))
+# for k in range(len(targets)):
+# # for x in range(-2,3):
+#     # for y in range(-2,3):
+#         # p_obj_end = optim_calc_results.Obj_pos[-1] + np.array([0.05*x,0.05*y,0])
+#     targets[k,:-1] = optim_calc_results.Obj_pos[-1] + np.array([random.uniform(-0.2,0.2),random.uniform(-0.2,0.2),random.uniform(-0.05,0.05)])
+#     targets[k,-1] = random.uniform(0,30)
+#     p_obj_end = targets[k,:-1]
+#     rotate = R.from_euler('z', targets[k,-1], degrees=True)
+#     R_obj_end =  orthonormalize(rotate.apply(optim_calc_results.Obj_frames[-1]))
 
-    R_obj_init = reparam.interpR(np.linspace(0, 1, len(trajectory)), [0,1], np.array([R_obj_start, R_obj_end]))
+#     R_obj_init = reparam.interpR(np.linspace(0, 1, len(trajectory)), [0,1], np.array([R_obj_start, R_obj_end]))
 
-    R_r_init, R_r_init_array, invars_init = initial_trajectory_movingframe_rotation(R_obj_start, R_obj_end)
+#     R_r_init, R_r_init_array, invars_init = initial_trajectory_movingframe_rotation(R_obj_start, R_obj_end)
 
-    boundary_constraints["position"]["final"] = p_obj_end 
-    boundary_constraints["orientation"]["final"] = R_obj_end
-    boundary_constraints["moving-frame"]["rotational"]["initial"] = R_r_init
-    boundary_constraints["moving-frame"]["rotational"]["final"] = R_r_init
+#     boundary_constraints["position"]["final"] = p_obj_end 
+#     boundary_constraints["orientation"]["final"] = R_obj_end
+#     boundary_constraints["moving-frame"]["rotational"]["initial"] = R_r_init
+#     boundary_constraints["moving-frame"]["rotational"]["final"] = R_r_init
 
-    initial_values["trajectory"]["orientation"] = R_obj_init
-    initial_values["moving-frame"]["rotational"] = R_r_init_array
+#     initial_values["trajectory"]["orientation"] = R_obj_init
+#     initial_values["moving-frame"]["rotational"] = R_r_init_array
     
 
-    # Solve
-    optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, joint_val = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values)
+#     # Solve
+#     optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, joint_val = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values)
 
-    for i in range(len(optim_gen_results.Obj_frames)):
-        optim_gen_results.Obj_frames[i] = orthonormalize(optim_gen_results.Obj_frames[i])
+#     for i in range(len(optim_gen_results.Obj_frames)):
+#         optim_gen_results.Obj_frames[i] = orthonormalize(optim_gen_results.Obj_frames[i])
 
-    if show_plots:
-        ax.plot(optim_gen_results.Obj_pos[:,0],optim_gen_results.Obj_pos[:,1],optim_gen_results.Obj_pos[:,2],'r')
+#     if show_plots:
+#         ax.plot(optim_gen_results.Obj_pos[:,0],optim_gen_results.Obj_pos[:,1],optim_gen_results.Obj_pos[:,2],'r')
 
-    # if solver == 'fatrop':
-    #     new_time = tot_time_pos + tot_time_rot
-    #     if new_time > max_time:
-    #         max_time = new_time
-    #     tot_time = tot_time + new_time
+#     # if solver == 'fatrop':
+#     #     new_time = tot_time_pos + tot_time_rot
+#     #     if new_time > max_time:
+#     #         max_time = new_time
+#     #     tot_time = tot_time + new_time
     
-    # counter += 1
+#     # counter += 1
 
-# if solver == 'fatrop':
-#     print('')
-#     print("AVERAGE time to generate new trajectory: ")
-#     print(str(tot_time/counter) + "[s]")
-#     print('')
-#     print("MAXIMUM time to generate new trajectory: ")
-#     print(str(max_time) + "[s]")
+# # if solver == 'fatrop':
+# #     print('')
+# #     print("AVERAGE time to generate new trajectory: ")
+# #     print(str(tot_time/counter) + "[s]")
+# #     print('')
+# #     print("MAXIMUM time to generate new trajectory: ")
+# #     print(str(max_time) + "[s]")
 
-# fig = plt.figure(figsize=(10,6))
-# ax1 = fig.add_subplot(111, projection='3d')
-# ax1 = plt.axes(projection='3d')
-# ax1.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,2],'b')
-# ax1.plot(targets[:,0],targets[:,1],targets[:,2],'r.')
+# # fig = plt.figure(figsize=(10,6))
+# # ax1 = fig.add_subplot(111, projection='3d')
+# # ax1 = plt.axes(projection='3d')
+# # ax1.plot(trajectory_position[:,0],trajectory_position[:,1],trajectory_position[:,2],'b')
+# # ax1.plot(targets[:,0],targets[:,1],targets[:,2],'r.')
 
-if show_plots:
-    fig = plt.figure(figsize=(5,5))
-    ax2 = fig.add_subplot()
-    ax2.plot(targets[:,-1],'r.')
+# if show_plots:
+#     fig = plt.figure(figsize=(5,5))
+#     ax2 = fig.add_subplot()
+#     ax2.plot(targets[:,-1],'r.')
 
-    if plt.get_backend() != 'agg':
-        plt.show()
+#     if plt.get_backend() != 'agg':
+#         plt.show()

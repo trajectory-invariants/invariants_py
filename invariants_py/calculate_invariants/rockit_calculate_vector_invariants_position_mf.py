@@ -118,7 +118,7 @@ class OCP_calc_pos:
         ocp.solve_limited() # code generation
 
         # Set Fatrop solver options (Q: why can this not be done before solving?)
-        if fatrop_solver:
+        if check_solver(fatrop_solver):
             ocp._method.set_option("tol",tolerance)
             ocp._method.set_option("print_level",print_level)
             ocp._method.set_option("max_iter",max_iter)

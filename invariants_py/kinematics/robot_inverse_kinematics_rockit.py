@@ -36,7 +36,8 @@ def inv_kin(q_init, q_joint_lim, des_p_obj, des_R_obj, path_to_urdf, root = 'bas
     ocp.set_der(q,qdot)
 
     # Forward kinematics
-    p_obj, R_obj = robot_forward_kinematics(q,path_to_urdf,root,tip)
+    fw_kin = robot_forward_kinematics(path_to_urdf,nb_joints,root,tip)
+    p_obj, R_obj = fw_kin(q)
     # Specify the objective
     e_pos = cas.dot(p_obj - p_obj_m,p_obj - p_obj_m)
     e_rot = cas.dot(R_obj_m.T @ R_obj - np.eye(3),R_obj_m.T @ R_obj - np.eye(3))
@@ -101,7 +102,8 @@ if __name__ == "__main__":
     # print(p_obj)
 
     for i in range(N):
-        p_obj, R_obj = robot_forward_kinematics(q[i],path_to_urdf,root_link_name,tip_link_name)
+        fw_kin = robot_forward_kinematics(path_to_urdf,np.shape(q)[1],root_link_name,tip_link_name)
+        p_obj, R_obj = fw_kin(q[i])
 
         e_pos = cas.dot(p_obj - des_p_obj[i],p_obj - des_p_obj[i])
         print(e_pos)

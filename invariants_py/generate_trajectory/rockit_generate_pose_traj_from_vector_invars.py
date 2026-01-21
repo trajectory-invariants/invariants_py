@@ -121,7 +121,8 @@ class OCP_gen_pose:
 
         if include_robot_model:
             # Forward kinematics
-            p_obj_fwkin, R_obj_fwkin = robot_forward_kinematics(q,path_to_urdf,root,tip)
+            fw_kin = robot_forward_kinematics(path_to_urdf,nb_joints,root,tip)
+            p_obj_fwkin, R_obj_fwkin = fw_kin(q)
             
         # Lower bounds on controls
         if bool_unsigned_invariants:
@@ -164,7 +165,7 @@ class OCP_gen_pose:
         ocp.set_value(w_invars, 0.001+np.zeros((6,window_len)))
         ocp.set_value(h, 0.1)
         if include_robot_model:
-            p_obj_dummy, _ = robot_forward_kinematics(q_init,path_to_urdf,root,tip)
+            p_obj_dummy, _ = fw_kin(q_init)
             ocp.set_initial(q,q_init) 
             ocp.set_initial(qdot, 0.001*np.ones((nb_joints,window_len-1)))
             ocp.set_value(q_lim,q_limits)
