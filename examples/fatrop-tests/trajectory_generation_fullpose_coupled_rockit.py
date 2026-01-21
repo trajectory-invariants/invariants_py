@@ -265,7 +265,7 @@ if plt.get_backend() != 'agg':
 
 current_progress = 0
 number_samples = 100
-number_of_trajectories = 100
+number_of_trajectories = 1
 
 progress_values = np.linspace(current_progress, arclength_n[-1], number_samples)
 model_invariants,new_stepsize = interpolate_model_invariants(spline_model_trajectory,progress_values)
