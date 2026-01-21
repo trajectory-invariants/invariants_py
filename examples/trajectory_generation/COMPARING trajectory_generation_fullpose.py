@@ -9,7 +9,7 @@ import scipy.interpolate as ip
 from invariants_py.calculate_invariants.opti_calculate_vector_invariants_rotation import OCP_calc_rot
 from invariants_py.calculate_invariants.opti_calculate_vector_invariants_position import OCP_calc_pos as OCP_calc_pos
 from invariants_py.generate_trajectory.opti_generate_pose_traj_from_vector_invars import OCP_gen_pose
-from invariants_py.generate_trajectory.rockit_generate_pose_traj_from_vector_invars import OCP_gen_pose as OCP_gen_pose_rockit
+from invariants_py.generate_trajectory.opti_generate_pose_traj_from_vector_invars_ipopt import OCP_gen_pose as OCP_gen_pose_ipopt
 from scipy.spatial.transform import Rotation as R
 from IPython.display import clear_output
 from invariants_py.kinematics.rigidbody_kinematics import orthonormalize_rotation as orthonormalize
@@ -18,7 +18,7 @@ import invariants_py.plotting_functions.plotters as pl
 from invariants_py.ocp_initialization import initial_trajectory_movingframe_rotation
 #%%
 
-solver = "ipopt"
+solver = "fatrop"
 
 data_location = dh.find_data_path('beer_1.txt')
 opener_location =  dh.find_data_path('opener.stl')
@@ -58,7 +58,7 @@ class OCP_results:
 optim_calc_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((len(trajectory),6)))
 
 # specify optimization problem symbolically
-FS_calculation_problem_pos = OCP_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.004)
+FS_calculation_problem_pos = OCP_calc_pos(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 0.001)
 FS_calculation_problem_rot = OCP_calc_rot(window_len=nb_samples, bool_unsigned_invariants = False, rms_error_traj = 2*pi/180) 
 
 # calculate invariants given measurements
@@ -122,7 +122,7 @@ FSr_end = orthonormalize(optim_calc_results.FSr_frames[-1])
 
 # define new class for OCP results
 optim_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
-rockit_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
+ipopt_gen_results = OCP_results(FSt_frames = [], FSr_frames = [], Obj_pos = [], Obj_frames = [], invariants = np.zeros((number_samples,6)))
 
 # Linear initialization
 R_obj_init = reparam.interpR(np.linspace(0, 1, len(optim_calc_results.Obj_frames)), [0,1], np.array([R_obj_start, R_obj_end]))
@@ -162,7 +162,7 @@ weights_params = {
 
 # Define robot parameters
 robot_params = {
-    "urdf_file_name": 'ur10.urdf', # use None if do not want to include robot model
+    "urdf_file_name": None, # use None if do not want to include robot model
     "q_init": np.array([-pi, -2.27, 2.27, -pi/2, -pi/2, pi/4]), # Initial joint values
     "tip": 'TCP_frame' # Name of the robot tip (if empty standard 'tool0' is used)
     # "joint_number": 6, # Number of joints (if empty it is automatically taken from urdf file)
@@ -177,7 +177,7 @@ else:
 
 # specify optimization problem symbolically
 FS_online_generation_problem = OCP_gen_pose(boundary_constraints, number_samples, solver = solver, robot_params = robot_params)
-rockit_online_generation_problem = OCP_gen_pose_rockit(boundary_constraints, number_samples,use_fatrop_solver,robot_params)
+ipopt_online_generation_problem = OCP_gen_pose_ipopt(boundary_constraints, number_samples,robot_params=robot_params)
 
 initial_values = {
     "trajectory": {
@@ -194,13 +194,13 @@ initial_values = {
 
 # Solve
 optim_gen_results.invariants, optim_gen_results.Obj_pos, optim_gen_results.Obj_frames, optim_gen_results.FSt_frames, optim_gen_results.FSr_frames, joint_values = FS_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values)
-rockit_gen_results.invariants, rockit_gen_results.Obj_pos, rockit_gen_results.Obj_frames, rockit_gen_results.FSt_frames, rockit_gen_results.FSr_frames, tot_time, rockit_joint_values = rockit_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values)
+ipopt_gen_results.invariants, ipopt_gen_results.Obj_pos, ipopt_gen_results.Obj_frames, ipopt_gen_results.FSt_frames, ipopt_gen_results.FSr_frames, ipopt_joint_values = ipopt_online_generation_problem.generate_trajectory(model_invariants,boundary_constraints,new_stepsize,weights_params,initial_values)
 
 fig = plt.figure(figsize=(14,8))
 ax = fig.add_subplot(111, projection='3d')
 ax.plot(optim_calc_results.Obj_pos[:,0],optim_calc_results.Obj_pos[:,1],optim_calc_results.Obj_pos[:,2],'b')
 ax.plot(optim_gen_results.Obj_pos[:,0],optim_gen_results.Obj_pos[:,1],optim_gen_results.Obj_pos[:,2],'r')
-ax.plot(rockit_gen_results.Obj_pos[:,0],rockit_gen_results.Obj_pos[:,1],rockit_gen_results.Obj_pos[:,2],'g')
+ax.plot(ipopt_gen_results.Obj_pos[:,0],ipopt_gen_results.Obj_pos[:,1],ipopt_gen_results.Obj_pos[:,2],'g')
 for i in indx:
     pl.plot_stl(opener_location,optim_calc_results.Obj_pos[i,:],optim_calc_results.Obj_frames[i,:,:],colour="c",alpha=0.2,ax=ax)
 
@@ -208,60 +208,60 @@ indx_online = np.trunc(np.linspace(0,len(optim_gen_results.Obj_pos)-1,n_frames))
 indx_online = indx_online.astype(int)
 for i in indx_online:
     pl.plot_stl(opener_location,optim_gen_results.Obj_pos[i,:],optim_gen_results.Obj_frames[i,:,:],colour="r",alpha=0.2,ax=ax)
-    pl.plot_stl(opener_location,rockit_gen_results.Obj_pos[i,:],rockit_gen_results.Obj_frames[i,:,:],colour="g",alpha=0.2,ax=ax)
+    pl.plot_stl(opener_location,ipopt_gen_results.Obj_pos[i,:],ipopt_gen_results.Obj_frames[i,:,:],colour="g",alpha=0.2,ax=ax)
 pl.plot_orientation(optim_calc_results.Obj_frames,optim_gen_results.Obj_frames,current_index)
-pl.plot_orientation(optim_calc_results.Obj_frames,rockit_gen_results.Obj_frames,current_index)
+pl.plot_orientation(optim_calc_results.Obj_frames,ipopt_gen_results.Obj_frames,current_index)
 
 
 fig = plt.figure()
 plt.subplot(2,3,1)
 plt.plot(arclength_n,optim_calc_results.invariants[:,0],'b')
 plt.plot(progress_values,optim_gen_results.invariants[:,0],'r')
-plt.plot(progress_values,rockit_gen_results.invariants[:,0],'g')
+plt.plot(progress_values,ipopt_gen_results.invariants[:,0],'g')
 plt.plot(0,0)
 plt.title('i_r1')
 
 plt.subplot(2,3,2)
 plt.plot(arclength_n,optim_calc_results.invariants[:,1],'b')
 plt.plot(progress_values,(optim_gen_results.invariants[:,1]),'r')
-plt.plot(progress_values,(rockit_gen_results.invariants[:,1]),'g')
+plt.plot(progress_values,(ipopt_gen_results.invariants[:,1]),'g')
 plt.plot(0,0)
 plt.title('i_r2')
 
 plt.subplot(2,3,3)
 plt.plot(arclength_n,optim_calc_results.invariants[:,2],'b')
 plt.plot(progress_values,(optim_gen_results.invariants[:,2]),'r')
-plt.plot(progress_values,(rockit_gen_results.invariants[:,2]),'g')
+plt.plot(progress_values,(ipopt_gen_results.invariants[:,2]),'g')
 plt.plot(0,0)
 plt.title('i_r3')
 
 plt.subplot(2,3,4)
 plt.plot(arclength_n,optim_calc_results.invariants[:,0],'b')
 plt.plot(progress_values,optim_gen_results.invariants[:,0],'r')
-plt.plot(arclength_n,rockit_gen_results.invariants[:,0],'g')
+plt.plot(arclength_n,ipopt_gen_results.invariants[:,0],'g')
 plt.plot(0,0)
 plt.title('i_t1')
 
 plt.subplot(2,3,5)
 plt.plot(arclength_n,optim_calc_results.invariants[:,1],'b')
 plt.plot(progress_values,(optim_gen_results.invariants[:,1]),'r')
-plt.plot(arclength_n,rockit_gen_results.invariants[:,1],'g')
+plt.plot(arclength_n,ipopt_gen_results.invariants[:,1],'g')
 plt.plot(0,0)
 plt.title('i_t1')
 
 plt.subplot(2,3,6)
 plt.plot(arclength_n,optim_calc_results.invariants[:,2],'b')
 plt.plot(progress_values,(optim_gen_results.invariants[:,2]),'r')
-plt.plot(arclength_n,rockit_gen_results.invariants[:,2],'g')
+plt.plot(arclength_n,ipopt_gen_results.invariants[:,2],'g')
 plt.plot(0,0)
 plt.title('i_t3')
 
 
-fig = plt.figure()
-for k in range(6):
-    plt.subplot(1,6,k+1)
-    plt.plot(arclength_n,joint_values[k,:],'r')
-    plt.plot(arclength_n,rockit_joint_values[:,k].T,'g')
+# fig = plt.figure()
+# for k in range(6):
+#     plt.subplot(1,6,k+1)
+#     plt.plot(arclength_n,joint_values[k,:],'r')
+#     plt.plot(arclength_n,ipopt_joint_values[:,k].T,'g')
 
 if plt.get_backend() != 'agg':
     plt.show()

@@ -31,21 +31,21 @@ class OCP_gen_pose:
 
         # Define system states X (unknown object pose + moving frame pose at every time step) 
         p_obj = []
-        R_t = []
         R_obj = []
+        R_t = []
         R_r = []
         X = []
         invars = []
         q = []
         qdot = []
         for k in range(N):
-            R_r.append(opti.variable(3,3)) # rotational Frenet-Serret frame
+            p_obj.append(opti.variable(3,1)) # object position
             R_obj.append(opti.variable(3,3)) # object orientation
             R_t.append(opti.variable(3,3)) # translational Frenet-Serret frame
-            p_obj.append(opti.variable(3,1)) # object position
+            R_r.append(opti.variable(3,3)) # rotational Frenet-Serret frame
             if include_robot_model:
                 q.append(opti.variable(nb_joints,1))
-            X.append(cas.vertcat(cas.vec(R_r[k]), cas.vec(R_obj[k]),cas.vec(R_t[k]), cas.vec(p_obj[k])))
+            X.append(cas.vertcat(cas.vec(p_obj[k]), cas.vec(R_obj[k]), cas.vec(R_t[k]), cas.vec(R_r[k])))
 
             if k < N-1:
                 invars.append(opti.variable(6,1)) # invariants
@@ -95,8 +95,8 @@ class OCP_gen_pose:
 
             if k == 0:
                 # Constrain rotation matrices to be orthogonal (only needed for one timestep, property is propagated by integrator)
-                opti.subject_to(tril_vec(R_t[0].T @ R_t[0] - np.eye(3)) == 0)
                 opti.subject_to(tril_vec(R_obj[0].T @ R_obj[0] - np.eye(3)) == 0)
+                opti.subject_to(tril_vec(R_t[0].T @ R_t[0] - np.eye(3)) == 0)
                 opti.subject_to(tril_vec(R_r[0].T @ R_r[0] - np.eye(3)) == 0)
         # Boundary constraints
                 if "position" in boundary_constraints and "initial" in boundary_constraints["position"]:    
@@ -111,7 +111,7 @@ class OCP_gen_pose:
             if include_robot_model:
                 for i in range(nb_joints):
                     # ocp.subject_to(-q_lim[i] <= (q[k][i] <= q_lim[i])) # This constraint definition does not work with fatrop, yet
-                    opti.subject_to(q[k][i] >= -q_lim[i])
+                    opti.subject_to(q[k][i] >= q_lim[i])
                     opti.subject_to(q[k][i] <= q_lim[nb_joints+i])
                 
                 # Forward kinematics
@@ -119,16 +119,6 @@ class OCP_gen_pose:
                 opti.subject_to(p_obj[k] == p_obj_fwkin)
                 opti.subject_to(tril_vec_no_diag(R_obj[k].T @ R_obj_fwkin - np.eye(3)) == 0.)
             
-        if include_robot_model:
-            for i in range(nb_joints):
-                # ocp.subject_to(-q_lim[i] <= (q[k][i] <= q_lim[i])) # This constraint definition does not work with fatrop, yet
-                opti.subject_to(q[-1][i] >= -q_lim[i])
-                opti.subject_to(q[-1][i] <= q_lim[nb_joints+i])
-            # Forward kinematics
-                p_obj_fwkin, R_obj_fwkin = robot_forward_kinematics(q[-1],path_to_urdf,root,tip)
-                opti.subject_to(p_obj[-1] == p_obj_fwkin)
-                opti.subject_to(tril_vec_no_diag(R_obj[-1].T @ R_obj_fwkin - np.eye(3)) == 0.)
-       
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
             opti.subject_to(p_obj[-1] == p_obj_end)
         if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:
@@ -137,6 +127,17 @@ class OCP_gen_pose:
             opti.subject_to(tril_vec_no_diag(R_t[-1].T @ R_t_end - np.eye(3)) == 0.)
         if "moving-frame" in boundary_constraints and "rotational" in boundary_constraints["moving-frame"] and "final" in boundary_constraints["moving-frame"]["rotational"]:
             opti.subject_to(tril_vec_no_diag(R_r[-1].T @ R_r_end - np.eye(3)) == 0.)
+
+        if include_robot_model:
+            for i in range(nb_joints):
+                # ocp.subject_to(-q_lim[i] <= (q[k][i] <= q_lim[i])) # This constraint definition does not work with fatrop, yet
+                opti.subject_to(q[-1][i] >= q_lim[i])
+                opti.subject_to(q[-1][i] <= q_lim[nb_joints+i])
+            # Forward kinematics
+                p_obj_fwkin, R_obj_fwkin = robot_forward_kinematics(q[-1],path_to_urdf,root,tip)
+                opti.subject_to(p_obj[-1] == p_obj_fwkin)
+                opti.subject_to(tril_vec_no_diag(R_obj[-1].T @ R_obj_fwkin - np.eye(3)) == 0.)
+       
 
         ''' Specifying the objective '''
 

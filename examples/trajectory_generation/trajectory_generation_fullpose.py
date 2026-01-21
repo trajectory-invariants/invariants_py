@@ -19,7 +19,7 @@ import random
 
 #%%
 show_plots = True
-solver = 'fatrop'
+solver = 'ipopt'
 
 data_location = dh.find_data_path('beer_1.txt')
 opener_location =  dh.find_data_path('opener.stl')
