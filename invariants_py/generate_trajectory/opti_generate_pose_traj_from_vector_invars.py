@@ -1,7 +1,7 @@
 import numpy as np
 import casadi as cas
 import invariants_py.dynamics_vector_invariants as dynamics
-from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag, extract_robot_params
+from invariants_py.ocp_helper import tril_vec, tril_vec_no_diag, extract_robot_params
 from invariants_py.ocp_initialization import generate_initvals_from_constraints_opti
 from invariants_py.kinematics.orientation_kinematics import rotate_x
 from invariants_py import spline_handler as sh
@@ -12,10 +12,6 @@ from invariants_py.kinematics.robot_forward_kinematics import robot_forward_kine
 class OCP_gen_pose:
 
     def __init__(self, boundary_constraints, N = 40, bool_unsigned_invariants = False, solver = 'ipopt', robot_params = {}, dummy = {}):  
-
-        # if solver == "fatrop":
-        #     fatrop_solver = True
-        #     fatrop_solver = check_solver(fatrop_solver)
 
         # Robot urdf location
         urdf_file_name = robot_params.get('urdf_file_name', None)
@@ -127,7 +123,7 @@ class OCP_gen_pose:
             
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
             # if include_robot_model:
-            #     opti.subject_to(p_obj[-1] - p_obj_end == epsilon)
+            #     opti.subject_to(-p_obj[-1] + p_obj_end + epsilon == 0)
             # else:
             opti.subject_to(p_obj[-1] == p_obj_end)
         if "orientation" in boundary_constraints and "final" in boundary_constraints["orientation"]:

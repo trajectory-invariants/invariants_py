@@ -1,7 +1,7 @@
 import numpy as np
 import casadi as cas
 import invariants_py.dynamics_vector_invariants as dynamics
-from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag, extract_robot_params
+from invariants_py.ocp_helper import tril_vec, tril_vec_no_diag, extract_robot_params
 from invariants_py.ocp_initialization import generate_initvals_from_constraints_opti
 from invariants_py.kinematics.orientation_kinematics import rotate_x
 from invariants_py import spline_handler as sh
@@ -12,8 +12,6 @@ import urdf2casadi.urdfparser as u2c
 class OCP_gen_pose:
 
     def __init__(self, boundary_constraints, N = 40, bool_unsigned_invariants = False, solver = 'ipopt', robot_params = {}, dummy = {}):  
-
-        # fatrop_solver = check_solver(fatrop_solver)
 
         # Robot urdf location
         urdf_file_name = robot_params.get('urdf_file_name', None)

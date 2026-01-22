@@ -1,6 +1,6 @@
 import numpy as np
 import casadi as cas
-from invariants_py.ocp_helper import check_solver, tril_vec, tril_vec_no_diag
+from invariants_py.ocp_helper import tril_vec, tril_vec_no_diag
 import invariants_py.dynamics_vector_invariants as dynamics
 from invariants_py.kinematics.orientation_kinematics import rotate_x
 from invariants_py.ocp_initialization import generate_initvals_from_constraints_opti
@@ -9,8 +9,6 @@ class OCP_gen_rot:
 
     def __init__(self, boundary_constraints, window_len = 100, bool_unsigned_invariants = False, solver = 'ipopt'):
        
-        # fatrop_solver = check_solver(fatrop_solver)  
-
         ''' Create decision variables and parameters for the optimization problem '''
         
         opti = cas.Opti() # use OptiStack package from Casadi for easy bookkeeping of variables (no cumbersome indexing)
