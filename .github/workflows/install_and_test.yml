@@ -40,18 +40,6 @@ jobs:
     - name: Install invariants-py
       run: pip install .
 
-    - name: Install fatrop
-      run: |
-        git clone https://github.com/meco-group/fatrop.git
-        cd fatrop
-        git checkout fatropv1
-        mkdir build
-        cd build
-        cmake .. -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF
-        make -j$(nproc)
-        make install 
-        cd ..
-
     - name: Install rockit and rockit-fatrop plugin
       run: |
         git clone https://gitlab.kuleuven.be/meco-software/rockit.git
