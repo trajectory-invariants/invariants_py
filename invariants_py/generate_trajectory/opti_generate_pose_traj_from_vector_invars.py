@@ -148,14 +148,18 @@ class OCP_gen_pose:
 
         # Fitting constraint to remain close to measurements
         objective_fit = 0
+        qdot_reg = 0
         for k in range(N-1):
             err_invars = w_invars[k]*(invars[k] - invars_demo[k])
             objective_fit += 1/N*cas.dot(err_invars,err_invars)
             if include_robot_model:
-                objective_fit += 0.001*cas.dot(qdot[k],qdot[k])
+                qdot_reg += 0.001*cas.dot(qdot[k],qdot[k])
         # if include_robot_model:
         #     objective_fit += 1500*cas.dot(epsilon,epsilon)
-        objective = objective_fit
+        if include_robot_model:
+            objective = objective_fit + qdot_reg
+        else:
+            objective = objective_fit
 
         ''' Define solver and save variables '''
         opti.minimize(objective)
@@ -163,7 +167,7 @@ class OCP_gen_pose:
         if solver == 'ipopt':
             opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':100,'tol':1e-6,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'})
         elif solver == 'fatrop':
-            opti.solver('fatrop',{"expand":True,'fatrop.max_iter':300,'fatrop.tol':1e-6,'fatrop.print_level':5, "structure_detection":"auto","debug":True,"fatrop.mu_init":0.1})
+            opti.solver('fatrop',{"expand":True,'fatrop.max_iter':100,'fatrop.tol':1e-6,'fatrop.print_level':0, "structure_detection":"auto","debug":False,"fatrop.mu_init":0.1})
             # ocp._method.set_name("/codegen/generation_position")
 
         # Solve already once with dummy measurements
@@ -245,8 +249,9 @@ class OCP_gen_pose:
         if include_robot_model:
             for k in range(N):
                 solution.append(q[k])
+        solution.append(objective_fit*N)
         self.opti_function = opti.to_function('opti_function', 
-            [*input_params,*bounds,*solution], # inputs
+            [*input_params,*bounds,*solution[:-1]], # inputs
             [*solution]) #outputs
             # ["h_value","invars_model","weights",*bounds_labels,"invars1","p_obj1","R_t1","R_obj1","R_r1"], # input labels for debugging
             # ["invars2","p_obj2","R_t2","R_obj2","R_r2"]) # output labels for debugging
@@ -293,7 +298,7 @@ class OCP_gen_pose:
             self.q_limits = q_limits
 
 
-    def generate_trajectory(self, invariant_model, boundary_constraints, step_size, weights_params = {}, initial_values = {}):
+    def generate_trajectory(self, invariant_model, boundary_constraints, step_size, weights_params = {}, initial_values = {}, output_inverr = False):
         
         N = invariant_model.shape[0]
         
@@ -357,6 +362,9 @@ class OCP_gen_pose:
             R_r_sol[i,:,:] = self.solution[4*N-1+i]
             if self.include_robot_model:
                 q_sol[i,:] = self.solution[5*N-1+i].T
+            inv_error = self.solution[-1]
+
+        self.solution = self.solution[:-1] # removing the inv_err term from the inputs to next iteratioin
 
         # Extract the solved variables
         invariants = np.array(invars)
@@ -370,7 +378,10 @@ class OCP_gen_pose:
         else:
             joint_val = []
 
-        return invariants, calculated_trajectory_pos, calculated_trajectory_rot, calculated_movingframe_pos, calculated_movingframe_rot, joint_val
+        if output_inverr:
+            return invariants, calculated_trajectory_pos, calculated_trajectory_rot, calculated_movingframe_pos, calculated_movingframe_rot, joint_val, inv_error
+        else:
+            return invariants, calculated_trajectory_pos, calculated_trajectory_rot, calculated_movingframe_pos, calculated_movingframe_rot, joint_val
     
 if __name__ == "__main__":
 
