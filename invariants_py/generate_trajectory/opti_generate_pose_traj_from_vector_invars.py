@@ -167,7 +167,7 @@ class OCP_gen_pose:
         if solver == 'ipopt':
             opti.solver('ipopt',{"print_time":True,"expand":True},{'max_iter':100,'tol':1e-6,'print_level':5,'ma57_automatic_scaling':'no','linear_solver':'mumps','print_info_string':'yes'})
         elif solver == 'fatrop':
-            opti.solver('fatrop',{"expand":True,'fatrop.max_iter':100,'fatrop.tol':1e-6,'fatrop.print_level':0, "structure_detection":"auto","debug":False,"fatrop.mu_init":0.1})
+            opti.solver('fatrop',{"expand":True,'fatrop.max_iter':300,'fatrop.tol':1e-6,'fatrop.print_level':0, "structure_detection":"auto","debug":False,"fatrop.mu_init":0.1})
             # ocp._method.set_name("/codegen/generation_position")
 
         # Solve already once with dummy measurements
