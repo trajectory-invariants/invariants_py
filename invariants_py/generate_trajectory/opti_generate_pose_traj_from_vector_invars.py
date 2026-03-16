@@ -298,7 +298,7 @@ class OCP_gen_pose:
             self.q_limits = q_limits
 
 
-    def generate_trajectory(self, invariant_model, boundary_constraints, step_size, weights_params = {}, initial_values = {}, output_inverr = False):
+    def generate_trajectory(self, invariant_model, boundary_constraints, step_size, weights_params = {}, initial_values = {}, output_inverr = False, recovery_mode = 0):
         
         N = invariant_model.shape[0]
         
@@ -332,7 +332,7 @@ class OCP_gen_pose:
         if self.first_window and not initial_values:
             self.solution = generate_initvals_from_constraints_opti(boundary_constraints, np.size(invariant_model,0), q_init = self.q_init if self.include_robot_model else None)
             self.first_window = False
-        elif self.first_window:
+        elif self.first_window or recovery_mode == 1:
             self.solution = [*initial_values["invariants"][:N-1,:], *initial_values["trajectory"]["position"][:N,:], *initial_values["moving-frame"]["translational"][:N],*initial_values["trajectory"]["orientation"][:N], *initial_values["moving-frame"]["rotational"][:N]]
             if self.include_robot_model:
                 for k in range(N):
