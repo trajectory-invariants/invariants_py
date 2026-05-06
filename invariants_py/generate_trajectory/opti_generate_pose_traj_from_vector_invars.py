@@ -120,6 +120,11 @@ class OCP_gen_pose:
                 p_obj_fwkin, R_obj_fwkin = fw_kin(q[k])
                 opti.subject_to(p_obj[k] == p_obj_fwkin)
                 opti.subject_to(tril_vec_no_diag(R_obj[k].T @ R_obj_fwkin - np.eye(3)) == 0.)
+
+            # Lower bound on control
+            if bool_unsigned_invariants:
+                opti.subject_to(invars[k][3] >= 0)
+                # opti.subject_to(invars[k][4] >= 0)
             
         if "position" in boundary_constraints and "final" in boundary_constraints["position"]:
             # if include_robot_model:
